@@ -50,6 +50,7 @@ export default function MusicPanel({
   const [showLyric, setShowLyric] = useState(false);
   const [uploadingAudio, setUploadingAudio] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
+  const [autoplay, setAutoplay] = useState(initial?.autoplay ?? false);
 
   const [error, setError] = useState("");
 
@@ -76,6 +77,7 @@ export default function MusicPanel({
       setAudioUrl(initial.url ?? "");
       setAudioName(initial.name ?? "");
       setLrc(initial.lrc ?? "");
+      setAutoplay(initial.autoplay ?? false);
       setAudioMode(initial.url ? "url" : "file");
       setTab("upload");
     } else if (open) {
@@ -85,6 +87,7 @@ export default function MusicPanel({
       setAudioUrl("");
       setAudioName("");
       setLrc("");
+      setAutoplay(false);
       setAudioMode("file");
       setTab("search");
     }
@@ -160,6 +163,7 @@ export default function MusicPanel({
           platform: selectedPlatform,
           musicId: String(item.id),
           extra: finalExtra,
+          autoplay,
         });
       } else {
         const err = await res.json().catch(() => ({ message: "获取失败" }));
@@ -229,6 +233,7 @@ export default function MusicPanel({
       url,
       source: "upload",
       lrc: lrc || undefined,
+      autoplay,
     });
   };
 
@@ -284,6 +289,28 @@ export default function MusicPanel({
           上传音乐
         </button>
       </div>
+
+      {/* 自动播放开关（搜索/上传通用） */}
+      <label className="mb-3 flex cursor-pointer items-center justify-between rounded-lg bg-adm-input px-3 py-2">
+        <span className="text-xs font-medium text-adm-text-secondary">
+          进入文章自动播放
+        </span>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={autoplay}
+          onClick={() => setAutoplay((v) => !v)}
+          className={`relative h-5 w-9 shrink-0 rounded-full transition-colors ${
+            autoplay ? "bg-gray-900 dark:bg-white" : "bg-gray-300 dark:bg-gray-600"
+          }`}
+        >
+          <span
+            className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${
+              autoplay ? "translate-x-4" : "translate-x-0.5"
+            }`}
+          />
+        </button>
+      </label>
 
       {/* Body content */}
       <div>

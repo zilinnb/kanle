@@ -880,6 +880,24 @@ img.inline-emoji.emoji-error {
 .article-editor-area .embed-block {
   cursor: default;
   position: relative;
+  /* 编辑器中允许删除按钮(top:-8px;right:-8px)溢出可见 */
+  overflow: visible;
+  /* 左右留出空间避免删除按钮被编辑器边缘裁剪 */
+  margin-left: 8px;
+  margin-right: 8px;
+}
+/* 编辑器中嵌入块子元素补圆角（父级 overflow:visible 后不再裁剪） */
+.article-editor-area .embed-block .embed-cover {
+  border-radius: 7px 0 0 7px;
+}
+.article-editor-area a.link-card {
+  /* 同理允许删除按钮溢出 */
+  overflow: visible;
+  margin-left: 8px;
+  margin-right: 8px;
+}
+.article-editor-area .link-card-image {
+  border-radius: 7px 0 0 7px;
 }
 .embed-block .embed-cover {
   flex-shrink: 0;

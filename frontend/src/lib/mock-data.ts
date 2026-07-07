@@ -43,6 +43,8 @@ export interface PostMusic {
   extra?: Record<string, any>;
   /** LRC 歌词文本（上传歌曲时由用户编辑/标记，播放时客户端解析） */
   lrc?: string;
+  /** 进入文章详情页时是否自动播放此音乐 */
+  autoplay?: boolean;
 }
 
 export interface LinkCard {
