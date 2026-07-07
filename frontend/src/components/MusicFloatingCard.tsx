@@ -143,7 +143,10 @@ export default function MusicFloatingCard() {
     const audio = getGlobalAudio();
     if (!audio || !activePostMusic) return;
     if (audio.paused) {
-      audio.play().catch(() => {});
+      audio.play().catch((e) => {
+        console.error("[MusicFloatingCard] play failed:", e);
+        useMusicPlayer.getState().setAudioError(true);
+      });
     } else {
       audio.pause();
     }

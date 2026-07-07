@@ -1,6 +1,6 @@
 "use client";
 
-import { Music, Pause, Play } from "lucide-react";
+import { Music, Pause, Play, AlertCircle } from "lucide-react";
 import type { PostMusic } from "@/lib/mock-data";
 import { useMusicPlayer, resolvePostMusicUrl } from "@/lib/music-player-store";
 import { getGlobalAudio } from "@/lib/global-audio";
@@ -43,25 +43,42 @@ export default function MusicEmbedCard({ music, postId }: MusicEmbedCardProps) {
   const activePostId = useMusicPlayer((s) => s.activePostId);
   const isPlaying = useMusicPlayer((s) => s.isPlaying);
   const isLoading = useMusicPlayer((s) => s.isLoading);
+  const audioError = useMusicPlayer((s) => s.audioError);
   const setActiveMusic = useMusicPlayer((s) => s.setActive);
 
   const isThisActive = activePostId === postId;
   const isThisPlaying = isThisActive && isPlaying;
   const isThisLoading = isThisActive && isLoading;
+  const isThisError = isThisActive && audioError;
   const info = formatMusicInfo(music);
+
+  const handlePlayError = (err: unknown, context: string) => {
+    console.error(`[MusicEmbedCard] ${context}:`, err, "music:", music);
+    const st = useMusicPlayer.getState();
+    st.setAudioError(true);
+    st.setSwitching(false);
+    st.setLoading(false);
+  };
 
   const handleClick = () => {
     const audio = getGlobalAudio();
     if (!audio) return;
 
     if (isThisActive) {
-      if (audio.paused) audio.play().catch(() => {});
-      else audio.pause();
+      if (audio.paused) {
+        audio.play().catch((e) => handlePlayError(e, "resume play failed"));
+      } else {
+        audio.pause();
+      }
       return;
     }
 
     const playUrl = resolvePostMusicUrl(music);
-    if (!playUrl) return;
+    if (!playUrl) {
+      console.warn("[MusicEmbedCard] resolvePostMusicUrl returned empty for music:", music);
+      handlePlayError(new Error("无法解析播放地址"), "no playUrl");
+      return;
+    }
 
     setActiveMusic(postId, {
       postId,
@@ -77,7 +94,8 @@ export default function MusicEmbedCard({ music, postId }: MusicEmbedCardProps) {
       lrc: music.lrc,
     });
     audio.src = playUrl;
-    audio.play().catch(() => {});
+    audio.load();
+    audio.play().catch((e) => handlePlayError(e, "initial play failed"));
   };
 
   const coverSrc = music.cover
@@ -115,6 +133,8 @@ export default function MusicEmbedCard({ music, postId }: MusicEmbedCardProps) {
         </div>
         {isThisLoading ? (
           <span className="h-3 w-3 shrink-0 animate-pulse rounded-full bg-black/55 dark:bg-white/55" />
+        ) : isThisError ? (
+          <AlertCircle className="h-3.5 w-3.5 shrink-0 text-red-500" />
         ) : isThisPlaying ? (
           <Pause className="h-3.5 w-3.5 shrink-0 text-black/55 dark:text-white/55" fill="currentColor" />
         ) : (
