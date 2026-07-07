@@ -33,9 +33,6 @@ export default function ArticleReader({ post }: ArticleReaderProps) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [pinned, setPinned] = useState(!!post.pinned);
   const [focusSignal, setFocusSignal] = useState(0);
-  // 评论可见：未评论且非作者时隐藏 reply-to-view 内容
-  const [meCommented, setMeCommented] = useState(!!post.meCommented);
-  const [isAuthor, setIsAuthor] = useState(!!post.isAuthor);
   const openEdit = useEditPost((s) => s.open);
 
   useEffect(() => {
@@ -75,8 +72,6 @@ export default function ArticleReader({ post }: ArticleReaderProps) {
         if (Array.isArray(data.likes)) setLikes(data.likes);
         if (Array.isArray(data.comments)) setComments(data.comments);
         if (typeof data.viewCount === "number") setViewCount(data.viewCount);
-        if (typeof data.meCommented === "boolean") setMeCommented(data.meCommented);
-        if (typeof data.isAuthor === "boolean") setIsAuthor(data.isAuthor);
       })
       .catch(() => {});
   }, [post.id]);
@@ -144,12 +139,8 @@ export default function ArticleReader({ post }: ArticleReaderProps) {
     setFocusSignal((n) => n + 1);
   };
 
-  // 评论变化回调：新增评论后解锁"评论可见"内容
   const handleCommentsChange = (next: typeof comments) => {
     setComments(next);
-    if (next.length > comments.length) {
-      setMeCommented(true);
-    }
   };
 
   const handleEdit = () => {
@@ -195,7 +186,7 @@ export default function ArticleReader({ post }: ArticleReaderProps) {
       {/* 正文内容 */}
       <div
         className="article-content rich-content mt-5 text-[16px] leading-[1.8] text-wechat-text dark:text-gray-200 md:text-[18px] md:leading-[1.9]"
-        dangerouslySetInnerHTML={{ __html: renderContent(post.content, meCommented || isAuthor) }}
+        dangerouslySetInnerHTML={{ __html: renderContent(post.content) }}
       />
 
       {/* 阅读量 + 点赞数 — 左右分布 */}

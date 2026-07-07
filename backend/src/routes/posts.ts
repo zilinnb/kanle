@@ -106,9 +106,7 @@ function sortCommentsThreaded<T extends { replyTo?: string | null; replyToEmail?
 function formatPost(
   post: any,
   meLiked = false,
-  commentLikesMap?: Map<string, { likeCount: number; meLiked: boolean }>,
-  meCommented = false,
-  isAuthor = false
+  commentLikesMap?: Map<string, { likeCount: number; meLiked: boolean }>
 ) {
   // 如果音乐有 neteaseId，用代理 URL（实时获取有效 URL，避免过期 403）
   let music = post.music || null;
@@ -188,8 +186,6 @@ function formatPost(
       likes: post.likes?.filter((l: any) => l.status === "like")
         .map((l: any) => ({ name: l.name, email: l.email || l.user?.email || undefined })) || [],
       meLiked,
-      meCommented,
-      isAuthor,
     };
 }
 
@@ -328,27 +324,6 @@ router.get("/:id", authenticateOptional, async (req: AuthRequest, res: Response)
     meLiked = !!existing;
   }
 
-  // 判断当前访客是否已评论（用于"评论可见"内容解锁）
-  let meCommented = false;
-  if (normalizedEmail) {
-    const existing = await Comment.findOne({
-      where: { postId: post.id, email: normalizedEmail },
-    });
-    meCommented = !!existing;
-  }
-  if (!meCommented && ip) {
-    const existing = await Comment.findOne({
-      where: { postId: post.id, ip },
-    });
-    meCommented = !!existing;
-  }
-
-  // 判断当前访客是否是文章作者（作者始终可见评论可见内容）
-  const authorEmail = (post as any).author?.email
-    ? String((post as any).author.email).trim().toLowerCase()
-    : "";
-  const isAuthor = !!(normalizedEmail && authorEmail && normalizedEmail === authorEmail);
-
   // 批量查询评论点赞计数 + 当前访客点赞状态（2 次查询，避免 N+1）
   const commentIds = ((post as any).comments || []).map((c: any) => c.id);
   const commentLikesMap = new Map<string, { likeCount: number; meLiked: boolean }>();
@@ -379,7 +354,7 @@ router.get("/:id", authenticateOptional, async (req: AuthRequest, res: Response)
     }
   }
 
-  res.json(formatPost(post, meLiked, commentLikesMap, meCommented, isAuthor));
+  res.json(formatPost(post, meLiked, commentLikesMap));
 });
 
 // POST /api/posts - create post (admin only)

@@ -115,10 +115,6 @@ export interface Post {
   comments: Comment[];
   /** 当前访客是否已点赞（基于 IP/email/userId 判断，跨浏览器同 IP 一致） */
   meLiked?: boolean;
-  /** 当前访客是否已评论（用于"评论可见"内容解锁） */
-  meCommented?: boolean;
-  /** 当前访客是否是文章作者（作者始终可见评论可见内容） */
-  isAuthor?: boolean;
   /** 阅读量（文章详情页客户端 fetch ?view=1 时递增） */
   viewCount?: number;
 }

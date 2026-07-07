@@ -780,21 +780,3 @@ img.inline-emoji.emoji-error {
   border: 1px solid var(--wechat-border);
   padding: 0.4em 0.6em;
 }
-
-/* ===== 评论可见内容块 ===== */
-/* 可见时无任何特殊渲染：.reply-to-view 仅作语义标记，内容与正文完全一致。
-   渲染入口 sanitize.ts 在解锁时会拆包 .reply-to-view div，内容自然融入正文。 */
-/* 未评论时的锁定占位块 */
-.article-content .reply-locked {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 1em 0;
-  padding: 1.2em 1em;
-  border: 1px dashed var(--wechat-border);
-  border-radius: 8px;
-  background: var(--wechat-bubble);
-  color: var(--wechat-time);
-  font-size: 14px;
-  text-align: center;
-}

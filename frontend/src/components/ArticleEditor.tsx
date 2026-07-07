@@ -28,7 +28,6 @@ import {
   Video,
   LayoutTemplate,
   Smile,
-  EyeOff,
 } from "lucide-react";
 import { sanitizeHtml } from "@/lib/sanitize";
 import { markdownToHtml } from "@/lib/markdown";
@@ -353,53 +352,6 @@ export default function ArticleEditor({
     handleMdClose();
   }, [mdText, emitChange, handleMdClose]);
 
-  // 评论可见：把选区内容包裹为 .reply-to-view 块
-  // 嵌套预防：若选区/光标已在 .reply-to-view 内，则跳过，避免重复点击产生嵌套
-  const wrapReplyView = useCallback(() => {
-    if (sourceMode) return;
-    const editor = editorRef.current;
-    if (!editor) return;
-    editor.focus();
-    restoreSelection();
-    const sel = window.getSelection();
-    if (!sel || sel.rangeCount === 0) {
-      insertHtml('<div class="reply-to-view">在此输入评论可见的内容</div>');
-      return;
-    }
-    const range = sel.getRangeAt(0);
-    const insideReply = (node: Node | null): boolean => {
-      let n: Node | null = node;
-      while (n && n !== editor) {
-        if (n.nodeType === 1 && (n as Element).classList?.contains("reply-to-view")) {
-          return true;
-        }
-        n = n.parentNode;
-      }
-      return false;
-    };
-    if (insideReply(range.startContainer) || insideReply(range.endContainer)) {
-      return;
-    }
-    if (range.collapsed) {
-      insertHtml('<div class="reply-to-view">在此输入评论可见的内容</div>');
-      return;
-    }
-    // 提取选区内容并包裹为 reply-to-view 块
-    const fragment = range.extractContents();
-    const wrapper = document.createElement("div");
-    wrapper.className = "reply-to-view";
-    wrapper.appendChild(fragment);
-    range.insertNode(wrapper);
-    // 选区移到 wrapper 之后
-    sel.removeAllRanges();
-    const newRange = document.createRange();
-    newRange.setStartAfter(wrapper);
-    newRange.collapse(true);
-    sel.addRange(newRange);
-    refreshActive();
-    emitChange();
-  }, [sourceMode, restoreSelection, insertHtml, refreshActive, emitChange]);
-
   const insertEmoji = useCallback((name: string) => {
     const item = EMOJI_LIST.find((e) => e.name === name);
     if (!item) return;
@@ -657,15 +609,6 @@ export default function ArticleEditor({
           title: "导入 Markdown",
           icon: <FileDown className="h-4 w-4" />,
           onClick: () => { setShowMdImport(true); setShowLink(false); },
-          disabled: sourceMode,
-        })}
-
-        {/* 评论可见 */}
-        {renderBtn({
-          key: "replyView",
-          title: "评论可见",
-          icon: <EyeOff className="h-4 w-4" />,
-          onClick: () => { saveSelection(); wrapReplyView(); setShowLink(false); setShowEmoji(false); },
           disabled: sourceMode,
         })}
       </div>
