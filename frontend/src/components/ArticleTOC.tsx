@@ -39,6 +39,11 @@ export default function ArticleTOC() {
     return () => clearTimeout(timer);
   }, [extractHeadings]);
 
+  // TopBar 高度(~48px) + 视觉缓冲(~22px)
+  const SCROLL_OFFSET = 70;
+  // scroll spy 提前激活阈值：标题进入视口顶部此距离内时视为当前章节
+  const SPY_THRESHOLD = 100;
+
   useEffect(() => {
     if (headings.length === 0) return;
 
@@ -46,11 +51,14 @@ export default function ArticleTOC() {
     if (!scrollRoot) return;
 
     const onScroll = () => {
-      const scrollTop = scrollRoot.scrollTop;
+      const scrollRect = scrollRoot.getBoundingClientRect();
       let current = "";
       for (const h of headings) {
-        const top = h.element.offsetTop;
-        if (top <= scrollTop + 100) {
+        // 用 getBoundingClientRect 精确计算标题相对于滚动容器的位置
+        // 避免 offsetTop 受 offsetParent 链(main 有 position:relative)影响
+        const rect = h.element.getBoundingClientRect();
+        const relativeTop = rect.top - scrollRect.top;
+        if (relativeTop <= SPY_THRESHOLD) {
           current = h.id;
         }
       }
@@ -66,8 +74,11 @@ export default function ArticleTOC() {
     e.preventDefault();
     const scrollRoot = document.getElementById("scroll-root");
     if (!scrollRoot || !heading.element) return;
-    const top = heading.element.offsetTop - 20;
-    scrollRoot.scrollTo({ top, behavior: "smooth" });
+    // 用 getBoundingClientRect 精确计算，不受 offsetParent 链影响
+    const scrollRect = scrollRoot.getBoundingClientRect();
+    const headingRect = heading.element.getBoundingClientRect();
+    const top = scrollRoot.scrollTop + (headingRect.top - scrollRect.top) - SCROLL_OFFSET;
+    scrollRoot.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
     setActiveId(heading.id);
   };
 
