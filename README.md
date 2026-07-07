@@ -36,7 +36,7 @@
 
 ```bash
 # 1. 克隆项目
-git clone https://github.com/zilinnb/kanle-next.git
+git clone https://gitee.com/ziln_cn/kanle-next.git
 cd kanle
 
 # 2. 复制环境变量模板并修改
@@ -62,16 +62,15 @@ docker compose up -d --build
 > docker compose up -d --build frontend
 > ```
 
-### 使用预构建镜像（GHCR）
+### Docker 镜像
 
-代码推送到 GitHub 后，GitHub Actions 会自动构建镜像并发布到 [GHCR](https://github.com/zilinnb/kanle-next/pkgs)：
+项目提供完整的 Dockerfile（`backend/Dockerfile` + `frontend/Dockerfile`），可直接从源码构建：
 
 ```bash
-# 拉取预构建镜像（无需本地编译）
-docker compose -f docker-compose.yml -f docker-compose.images.yml up -d
+docker compose up -d --build
 ```
 
-> 注意：预构建前端镜像使用默认 API URL（`http://localhost:4000/api`）。生产环境请自行构建前端镜像以注入正确的域名。
+> 注意：前端 `NEXT_PUBLIC_*` 变量在构建时内联，换域名后需重新构建前端镜像：`docker compose up -d --build frontend`
 
 ## 手动部署（PM2 + Nginx）
 
