@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
-import { Music, AlertCircle, ChevronDown, ChevronUp, Pause } from "lucide-react";
+import { useEffect, useRef, useCallback } from "react";
+import { Music, AlertCircle, Pause } from "lucide-react";
 import type { PostMusic } from "@/lib/mock-data";
 import { useMusicPlayer, resolvePostMusicUrl } from "@/lib/music-player-store";
 import { getGlobalAudio } from "@/lib/global-audio";
@@ -51,8 +51,6 @@ export default function MusicEmbedCard({ music, postId }: MusicEmbedCardProps) {
   const isLoading = useMusicPlayer((s) => s.isLoading);
   const audioError = useMusicPlayer((s) => s.audioError);
   const setActiveMusic = useMusicPlayer((s) => s.setActive);
-  const lyric = useMusicPlayer((s) => s.lyric);
-  const currentLyricIndex = useMusicPlayer((s) => s.currentLyricIndex);
 
   const isThisActive = activePostId === postId;
   const isThisPlaying = isThisActive && isPlaying;
@@ -60,8 +58,6 @@ export default function MusicEmbedCard({ music, postId }: MusicEmbedCardProps) {
   const isThisError = isThisActive && audioError;
   const info = formatMusicInfo(music);
 
-  const [showFullLyric, setShowFullLyric] = useState(false);
-  const lyricScrollRef = useRef<HTMLDivElement>(null);
   const autoplayAttempted = useRef(false);
 
   const handlePlayError = useCallback((err: unknown, context: string) => {
@@ -129,15 +125,6 @@ export default function MusicEmbedCard({ music, postId }: MusicEmbedCardProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 歌词滚动跟随
-  useEffect(() => {
-    if (!showFullLyric || !lyricScrollRef.current || currentLyricIndex < 0) return;
-    const el = lyricScrollRef.current.querySelector<HTMLElement>(
-      `[data-lyric-idx="${currentLyricIndex}"]`
-    );
-    if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
-  }, [currentLyricIndex, showFullLyric]);
-
   const coverSrc = music.cover
     ? toHttps(
         typeof music.cover === "string" && music.cover.startsWith("http")
@@ -145,14 +132,6 @@ export default function MusicEmbedCard({ music, postId }: MusicEmbedCardProps) {
           : `${API_URL.replace("/api", "")}${toAbsoluteUrl(music.cover)}`
       )
     : "";
-
-  const hasLyric = isThisActive && lyric && lyric.length > 0;
-  const currentLine =
-    hasLyric && currentLyricIndex >= 0
-      ? lyric![currentLyricIndex]?.text
-      : hasLyric
-        ? lyric![0]?.text
-        : "";
 
   return (
     <div className="my-3 w-full">
@@ -188,19 +167,19 @@ export default function MusicEmbedCard({ music, postId }: MusicEmbedCardProps) {
               </p>
             )}
           </div>
-          {/* 播放/暂停按钮 — 醒目的圆形按钮，位置在右侧 */}
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-black/[0.06] transition-colors dark:bg-white/[0.1]">
+          {/* 播放/暂停按钮 — 仅图标，无外圈背景 */}
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center transition-colors">
             {isThisLoading ? (
               <span className="h-3 w-3 rounded-full bg-black/55 animate-pulse dark:bg-white/55" />
             ) : isThisError ? (
               <AlertCircle className="h-4 w-4 text-red-500" />
             ) : isThisPlaying ? (
-              <Pause className="h-4 w-4 text-black/75 dark:text-white/75" fill="currentColor" strokeWidth={0} />
+              <Pause className="h-5 w-5 text-black/75 dark:text-white/75" fill="currentColor" strokeWidth={0} />
             ) : (
               <svg
                 viewBox="0 0 24 24"
                 fill="currentColor"
-                className="h-4 w-4 translate-x-[1px] text-black/75 dark:text-white/75"
+                className="h-5 w-5 translate-x-[1px] text-black/75 dark:text-white/75"
               >
                 <path d="M8 5.14v13.72c0 .93 1.03 1.5 1.83 1.01l11.3-6.86a1.25 1.25 0 0 0 0-2.14L9.83 4.13A1.25 1.25 0 0 0 8 5.14Z" />
               </svg>
@@ -208,64 +187,6 @@ export default function MusicEmbedCard({ music, postId }: MusicEmbedCardProps) {
           </div>
         </div>
       </div>
-
-      {/* ===== 歌词面板（文章页增强，默认收起） ===== */}
-      {hasLyric && (
-        <div className="mt-1.5">
-          {!showFullLyric ? (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowFullLyric(true);
-              }}
-              className="flex w-full items-center justify-center gap-1.5 rounded-[8px] bg-[#f2f2f2]/70 px-3 py-2 text-[12.5px] leading-[17px] text-black/45 transition-colors hover:bg-[#f2f2f2] dark:bg-[#2a2a30]/70 dark:text-white/45 dark:hover:bg-[#2a2a30]"
-            >
-              <span className="shrink-0 text-black/30 dark:text-white/30">♪</span>
-              <span className="min-w-0 flex-1 truncate text-center font-medium text-black/55 dark:text-white/65">
-                {currentLine || "暂无歌词"}
-              </span>
-              <ChevronDown className="h-3.5 w-3.5 shrink-0 text-black/30 dark:text-white/30" />
-            </button>
-          ) : (
-            <div className="rounded-[8px] bg-[#f2f2f2]/70 p-2 dark:bg-[#2a2a30]/70">
-              <div
-                ref={lyricScrollRef}
-                className="max-h-[180px] overflow-y-auto scroll-smooth py-1"
-                style={{
-                  maskImage: "linear-gradient(transparent, black 12%, black 88%, transparent)",
-                  WebkitMaskImage: "linear-gradient(transparent, black 12%, black 88%, transparent)",
-                }}
-              >
-                {lyric!.map((line, i) => (
-                  <p
-                    key={i}
-                    data-lyric-idx={i}
-                    className={`px-2 py-[4px] text-center text-[13.5px] leading-[1.6] transition-all duration-300 ${
-                      i === currentLyricIndex
-                        ? "font-semibold text-black/85 dark:text-white/90"
-                        : "text-black/35 dark:text-white/35"
-                    }`}
-                  >
-                    {line.text || "♪"}
-                  </p>
-                ))}
-              </div>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowFullLyric(false);
-                }}
-                className="mt-0.5 flex w-full items-center justify-center gap-1 py-1 text-[11px] text-black/35 dark:text-white/35"
-              >
-                <ChevronUp className="h-3 w-3" />
-                <span>收起</span>
-              </button>
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }
