@@ -391,12 +391,9 @@ export default function TopBar({ coverHeight = 300 }: TopBarProps) {
                     if (lyric && lyric.length > 0) setShowLyricPanel(true);
                   }}
                   disabled={!lyric || lyric.length === 0}
-                  className={`flex min-w-0 max-w-[180px] items-center gap-1 truncate text-[11px] transition-opacity hover:opacity-80 disabled:cursor-default md:max-w-[260px] ${currentLyric ? "font-medium" : ""}`}
+                  className={`flex min-w-0 max-w-[180px] items-center truncate text-[11px] transition-opacity hover:opacity-80 disabled:cursor-default md:max-w-[260px] ${currentLyric ? "font-medium" : ""}`}
                   title={lyric && lyric.length > 0 ? "点击查看歌词" : ""}
                 >
-                  {currentLyric && (
-                    <span className="shrink-0 text-[10px] opacity-60">♪</span>
-                  )}
                   <span className="truncate">
                     {!musicUrl && !activePostMusic
                       ? "未设置"
