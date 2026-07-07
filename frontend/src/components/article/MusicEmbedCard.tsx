@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Music, AlertCircle, ChevronDown, ChevronUp, Loader2, Play, Pause } from "lucide-react";
+import { Music, AlertCircle, ChevronDown, ChevronUp, Pause } from "lucide-react";
 import type { PostMusic } from "@/lib/mock-data";
 import { useMusicPlayer, resolvePostMusicUrl } from "@/lib/music-player-store";
 import { getGlobalAudio } from "@/lib/global-audio";
@@ -40,13 +40,11 @@ function formatMusicInfo(music: PostMusic): { title: string; subtitle?: string }
   return { title: name || "未知歌曲", subtitle: artist || undefined };
 }
 
-function formatTime(sec: number): string {
-  if (!isFinite(sec) || sec < 0) return "0:00";
-  const m = Math.floor(sec / 60);
-  const s = Math.floor(sec % 60);
-  return `${m}:${s.toString().padStart(2, "0")}`;
-}
-
+/**
+ * 文章详情页音乐卡片 — 参考首页动态音乐卡片样式（PostCard.tsx）
+ * 全宽适配文章正文，点击由全局 audio 接管播放，store.activePostMusic 自动触发悬浮卡片。
+ * 歌词面板为文章页增强（默认收起）。
+ */
 export default function MusicEmbedCard({ music, postId }: MusicEmbedCardProps) {
   const activePostId = useMusicPlayer((s) => s.activePostId);
   const isPlaying = useMusicPlayer((s) => s.isPlaying);
@@ -63,9 +61,6 @@ export default function MusicEmbedCard({ music, postId }: MusicEmbedCardProps) {
   const info = formatMusicInfo(music);
 
   const [showFullLyric, setShowFullLyric] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
   const lyricScrollRef = useRef<HTMLDivElement>(null);
   const autoplayAttempted = useRef(false);
 
@@ -121,6 +116,7 @@ export default function MusicEmbedCard({ music, postId }: MusicEmbedCardProps) {
     startPlayback();
   }, [isThisActive, startPlayback, handlePlayError]);
 
+  // 自动播放（仅一次，且无其他动态占用时）
   useEffect(() => {
     if (!music.autoplay || autoplayAttempted.current) return;
     autoplayAttempted.current = true;
@@ -133,41 +129,7 @@ export default function MusicEmbedCard({ music, postId }: MusicEmbedCardProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
-    if (!isThisActive) {
-      setProgress(0);
-      setCurrentTime(0);
-      setDuration(0);
-      return;
-    }
-    const audio = getGlobalAudio();
-    if (!audio) return;
-
-    const onTimeUpdate = () => {
-      setCurrentTime(audio.currentTime);
-      if (audio.duration > 0) {
-        setProgress(Math.min(1, audio.currentTime / audio.duration));
-      }
-    };
-    const onLoadedMeta = () => setDuration(audio.duration);
-    const onDurationChange = () => setDuration(audio.duration);
-
-    audio.addEventListener("timeupdate", onTimeUpdate);
-    audio.addEventListener("loadedmetadata", onLoadedMeta);
-    audio.addEventListener("durationchange", onDurationChange);
-    setCurrentTime(audio.currentTime);
-    if (audio.duration > 0) {
-      setDuration(audio.duration);
-      setProgress(Math.min(1, audio.currentTime / audio.duration));
-    }
-
-    return () => {
-      audio.removeEventListener("timeupdate", onTimeUpdate);
-      audio.removeEventListener("loadedmetadata", onLoadedMeta);
-      audio.removeEventListener("durationchange", onDurationChange);
-    };
-  }, [isThisActive]);
-
+  // 歌词滚动跟随
   useEffect(() => {
     if (!showFullLyric || !lyricScrollRef.current || currentLyricIndex < 0) return;
     const el = lyricScrollRef.current.querySelector<HTMLElement>(
@@ -192,89 +154,60 @@ export default function MusicEmbedCard({ music, postId }: MusicEmbedCardProps) {
         ? lyric![0]?.text
         : "";
 
-  const progressPct = Math.round(progress * 100);
-
   return (
     <div className="my-3 w-full">
-      {/* ===== 音乐卡片 — 与首页风格一致，全宽，大播放按钮 ===== */}
+      {/* ===== 音乐卡片 — 参考首页动态音乐卡片，全宽适配文章正文 ===== */}
       <div
         onClick={handleClick}
-        className="flex w-full cursor-pointer items-stretch overflow-hidden rounded-[10px] bg-[#f2f2f2] transition-all duration-200 hover:bg-[#ebebeb] active:scale-[0.997] dark:bg-[#2a2a30] dark:hover:bg-[#33333a] md:rounded-[12px]"
+        className="flex w-full cursor-pointer items-stretch overflow-hidden rounded-[8px] bg-[#f2f2f2] transition-opacity active:opacity-80 dark:bg-[#2a2a30] md:rounded-[10px]"
       >
-        {/* 封面 + 大播放按钮 */}
-        <div className="relative h-[80px] w-[80px] shrink-0 overflow-hidden bg-black/5 dark:bg-white/5 md:h-[88px] md:w-[88px]">
-          {/* 黑胶唱片：播放时从右侧滑出旋转 */}
-          <div
-            className={`absolute top-1/2 left-[55%] z-0 h-[80px] w-[80px] -translate-y-1/2 rounded-full transition-opacity duration-500 md:h-[88px] md:w-[88px] ${
-              isThisPlaying ? "opacity-100 [animation:vinyl-spin_4s_linear_infinite]" : "opacity-0"
-            }`}
-            style={{
-              backgroundImage: `radial-gradient(circle at center, #1a1a1a 28%, #2a2a2a 28%, #2a2a2a 29%, #1a1a1a 29%, #1a1a1a 44%, #333 44%, #333 45%, #1a1a1a 45%)`,
-            }}
-          >
-            <div className="absolute top-1/2 left-1/2 h-[16px] w-[16px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-br from-[#666] to-[#444] md:h-[20px] md:w-[20px]" />
-            <div className="absolute top-1/2 left-1/2 h-[4px] w-[4px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#1a1a1a]" />
-          </div>
-
-          {/* 封面图 */}
-          <div className="absolute top-1/2 left-0 z-10 h-full w-full -translate-y-1/2 overflow-hidden">
-            {coverSrc ? (
-              <LazyImage src={coverSrc} alt="" className="h-full w-full object-cover" />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center">
-                <Music className="h-7 w-7 text-black/30 dark:text-white/30 md:h-8 md:w-8" />
-              </div>
-            )}
-          </div>
-
-          {/* 大圆形播放/暂停按钮 — 居中叠加在封面上 */}
-          <div className="absolute top-1/2 left-1/2 z-20 flex h-[40px] w-[40px] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 shadow-[0_2px_10px_rgba(0,0,0,0.25)] backdrop-blur-sm transition-transform duration-150 hover:scale-110 active:scale-95 md:h-[44px] md:w-[44px]">
-            {isThisLoading ? (
-              <Loader2 className="h-[20px] w-[20px] animate-spin text-gray-700 md:h-[22px] md:w-[22px]" strokeWidth={2.5} />
-            ) : isThisError ? (
-              <AlertCircle className="h-[20px] w-[20px] text-red-500 md:h-[22px] md:w-[22px]" strokeWidth={2.5} />
-            ) : isThisPlaying ? (
-              <Pause className="h-[18px] w-[18px] text-gray-800 md:h-[20px] md:w-[20px]" fill="currentColor" strokeWidth={0} />
-            ) : (
-              <Play className="h-[18px] w-[18px] translate-x-[1px] text-gray-800 md:h-[20px] md:w-[20px]" fill="currentColor" strokeWidth={0} />
-            )}
-          </div>
+        {/* 左侧方形封面 — 与首页一致，无叠加按钮 */}
+        <div className="relative h-[72px] w-[72px] shrink-0 overflow-hidden bg-black/5 dark:bg-white/5 md:h-[80px] md:w-[80px]">
+          {coverSrc ? (
+            <LazyImage src={coverSrc} alt="" className="h-full w-full object-cover" />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center">
+              <Music className="h-6 w-6 text-black/30 dark:text-white/30 md:h-7 md:w-7" />
+            </div>
+          )}
+          {/* 活跃时左上角细线指示，避免遮挡封面 */}
+          {isThisActive && !isThisError && (
+            <span className="absolute top-0 left-0 h-full w-[2px] bg-black/40 dark:bg-white/50" />
+          )}
         </div>
 
-        {/* 右侧内容区 — 与首页一致的半透明背景 */}
-        <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5 bg-white/35 px-3 py-2 dark:bg-white/[0.04] md:px-4">
+        {/* 右侧内容区 — 半透明背景，与首页一致 */}
+        <div className="flex min-w-0 flex-1 items-center gap-2 bg-white/35 px-3 dark:bg-white/[0.04] md:px-4">
           <div className="min-w-0 flex-1">
-            <p className="truncate text-[14px] font-medium leading-[20px] text-black/[0.87] dark:text-white/90 md:text-[16px] md:leading-[22px]">
+            <p className="truncate text-[14px] font-medium leading-[20px] text-black/[0.87] dark:text-white/90 md:text-[15px] md:leading-[21px]">
               {info.title}
             </p>
             {info.subtitle && (
-              <p className="mt-0.5 truncate text-[12px] leading-[16px] text-black/50 dark:text-white/50 md:text-[13px] md:leading-[17px]">
+              <p className="truncate text-[12px] leading-[16px] text-black/50 dark:text-white/50 md:text-[13px] md:leading-[17px]">
                 {info.subtitle}
               </p>
             )}
           </div>
-
-          {/* 进度条 + 时间（仅活跃时显示） */}
-          {isThisActive && !isThisError && (
-            <div className="mt-1.5 flex items-center gap-2">
-              <span className="shrink-0 text-[10px] tabular-nums text-black/40 dark:text-white/40">
-                {formatTime(currentTime)}
-              </span>
-              <div className="relative h-[3px] flex-1 overflow-hidden rounded-full bg-black/10 dark:bg-white/10">
-                <div
-                  className="absolute top-0 left-0 h-full rounded-full bg-black/50 transition-[width] duration-200 ease-linear dark:bg-white/60"
-                  style={{ width: `${progressPct}%` }}
-                />
-              </div>
-              <span className="shrink-0 text-[10px] tabular-nums text-black/40 dark:text-white/40">
-                {formatTime(duration)}
-              </span>
-            </div>
+          {/* 播放/暂停图标 — 与首页一致的小图标样式 */}
+          {isThisLoading ? (
+            <span className="h-3 w-3 shrink-0 rounded-full bg-black/55 animate-pulse dark:bg-white/55" />
+          ) : isThisError ? (
+            <AlertCircle className="h-4 w-4 shrink-0 text-red-500" />
+          ) : isThisPlaying ? (
+            <Pause className="h-4 w-4 shrink-0 text-black/55 dark:text-white/55" fill="currentColor" strokeWidth={0} />
+          ) : (
+            <svg
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              className="h-4 w-4 shrink-0 translate-x-[1px] text-black/55 dark:text-white/55"
+            >
+              <path d="M8 5.14v13.72c0 .93 1.03 1.5 1.83 1.01l11.3-6.86a1.25 1.25 0 0 0 0-2.14L9.83 4.13A1.25 1.25 0 0 0 8 5.14Z" />
+            </svg>
           )}
         </div>
       </div>
 
-      {/* ===== 歌词面板 ===== */}
+      {/* ===== 歌词面板（文章页增强，默认收起） ===== */}
       {hasLyric && (
         <div className="mt-1.5">
           {!showFullLyric ? (

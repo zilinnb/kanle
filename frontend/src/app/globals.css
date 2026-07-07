@@ -994,45 +994,33 @@ img.inline-emoji.emoji-error {
   padding: 0;
 }
 
-/* 静态预览兜底样式：如果 portal 未渲染，依然显示完整的音乐卡片 + 播放按钮 */
+/* 静态预览兜底样式：portal 渲染前显示干净的封面+文本（与首页音乐卡片一致，无叠加按钮） */
 .article-content .embed-block.embed-music {
   display: flex;
   align-items: stretch;
   width: 100%;
   max-width: 100%;
   margin: 12px 0;
-  border-radius: 10px;
+  border-radius: 8px;
   background: #f2f2f2;
   overflow: hidden;
 }
+@media (min-width: 768px) {
+  .article-content .embed-block.embed-music {
+    border-radius: 10px;
+  }
+}
 .article-content .embed-block.embed-music .embed-cover {
   position: relative;
-  width: 80px;
-  height: 80px;
+  width: 72px;
+  height: 72px;
   flex-shrink: 0;
 }
 @media (min-width: 768px) {
   .article-content .embed-block.embed-music .embed-cover {
-    width: 88px;
-    height: 88px;
+    width: 80px;
+    height: 80px;
   }
-}
-/* 静态预览的 CSS 播放按钮（portal 渲染后会被清空） */
-.article-content .embed-block.embed-music .embed-cover::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 40px;
-  height: 40px;
-  margin-top: -20px;
-  margin-left: -20px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.9);
-  box-shadow: 0 2px 10px rgba(0,0,0,0.25);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='%23333'%3E%3Cpath d='M8 5.14v13.72c0 .93 1.03 1.5 1.83 1.01l11.3-6.86a1.25 1.25 0 0 0 0-2.14L9.83 4.13A1.25 1.25 0 0 0 8 5.14Z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: 55% center;
 }
 .article-content .embed-block.embed-music .embed-info {
   flex: 1;
@@ -1063,8 +1051,8 @@ img.inline-emoji.emoji-error {
 }
 @media (min-width: 768px) {
   .article-content .embed-block.embed-music .embed-title {
-    font-size: 16px;
-    line-height: 22px;
+    font-size: 15px;
+    line-height: 21px;
   }
   .article-content .embed-block.embed-music .embed-subtitle {
     font-size: 13px;
@@ -1208,10 +1196,4 @@ img.inline-emoji.emoji-error {
 }
 .dark .article-content .embed-block.embed-music .embed-subtitle {
   color: rgba(255,255,255,0.5);
-}
-
-/* 黑胶唱片旋转动画（文章详情页音乐卡片） */
-@keyframes vinyl-spin {
-  from { transform: translateY(-50%) rotate(0deg); }
-  to { transform: translateY(-50%) rotate(360deg); }
 }
