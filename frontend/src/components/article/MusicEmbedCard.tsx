@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Music, Pause, Play, AlertCircle, ChevronDown, ChevronUp } from "lucide-react";
+import { Music, Pause, Play, AlertCircle, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
 import type { PostMusic } from "@/lib/mock-data";
 import { useMusicPlayer, resolvePostMusicUrl } from "@/lib/music-player-store";
 import { getGlobalAudio } from "@/lib/global-audio";
@@ -159,6 +159,7 @@ export default function MusicEmbedCard({ music, postId }: MusicEmbedCardProps) {
         onClick={handleClick}
         className="flex w-full cursor-pointer items-stretch overflow-hidden rounded-[8px] bg-[#f2f2f2] transition-opacity active:opacity-80 dark:bg-[#2a2a30]"
       >
+        {/* 封面 + 播放按钮叠加 */}
         <div className="relative h-[64px] w-[64px] shrink-0 overflow-hidden bg-black/5 dark:bg-white/5 md:h-[72px] md:w-[72px]">
           {coverSrc ? (
             <LazyImage src={coverSrc} alt="" className="h-full w-full object-cover" />
@@ -167,25 +168,33 @@ export default function MusicEmbedCard({ music, postId }: MusicEmbedCardProps) {
               <Music className="h-5 w-5 text-black/30 dark:text-white/30" />
             </div>
           )}
-          {isThisPlaying && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+          {/* 半透明遮罩 + 播放/暂停/加载/错误按钮 */}
+          <div className="absolute inset-0 flex items-center justify-center bg-black/25">
+            {isThisLoading ? (
+              <Loader2 className="h-5 w-5 animate-spin text-white" strokeWidth={2.5} />
+            ) : isThisError ? (
+              <AlertCircle className="h-5 w-5 text-red-400" strokeWidth={2.5} />
+            ) : isThisPlaying ? (
               <span className="flex items-end gap-[2px]">
                 {[0, 1, 2].map((i) => (
                   <span
                     key={i}
-                    className="w-[2px] animate-pulse rounded-full bg-white"
+                    className="w-[2.5px] animate-pulse rounded-full bg-white"
                     style={{
-                      height: "12px",
+                      height: "14px",
                       animationDelay: `${i * 0.15}s`,
                       animationDuration: "0.6s",
                     }}
                   />
                 ))}
               </span>
-            </div>
-          )}
+            ) : (
+              <Play className="h-6 w-6 translate-x-[1px] text-white drop-shadow-md" fill="currentColor" strokeWidth={0} />
+            )}
+          </div>
         </div>
-        <div className="flex min-w-0 flex-1 items-center gap-2 bg-white/35 px-3 dark:bg-white/[0.04]">
+        {/* 标题 + 艺术家 */}
+        <div className="flex min-w-0 flex-1 items-center bg-white/35 px-3 dark:bg-white/[0.04]">
           <div className="min-w-0 flex-1">
             <p className="truncate text-[14px] font-medium leading-[20px] text-black/[0.87] dark:text-white/90 md:text-[15px]">
               {info.title}
@@ -196,15 +205,6 @@ export default function MusicEmbedCard({ music, postId }: MusicEmbedCardProps) {
               </p>
             )}
           </div>
-          {isThisLoading ? (
-            <span className="h-3 w-3 shrink-0 animate-pulse rounded-full bg-black/55 dark:bg-white/55" />
-          ) : isThisError ? (
-            <AlertCircle className="h-3.5 w-3.5 shrink-0 text-red-500" />
-          ) : isThisPlaying ? (
-            <Pause className="h-3.5 w-3.5 shrink-0 text-black/55 dark:text-white/55" fill="currentColor" />
-          ) : (
-            <Play className="h-3.5 w-3.5 shrink-0 translate-x-[1px] text-black/55 dark:text-white/55" fill="currentColor" />
-          )}
         </div>
       </div>
 
