@@ -53,6 +53,12 @@ function EmbedInner({ content, postId, className }: ArticleEmbedContentProps) {
       if (payload) {
         // 仅在有有效 payload 时清空静态预览，避免解码失败导致空白
         el.innerHTML = "";
+        // 移除静态预览专属类，让父级回到 .embed-block 中性样式
+        // （display:block; background:transparent; overflow:visible）
+        // 避免 display:flex / overflow:hidden / background 等与 React 组件冲突
+        if (type === "music") {
+          el.classList.remove("embed-music");
+        }
         items.push({ node: el, type, payload });
       }
     }

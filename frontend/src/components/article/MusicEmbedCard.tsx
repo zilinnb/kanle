@@ -188,22 +188,24 @@ export default function MusicEmbedCard({ music, postId }: MusicEmbedCardProps) {
               </p>
             )}
           </div>
-          {/* 播放/暂停图标 — 与首页一致的小图标样式 */}
-          {isThisLoading ? (
-            <span className="h-3 w-3 shrink-0 rounded-full bg-black/55 animate-pulse dark:bg-white/55" />
-          ) : isThisError ? (
-            <AlertCircle className="h-4 w-4 shrink-0 text-red-500" />
-          ) : isThisPlaying ? (
-            <Pause className="h-4 w-4 shrink-0 text-black/55 dark:text-white/55" fill="currentColor" strokeWidth={0} />
-          ) : (
-            <svg
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              className="h-4 w-4 shrink-0 translate-x-[1px] text-black/55 dark:text-white/55"
-            >
-              <path d="M8 5.14v13.72c0 .93 1.03 1.5 1.83 1.01l11.3-6.86a1.25 1.25 0 0 0 0-2.14L9.83 4.13A1.25 1.25 0 0 0 8 5.14Z" />
-            </svg>
-          )}
+          {/* 播放/暂停按钮 — 醒目的圆形按钮，位置在右侧 */}
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-black/[0.06] transition-colors dark:bg-white/[0.1]">
+            {isThisLoading ? (
+              <span className="h-3 w-3 rounded-full bg-black/55 animate-pulse dark:bg-white/55" />
+            ) : isThisError ? (
+              <AlertCircle className="h-4 w-4 text-red-500" />
+            ) : isThisPlaying ? (
+              <Pause className="h-4 w-4 text-black/75 dark:text-white/75" fill="currentColor" strokeWidth={0} />
+            ) : (
+              <svg
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                className="h-4 w-4 translate-x-[1px] text-black/75 dark:text-white/75"
+              >
+                <path d="M8 5.14v13.72c0 .93 1.03 1.5 1.83 1.01l11.3-6.86a1.25 1.25 0 0 0 0-2.14L9.83 4.13A1.25 1.25 0 0 0 8 5.14Z" />
+              </svg>
+            )}
+          </div>
         </div>
       </div>
 
