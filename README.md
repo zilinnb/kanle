@@ -25,14 +25,32 @@
 | 数据库 | MySQL 8 |
 | 进程管理 | PM2（手动部署）/ Docker Compose（容器部署）|
 
-## 快速开始（Docker Compose 一键部署）
+## 快速开始（Docker 一键部署）
 
 ### 前置要求
 
 - Docker 20+
 - Docker Compose v2
 
-### 步骤
+### 方式一：拉取镜像直接部署（推荐，无需 clone 代码）
+
+```bash
+# 1. 下载 docker-compose.yml 和环境变量模板
+curl -sL https://gitee.com/ziln_cn/kanle-next/raw/main/docker-compose.yml -o docker-compose.yml
+curl -sL https://gitee.com/ziln_cn/kanle-next/raw/main/.env.example -o .env
+
+# 2. 编辑 .env，至少修改 DB_PASSWORD、JWT_SECRET、ADMIN_PASSWORD
+vi .env
+
+# 3. 一键启动（自动拉取镜像）
+docker compose up -d
+
+# 4. 访问
+# 前端: http://localhost:3000
+# 后端 API: http://localhost:4000/api/health
+```
+
+### 方式二：从源码构建（需要自定义前端配置时使用）
 
 ```bash
 # 1. 克隆项目
@@ -43,10 +61,11 @@ cd kanle
 cp .env.example .env
 # 编辑 .env，至少修改 DB_PASSWORD、JWT_SECRET、ADMIN_PASSWORD
 
-# 3. 一键启动
+# 3. 修改 docker-compose.yml：注释掉 image 行，取消 build 的注释
+# 4. 一键构建并启动
 docker compose up -d --build
 
-# 4. 访问
+# 5. 访问
 # 前端: http://localhost:3000
 # 后端 API: http://localhost:4000/api/health
 ```
@@ -57,20 +76,12 @@ docker compose up -d --build
 
 访问 `http://localhost:3000/admin/login` 进入后台管理。
 
-> **重要**：修改 `NEXT_PUBLIC_API_URL` 后需要重新构建前端镜像：
+> **关于域名**：预构建镜像中 `NEXT_PUBLIC_API_URL=http://localhost:4000/api`，适合本地体验。生产环境使用自定义域名时，需从源码构建前端镜像以注入正确地址：
 > ```bash
+> # 修改 .env 中的 NEXT_PUBLIC_API_URL 为你的域名
+> # 取消 docker-compose.yml 中 frontend 的 build 注释，注释掉 image 行
 > docker compose up -d --build frontend
 > ```
-
-### Docker 镜像
-
-项目提供完整的 Dockerfile（`backend/Dockerfile` + `frontend/Dockerfile`），可直接从源码构建：
-
-```bash
-docker compose up -d --build
-```
-
-> 注意：前端 `NEXT_PUBLIC_*` 变量在构建时内联，换域名后需重新构建前端镜像：`docker compose up -d --build frontend`
 
 ## 手动部署（PM2 + Nginx）
 

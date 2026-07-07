@@ -17,7 +17,9 @@ services:
     restart: unless-stopped
 
   backend:
-    build: ./backend
+    image: zilinnb/kanle-next-backend:latest
+    # 如需从源码构建（修改后端代码后）：注释掉 image，取消下面 build 的注释
+    # build: ./backend
     environment:
       NODE_ENV: production
       PORT: 4000
@@ -44,12 +46,14 @@ services:
     restart: unless-stopped
 
   frontend:
-    build:
-      context: ./frontend
-      args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:4000/api}
-        NEXT_PUBLIC_TWIKOO_ENV_ID: ${NEXT_PUBLIC_TWIKOO_ENV_ID:-}
-        NEXT_PUBLIC_REVALIDATE_SECRET: ${REVALIDATE_SECRET:-kanle-revalidate}
+    image: zilinnb/kanle-next-frontend:latest
+    # 如需从源码构建（自定义 NEXT_PUBLIC_API_URL 等）：注释掉 image，取消下面 build 的注释
+    # build:
+    #   context: ./frontend
+    #   args:
+    #     NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:4000/api}
+    #     NEXT_PUBLIC_TWIKOO_ENV_ID: ${NEXT_PUBLIC_TWIKOO_ENV_ID:-}
+    #     NEXT_PUBLIC_REVALIDATE_SECRET: ${REVALIDATE_SECRET:-kanle-revalidate}
     environment:
       REVALIDATE_SECRET: ${REVALIDATE_SECRET:-kanle-revalidate}
       PORT: 3000
