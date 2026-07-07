@@ -863,3 +863,64 @@ img.inline-emoji.emoji-error {
     max-width: 100%;
   }
 }
+
+/* 音乐/视频嵌入块（编辑器中的静态预览；阅读器中内容由 React portal 替换） */
+.article-editor-area .embed-block,
+.article-content .embed-block {
+  display: flex;
+  align-items: stretch;
+  max-width: 360px;
+  margin: 0.8em 0;
+  border: 1px solid var(--wechat-border);
+  border-radius: 8px;
+  background: var(--wechat-bubble);
+  overflow: hidden;
+  user-select: none;
+}
+.article-editor-area .embed-block {
+  cursor: default;
+}
+.embed-block .embed-cover {
+  flex-shrink: 0;
+  width: 64px;
+  height: 64px;
+  overflow: hidden;
+  background: var(--wechat-surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.embed-block .embed-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  margin: 0;
+  border-radius: 0;
+  display: block;
+}
+.embed-block .embed-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 10px;
+  gap: 4px;
+}
+.embed-block .embed-title {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--wechat-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.embed-block .embed-subtitle {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--wechat-time);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

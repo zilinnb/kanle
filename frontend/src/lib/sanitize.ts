@@ -79,6 +79,10 @@ function sanitizeNode(node: Element): void {
         child.removeAttribute(attr.name);
         continue;
       }
+      // 允许所有 data-* 属性（惰性数据，无安全风险；用于 embed 占位等）
+      if (name.startsWith("data-")) {
+        continue;
+      }
       // 全局允许
       if (ALLOWED_GLOBAL_ATTRS.has(name)) {
         if (name === "style") {

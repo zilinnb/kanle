@@ -5,11 +5,13 @@ import Link from "next/link";
 import { Heart, Share2, MessageCircle } from "lucide-react";
 import { Post, formatArticleTime } from "@/lib/mock-data";
 import { resolveAvatar } from "@/lib/avatar";
-import { renderContent } from "@/lib/sanitize";
 import { getCurrentUser, authFetchHeaders } from "@/lib/auth";
 import { useEditPost } from "@/lib/edit-post-store";
 import { useSiteSettings } from "@/lib/site-settings-store";
 import ArticleCommentSection from "@/components/article/ArticleCommentSection";
+import ArticleEmbedContent from "@/components/article/ArticleEmbedContent";
+import MusicEmbedCard from "@/components/article/MusicEmbedCard";
+import VideoPlayer from "@/components/VideoPlayer";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
 
@@ -183,11 +185,16 @@ export default function ArticleReader({ post }: ArticleReaderProps) {
         </span>
       </div>
 
-      {/* 正文内容 */}
-      <div
+      {/* 正文内容（含内联音乐/视频嵌入） */}
+      <ArticleEmbedContent
+        content={post.content}
+        postId={post.id}
         className="article-content rich-content mt-5 text-[16px] leading-[1.8] text-wechat-text dark:text-gray-200 md:text-[18px] md:leading-[1.9]"
-        dangerouslySetInnerHTML={{ __html: renderContent(post.content) }}
       />
+
+      {/* 旧数据兼容：post.music / post.video 独立字段（新文章已内联到正文） */}
+      {post.music && <MusicEmbedCard music={post.music} postId={post.id} />}
+      {post.video && <VideoPlayer video={post.video} postId={post.id} />}
 
       {/* 阅读量 + 点赞数 — 左右分布 */}
       <div className="mt-4 flex items-center justify-between text-[12px] text-wechat-time md:text-[13px]">

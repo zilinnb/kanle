@@ -6,10 +6,6 @@ import { ArrowLeft, Loader2, X, Image as ImageIcon, MapPin, Heart, MessageSquare
 import ArticleEditor from "@/components/ArticleEditor";
 import { apiFetch, getToken } from "@/lib/api-fetch";
 import { uploadImage, toAbsoluteUrl } from "@/lib/upload";
-import type { PostMusic, PostVideo } from "@/lib/mock-data";
-import CardPreview from "@/components/admin/CardPreview";
-import MusicPanel from "@/components/admin/MusicPanel";
-import VideoPanel from "@/components/admin/VideoPanel";
 
 interface ArticleEditorPageProps {
   articleId?: string;
@@ -31,9 +27,6 @@ export default function ArticleEditorPage({ articleId }: ArticleEditorPageProps)
   const [likesDisabled, setLikesDisabled] = useState(false);
   const [commentsDisabled, setCommentsDisabled] = useState(false);
   const [pinned, setPinned] = useState(false);
-  const [music, setMusic] = useState<PostMusic | null>(null);
-  const [video, setVideo] = useState<PostVideo | null>(null);
-  const [activePanel, setActivePanel] = useState<null | "music" | "video">(null);
   const coverInputRef = useRef<HTMLInputElement | null>(null);
   // 编辑模式：加载完成后记录初始快照，用于判断是否有未保存改动
   const initialSnapshotRef = useRef<{ title: string; content: string } | null>(null);
@@ -53,8 +46,6 @@ export default function ArticleEditorPage({ articleId }: ArticleEditorPageProps)
         setLikesDisabled(!!data.likesDisabled);
         setCommentsDisabled(!!data.commentsDisabled);
         setPinned(!!data.pinned);
-        setMusic(data.music ?? null);
-        setVideo(data.video ?? null);
         initialSnapshotRef.current = { title: data.title || "", content: data.content || "" };
       } catch (err) {
         alert(err instanceof Error ? err.message : "加载文章失败");
@@ -144,8 +135,6 @@ export default function ArticleEditorPage({ articleId }: ArticleEditorPageProps)
         commentsDisabled,
         pinned,
         status,
-        music: music || null,
-        video: video || null,
       };
 
       if (isEdit) {
@@ -178,7 +167,7 @@ export default function ArticleEditorPage({ articleId }: ArticleEditorPageProps)
     } finally {
       setSaving(null);
     }
-  }, [title, content, cover, articleType, region, likesDisabled, commentsDisabled, pinned, music, video, isEdit, articleId, router]);
+  }, [title, content, cover, articleType, region, likesDisabled, commentsDisabled, pinned, isEdit, articleId, router]);
 
   // 判断是否有未保存改动
   // - 新建模式：标题或正文任一非空即视为有内容
@@ -306,10 +295,6 @@ export default function ArticleEditorPage({ articleId }: ArticleEditorPageProps)
             onChange={setContent}
             token={getToken() || ""}
             placeholder="开始写作..."
-            onInsertMusic={() => setActivePanel("music")}
-            onInsertVideo={() => setActivePanel("video")}
-            hasMusic={!!music}
-            hasVideo={!!video}
           />
         </div>
 
@@ -425,35 +410,9 @@ export default function ArticleEditorPage({ articleId }: ArticleEditorPageProps)
                 />
               </div>
             </div>
-
-            {/* 附加卡片预览 */}
-            <CardPreview
-              music={music}
-              video={video}
-              onRemoveMusic={() => setMusic(null)}
-              onRemoveVideo={() => setVideo(null)}
-              onEditMusic={() => setActivePanel("music")}
-              onEditVideo={() => setActivePanel("video")}
-            />
           </div>
         </aside>
       </div>
-
-      {/* 卡片面板 */}
-      <MusicPanel
-        open={activePanel === "music"}
-        onClose={() => setActivePanel(null)}
-        onConfirm={(m) => { setMusic(m); setActivePanel(null); }}
-        initial={music}
-        token={getToken() || ""}
-      />
-      <VideoPanel
-        open={activePanel === "video"}
-        onClose={() => setActivePanel(null)}
-        onConfirm={(v) => { setVideo(v); setActivePanel(null); }}
-        initial={video}
-        token={getToken() || ""}
-      />
     </div>
   );
 }

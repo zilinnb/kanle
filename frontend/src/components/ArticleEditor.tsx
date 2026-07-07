@@ -35,7 +35,9 @@ import { uploadImage, toAbsoluteUrl } from "@/lib/upload";
 import { EMOJI_LIST } from "@/lib/emoji";
 import EmojiPicker from "./EmojiPicker";
 import LinkCardPanel from "./admin/LinkCardPanel";
-import type { LinkCard } from "@/lib/mock-data";
+import MusicPanel from "./admin/MusicPanel";
+import VideoPanel from "./admin/VideoPanel";
+import type { LinkCard, PostMusic, PostVideo } from "@/lib/mock-data";
 import { useExitAnimation } from "@/lib/use-exit-animation";
 
 interface ArticleEditorProps {
@@ -43,10 +45,6 @@ interface ArticleEditorProps {
   onChange: (html: string) => void;
   token: string;
   placeholder?: string;
-  onInsertMusic?: () => void;
-  onInsertVideo?: () => void;
-  hasMusic?: boolean;
-  hasVideo?: boolean;
 }
 
 const PARAGRAPH_STYLES = [
@@ -62,10 +60,6 @@ export default function ArticleEditor({
   onChange,
   token,
   placeholder = "开始写作...",
-  onInsertMusic,
-  onInsertVideo,
-  hasMusic,
-  hasVideo,
 }: ArticleEditorProps) {
   const editorRef = useRef<HTMLDivElement | null>(null);
   const savedRange = useRef<Range | null>(null);
@@ -80,6 +74,8 @@ export default function ArticleEditor({
   const [mdText, setMdText] = useState("");
   const [showEmoji, setShowEmoji] = useState(false);
   const [showLinkCardPanel, setShowLinkCardPanel] = useState(false);
+  const [showMusicPanel, setShowMusicPanel] = useState(false);
+  const [showVideoPanel, setShowVideoPanel] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const linkBtnRef = useRef<HTMLButtonElement | null>(null);
@@ -587,8 +583,8 @@ export default function ArticleEditor({
 
         {/* 音乐 / 视频（一组：媒体） */}
         <div className="flex items-center gap-0.5">
-          {onInsertMusic && renderBtn({ key: "music", title: "添加音乐", icon: <Music className="h-4 w-4" />, onClick: () => { onInsertMusic(); setShowLink(false); setShowEmoji(false); }, active: hasMusic })}
-          {onInsertVideo && renderBtn({ key: "video", title: "插入视频", icon: <Video className="h-4 w-4" />, onClick: () => { onInsertVideo(); setShowLink(false); setShowEmoji(false); }, active: hasVideo })}
+          {renderBtn({ key: "music", title: "添加音乐", icon: <Music className="h-4 w-4" />, onClick: () => { saveSelection(); setShowMusicPanel(true); setShowLink(false); setShowEmoji(false); }, disabled: sourceMode })}
+          {renderBtn({ key: "video", title: "插入视频", icon: <Video className="h-4 w-4" />, onClick: () => { saveSelection(); setShowVideoPanel(true); setShowLink(false); setShowEmoji(false); }, disabled: sourceMode })}
         </div>
 
         <Divider />
@@ -695,6 +691,26 @@ export default function ArticleEditor({
         }}
         token={token}
       />
+
+      <MusicPanel
+        open={showMusicPanel}
+        onClose={() => setShowMusicPanel(false)}
+        onConfirm={(music) => {
+          insertHtml(buildMusicEmbedHtml(music));
+          setShowMusicPanel(false);
+        }}
+        token={token}
+      />
+
+      <VideoPanel
+        open={showVideoPanel}
+        onClose={() => setShowVideoPanel(false)}
+        onConfirm={(video) => {
+          insertHtml(buildVideoEmbedHtml(video));
+          setShowVideoPanel(false);
+        }}
+        token={token}
+      />
     </div>
   );
 }
@@ -722,6 +738,32 @@ function buildLinkCardHtml(card: LinkCard): string {
   }
   html += `</span></a>`;
   return html;
+}
+
+function encodePayload(obj: unknown): string {
+  return btoa(encodeURIComponent(JSON.stringify(obj)));
+}
+
+function buildMusicEmbedHtml(music: PostMusic): string {
+  const payload = encodePayload(music);
+  const cover = music.cover ? escapeHtml(toAbsoluteUrl(music.cover)) : "";
+  const title = escapeHtml(music.name || "未知歌曲");
+  const artist = escapeHtml(music.artist || "未知艺术家");
+  return `<div data-embed="music" data-payload="${payload}" contenteditable="false" class="embed-block embed-music">` +
+    `<span class="embed-cover">${cover ? `<img src="${cover}" alt="" />` : ""}</span>` +
+    `<span class="embed-info"><span class="embed-title">${title}</span>` +
+    `<span class="embed-subtitle">${artist}</span></span>` +
+    `</div>`;
+}
+
+function buildVideoEmbedHtml(video: PostVideo): string {
+  const payload = encodePayload(video);
+  const cover = video.cover ? escapeHtml(toAbsoluteUrl(video.cover)) : "";
+  const title = escapeHtml(video.title || "视频");
+  return `<div data-embed="video" data-payload="${payload}" contenteditable="false" class="embed-block embed-video">` +
+    `<span class="embed-cover">${cover ? `<img src="${cover}" alt="" />` : ""}</span>` +
+    `<span class="embed-info"><span class="embed-title">${title}</span></span>` +
+    `</div>`;
 }
 
 function Divider() {
