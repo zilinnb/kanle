@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { flushSync } from "react-dom";
 import Link from "next/link";
 import { Heart, Share2, MessageCircle } from "lucide-react";
 import { Post, formatArticleTime } from "@/lib/mock-data";
@@ -24,6 +25,21 @@ const ARTICLE_TYPE_LABEL: Record<string, string> = {
   repost: "转载",
   ai: "AI生成",
 };
+
+/** 滚动到编辑器：桌面端用 #scroll-root 精确计算，移动端用 scrollIntoView */
+function scrollToEditor(editor: HTMLElement) {
+  const scrollRoot = document.getElementById("scroll-root");
+  if (scrollRoot && window.innerWidth >= 768) {
+    const scrollRect = scrollRoot.getBoundingClientRect();
+    const editorRect = editor.getBoundingClientRect();
+    // TopBar 高度约 48px + 视觉缓冲 32px
+    const offset = 80;
+    const top = scrollRoot.scrollTop + (editorRect.top - scrollRect.top) - offset;
+    scrollRoot.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+  } else {
+    editor.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+}
 
 export default function ArticleReader({ post }: ArticleReaderProps) {
   const [likes, setLikes] = useState<Array<{ name: string; email?: string }>>(post.likes || []);
@@ -138,7 +154,20 @@ export default function ArticleReader({ post }: ArticleReaderProps) {
   };
 
   const handleCommentClick = () => {
-    setFocusSignal((n) => n + 1);
+    const existingEditor = document.querySelector<HTMLDivElement>(".comment-editor");
+    if (existingEditor) {
+      // 已展开：直接 focus（在用户手势栈内，手机端自动弹键盘）
+      existingEditor.focus();
+      requestAnimationFrame(() => scrollToEditor(existingEditor));
+    } else {
+      // 未展开：flushSync 同步展开 + 同步 focus，整段保持在用户手势栈内
+      flushSync(() => setFocusSignal((n) => n + 1));
+      const editor = document.querySelector<HTMLDivElement>(".comment-editor");
+      if (editor) {
+        editor.focus();
+        requestAnimationFrame(() => scrollToEditor(editor));
+      }
+    }
   };
 
   const handleCommentsChange = (next: typeof comments) => {

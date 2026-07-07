@@ -125,38 +125,12 @@ export default function ArticleCommentSection({
     }
   }, [pendingReplyTo, onPendingReplyConsumed, comments]);
 
-  // 底部栏"写留言"按钮触发：总是展开编辑器并滚动到输入区域
-  // 用 useLayoutEffect 保证在用户手势栈内同步 focus（手机端自动弹键盘）
+  // 底部栏"写留言"按钮触发：展开编辑器（focus 和滚动由 ArticleReader 直接处理，
+  // 确保在用户手势栈内同步 focus，手机端能自动弹键盘）
   useLayoutEffect(() => {
     if (!focusSignal) return;
-    const wasExpanded = expandedRef.current;
-    if (!wasExpanded) {
-      flushSync(() => setExpanded(true));
-    }
-    editorRef.current?.focus();
-
-    // 滚动到输入框：桌面端用 #scroll-root 精确计算，移动端用 scrollIntoView
-    const scrollToInput = () => {
-      const target = inputContainerRef.current;
-      if (!target) return;
-      const scrollRoot = document.getElementById("scroll-root");
-      if (scrollRoot && window.innerWidth >= 768) {
-        const scrollRect = scrollRoot.getBoundingClientRect();
-        const targetRect = target.getBoundingClientRect();
-        // TopBar 高度约 48px + 视觉缓冲 32px
-        const offset = 80;
-        const top = scrollRoot.scrollTop + (targetRect.top - scrollRect.top) - offset;
-        scrollRoot.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
-      } else {
-        target.scrollIntoView({ behavior: "smooth", block: "center" });
-      }
-    };
-
-    // 已展开时布局已稳定，直接滚动；刚展开时等一帧让布局稳定
-    if (wasExpanded) {
-      scrollToInput();
-    } else {
-      requestAnimationFrame(scrollToInput);
+    if (!expandedRef.current) {
+      setExpanded(true);
     }
   }, [focusSignal]);
 
