@@ -62,7 +62,8 @@ export default function ArticleCommentSection({
   const [inlineError, setInlineError] = useState("");
   // 回复折叠状态：默认折叠，点击"N条回复"展开
   const [expandedThreads, setExpandedThreads] = useState<Set<string>>(new Set());
-  const inlineTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const inlineEditorRef = useRef<HTMLDivElement>(null);
+  const inlineSavedRange = useRef<Range | null>(null);
 
   // 评论点赞局部状态（乐观更新，不写回 onCommentsChange）
   const [commentLikes, setCommentLikes] = useState<Record<string, { likeCount: number; meLiked: boolean }>>(() => {
@@ -119,7 +120,7 @@ export default function ArticleCommentSection({
           setInlineShowEmoji(false);
           setInlineError("");
         });
-        inlineTextareaRef.current?.focus();
+        inlineEditorRef.current?.focus();
       }
       onPendingReplyConsumed?.();
     }
@@ -360,10 +361,12 @@ export default function ArticleCommentSection({
   // 内联回复提交
   const handleInlineSubmit = async () => {
     const targetComment = comments.find((c) => c.id === inlineReplyId);
-    if (!targetComment || !inlineContent.trim() || inlineSubmitting) return;
+    const editor = inlineEditorRef.current;
+    const text = editor ? editableToShortcode(editor) : inlineContent;
+    if (!targetComment || !text.trim() || inlineSubmitting) return;
     setInlineSubmitting(true);
     const ok = await submitComment(
-      inlineContent,
+      text,
       targetComment.author,
       targetComment.email || "",
       setInlineError
@@ -387,6 +390,10 @@ export default function ArticleCommentSection({
         // 回复的是顶级评论：直接展开
         setExpandedThreads((prev) => new Set(prev).add(targetComment.id));
       }
+      if (editor) {
+        editor.innerHTML = "";
+        editor.setAttribute("data-empty", "true");
+      }
       setInlineContent("");
       setInlineReplyId(null);
       setInlineShowEmoji(false);
@@ -394,20 +401,58 @@ export default function ArticleCommentSection({
     }
   };
 
-  // emoji 插入到 textarea（shortcode 方式）
-  const insertEmojiToTextarea = (name: string) => {
-    const textarea = inlineTextareaRef.current;
-    if (!textarea) return;
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const shortcode = `[${name}]`;
-    const newText = inlineContent.slice(0, start) + shortcode + inlineContent.slice(end);
-    setInlineContent(newText);
-    requestAnimationFrame(() => {
-      textarea.focus();
-      const pos = start + shortcode.length;
-      textarea.setSelectionRange(pos, pos);
-    });
+  // ===== 内联回复编辑器逻辑（contentEditable，与底部编辑器同方案）=====
+  const inlineSaveSelection = useCallback(() => {
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0) {
+      const range = sel.getRangeAt(0);
+      if (inlineEditorRef.current && inlineEditorRef.current.contains(range.commonAncestorContainer)) {
+        inlineSavedRange.current = range.cloneRange();
+      }
+    }
+  }, []);
+
+  const inlineRestoreSelection = useCallback(() => {
+    const range = inlineSavedRange.current;
+    if (!range) return;
+    const sel = window.getSelection();
+    if (!sel) return;
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }, []);
+
+  const inlineSyncContent = useCallback(() => {
+    const editor = inlineEditorRef.current;
+    if (!editor) return;
+    const text = editableToShortcode(editor);
+    setInlineContent(text);
+    const isEmpty = !text;
+    editor.setAttribute("data-empty", isEmpty ? "true" : "false");
+    if (isEmpty && editor.innerHTML !== "") {
+      editor.innerHTML = "";
+    }
+  }, []);
+
+  const insertInlineEmoji = (name: string) => {
+    const item = EMOJI_LIST.find((e) => e.name === name);
+    if (!item) return;
+    const editor = inlineEditorRef.current;
+    if (!editor) return;
+    editor.focus();
+    if (!inlineSavedRange.current) {
+      const range = document.createRange();
+      range.selectNodeContents(editor);
+      range.collapse(false);
+      const sel = window.getSelection();
+      sel?.removeAllRanges();
+      sel?.addRange(range);
+    } else {
+      inlineRestoreSelection();
+    }
+    const imgHtml = `<img src="${item.url}" alt="${name}" class="inline-emoji" />`;
+    document.execCommand("insertHTML", false, imgHtml);
+    requestAnimationFrame(() => inlineSaveSelection());
+    inlineSyncContent();
   };
 
   const handleSaveInfo = () => {
@@ -493,8 +538,8 @@ export default function ArticleCommentSection({
       setInlineShowEmoji(false);
       setInlineError("");
     });
-    inlineTextareaRef.current?.focus();
-    inlineTextareaRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    inlineEditorRef.current?.focus();
+    inlineEditorRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   };
 
   const isLoggedIn = currentUser?.isLoggedIn;
@@ -603,10 +648,15 @@ export default function ArticleCommentSection({
         {/* 灰色输入容器 — 与底部编辑器同风格 */}
         <div className="rounded-md bg-gray-100 dark:bg-[#232328]">
           <div className="relative">
-            <textarea
-              ref={inlineTextareaRef}
-              value={inlineContent}
-              onChange={(e) => setInlineContent(e.target.value)}
+            <div
+              ref={inlineEditorRef}
+              contentEditable
+              suppressContentEditableWarning
+              data-empty="true"
+              data-placeholder={`回复 ${comment.author}...`}
+              onInput={inlineSyncContent}
+              onKeyUp={inlineSaveSelection}
+              onMouseUp={inlineSaveSelection}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
                   e.preventDefault();
@@ -620,9 +670,7 @@ export default function ArticleCommentSection({
                   setInlineError("");
                 }
               }}
-              placeholder={`回复 ${comment.author}...`}
-              rows={2}
-              className="w-full resize-none rounded-md bg-transparent px-3 py-2.5 pr-8 text-[15px] leading-[23px] text-wechat-text placeholder:text-wechat-time focus:outline-none md:text-[16px]"
+              className="inline-comment-editor w-full resize-none rounded-md bg-transparent px-3 py-2.5 pr-8 text-[15px] leading-[23px] text-wechat-text focus:outline-none md:text-[16px]"
             />
             <button
               type="button"
@@ -646,7 +694,7 @@ export default function ArticleCommentSection({
                     key={emoji.name}
                     type="button"
                     data-no-collapse
-                    onClick={() => insertEmojiToTextarea(emoji.name)}
+                    onClick={() => insertInlineEmoji(emoji.name)}
                     className="flex h-8 w-8 items-center justify-center rounded-md transition-colors hover:bg-white dark:hover:bg-white/10"
                     title={emoji.name}
                   >

@@ -623,6 +623,15 @@ img.inline-emoji.emoji-error {
   min-height: 80px;
   word-break: break-word;
 }
+.inline-comment-editor[data-empty="true"]:before {
+  content: attr(data-placeholder);
+  color: var(--wechat-time);
+  pointer-events: none;
+}
+.inline-comment-editor {
+  min-height: 48px;
+  word-break: break-word;
+}
 .rich-editor-area hr,
 .rich-content hr {
   border: none;
