@@ -36,7 +36,7 @@ COPY --from=builder /app/frontend/.next/static ./.next/static
 COPY --from=builder /app/frontend/public ./public
 
 ENV PORT=3000
-HOSTNAME=0.0.0.0
+ENV HOSTNAME=0.0.0.0
 
 EXPOSE 3000
 
