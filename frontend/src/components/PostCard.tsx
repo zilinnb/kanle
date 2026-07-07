@@ -43,10 +43,17 @@ interface PostCardProps {
   onDelete?: () => void;
 }
 
+function stripRichEmbeds(html: string): string {
+  return html
+    .replace(/<div\s+data-embed="[^"]*"[^>]*>[\s\S]*?<\/div>/gi, "")
+    .replace(/<a\s+[^>]*class="[^"]*link-card[^"]*"[^>]*>[\s\S]*?<\/a>/gi, "");
+}
+
 export default function PostCard({ post, index, onDelete }: PostCardProps) {
   const router = useRouter();
   const isArticle = post.type === "article";
   const articleDetailUrl = `/articles/${post.shortId || post.id}`;
+  const articleExcerpt = post.excerpt || stripRichEmbeds(post.content || "").replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim();
   const [likes, setLikes] = useState<Array<{ name: string; email?: string }>>(post.likes || []);
   const [liked, setLiked] = useState(false);
   const [liking, setLiking] = useState(false);
@@ -416,17 +423,17 @@ export default function PostCard({ post, index, onDelete }: PostCardProps) {
               <p className="line-clamp-1 text-[14px] font-medium leading-[20px] text-black/[0.87] dark:text-white/90 md:text-[15px] md:leading-[21px]">
                 {post.title || "无标题文章"}
               </p>
-              {(post.excerpt || (post.content || "").replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim()) && (
+              {articleExcerpt && (
                 <p className="line-clamp-2 mt-0.5 text-[12px] leading-[15px] text-black/50 dark:text-white/50 md:text-[13px] md:leading-[16px]">
-                  {post.excerpt || (post.content || "").replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim()}
+                  {articleExcerpt}
                 </p>
               )}
             </div>
           </Link>
         )}
 
-        {/* Link card — 微信朋友圈链接卡片样式 */}
-        {post.linkCard && (
+        {/* Link card — 微信朋友圈链接卡片样式（文章类型的链接卡片已内联到正文，仅在详情页显示） */}
+        {!isArticle && post.linkCard && (
           <a
             href={post.linkCard.url}
             target="_blank"
@@ -461,8 +468,9 @@ export default function PostCard({ post, index, onDelete }: PostCardProps) {
         )}
 
         {/* Music card — 微信朋友圈官方音乐卡片样式（占满整栏）
-            点击后由顶栏全局 audio 接管播放，歌词在顶栏显示 */}
-        {post.music && (
+            点击后由顶栏全局 audio 接管播放，歌词在顶栏显示
+            文章类型的音乐已内联到正文，仅在详情页显示 */}
+        {!isArticle && post.music && (
           <div
             onClick={handleMusicClick}
             className="mt-2 flex w-full max-w-[240px] cursor-pointer items-stretch overflow-hidden rounded-[8px] bg-[#f2f2f2] transition-opacity active:opacity-80 dark:bg-[#2a2a30] md:max-w-[280px]"
