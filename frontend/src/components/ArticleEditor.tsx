@@ -354,6 +354,7 @@ export default function ArticleEditor({
   }, [mdText, emitChange, handleMdClose]);
 
   // 评论可见：把选区内容包裹为 .reply-to-view 块
+  // 嵌套预防：若选区/光标已在 .reply-to-view 内，则跳过，避免重复点击产生嵌套
   const wrapReplyView = useCallback(() => {
     if (sourceMode) return;
     const editor = editorRef.current;
@@ -362,11 +363,23 @@ export default function ArticleEditor({
     restoreSelection();
     const sel = window.getSelection();
     if (!sel || sel.rangeCount === 0) {
-      // 无选区：插入空模板
       insertHtml('<div class="reply-to-view">在此输入评论可见的内容</div>');
       return;
     }
     const range = sel.getRangeAt(0);
+    const insideReply = (node: Node | null): boolean => {
+      let n: Node | null = node;
+      while (n && n !== editor) {
+        if (n.nodeType === 1 && (n as Element).classList?.contains("reply-to-view")) {
+          return true;
+        }
+        n = n.parentNode;
+      }
+      return false;
+    };
+    if (insideReply(range.startContainer) || insideReply(range.endContainer)) {
+      return;
+    }
     if (range.collapsed) {
       insertHtml('<div class="reply-to-view">在此输入评论可见的内容</div>');
       return;

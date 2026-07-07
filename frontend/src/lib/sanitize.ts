@@ -202,22 +202,29 @@ function findReplyToViewBlocks(html: string): Array<[number, number]> {
 /**
  * 拆包 .reply-to-view：移除外层 div 包裹，仅保留内部内容，
  * 使解锁后的内容与正文完全一致（无任何特殊渲染）。
+ * 支持嵌套 .reply-to-view（编辑器重复包裹时产生）：循环拆包直到全部移除。
  */
 function unwrapReplyContent(html: string): string {
   if (html.indexOf("reply-to-view") === -1) return html;
   if (typeof document === "undefined") {
-    const ranges = findReplyToViewBlocks(html);
-    if (ranges.length === 0) return html;
-    let result = "";
-    let cursor = 0;
-    for (const [start, end] of ranges) {
-      const openTagEnd = html.indexOf(">", start) + 1;
-      const closeTagStart = end - 6; // "</div>".length
-      result += html.slice(cursor, start);
-      result += html.slice(openTagEnd, closeTagStart);
-      cursor = end;
+    // SSR 后备：循环拆包，每轮移除最外层 .reply-to-view 标签
+    let result = html;
+    let safety = 20; // 防止无限循环
+    while (result.indexOf("reply-to-view") !== -1 && safety-- > 0) {
+      const ranges = findReplyToViewBlocks(result);
+      if (ranges.length === 0) break;
+      let rebuilt = "";
+      let cursor = 0;
+      for (const [start, end] of ranges) {
+        const openTagEnd = result.indexOf(">", start) + 1;
+        const closeTagStart = end - 6; // "</div>".length
+        rebuilt += result.slice(cursor, start);
+        rebuilt += result.slice(openTagEnd, closeTagStart);
+        cursor = end;
+      }
+      rebuilt += result.slice(cursor);
+      result = rebuilt;
     }
-    result += html.slice(cursor);
     return result;
   }
   const parser = new DOMParser();
