@@ -1,33 +1,27 @@
 "use client";
 
-import { Music, Video, Link2, X, Pencil } from "lucide-react";
-import type { PostMusic, LinkCard, PostVideo } from "@/lib/mock-data";
+import { Music, Video, X, Pencil } from "lucide-react";
+import type { PostMusic, PostVideo } from "@/lib/mock-data";
 import { toAbsoluteUrl } from "@/lib/upload";
 
 interface CardPreviewProps {
   music: PostMusic | null;
-  linkCard: LinkCard | null;
   video: PostVideo | null;
   onRemoveMusic: () => void;
-  onRemoveLinkCard: () => void;
   onRemoveVideo: () => void;
   onEditMusic: () => void;
-  onEditLinkCard: () => void;
   onEditVideo: () => void;
 }
 
 export default function CardPreview({
   music,
-  linkCard,
   video,
   onRemoveMusic,
-  onRemoveLinkCard,
   onRemoveVideo,
   onEditMusic,
-  onEditLinkCard,
   onEditVideo,
 }: CardPreviewProps) {
-  const isEmpty = !music && !linkCard && !video;
+  const isEmpty = !music && !video;
 
   return (
     <div className="rounded-xl border border-adm-border bg-adm-card p-4">
@@ -36,39 +30,10 @@ export default function CardPreview({
       </label>
       {isEmpty ? (
         <p className="text-xs text-adm-text-tertiary">
-          通过工具栏插入链接卡片、音乐或视频
+          通过工具栏插入音乐或视频
         </p>
       ) : (
         <div className="space-y-3">
-          {linkCard && (
-            <PreviewItem
-              icon={<Link2 className="h-3.5 w-3.5" />}
-              onRemove={onRemoveLinkCard}
-              onEdit={onEditLinkCard}
-            >
-              <div className="flex gap-2">
-                {linkCard.image && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={toAbsoluteUrl(linkCard.image)}
-                    alt=""
-                    className="h-12 w-12 shrink-0 rounded object-cover"
-                  />
-                )}
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-xs font-medium text-adm-text">
-                    {linkCard.title || linkCard.url}
-                  </p>
-                  {linkCard.description && (
-                    <p className="mt-0.5 line-clamp-2 text-[11px] text-adm-text-tertiary">
-                      {linkCard.description}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </PreviewItem>
-          )}
-
           {music && (
             <PreviewItem
               icon={<Music className="h-3.5 w-3.5" />}

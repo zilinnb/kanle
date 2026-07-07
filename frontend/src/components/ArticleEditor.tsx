@@ -31,9 +31,11 @@ import {
 } from "lucide-react";
 import { sanitizeHtml } from "@/lib/sanitize";
 import { markdownToHtml } from "@/lib/markdown";
-import { uploadImage } from "@/lib/upload";
+import { uploadImage, toAbsoluteUrl } from "@/lib/upload";
 import { EMOJI_LIST } from "@/lib/emoji";
 import EmojiPicker from "./EmojiPicker";
+import LinkCardPanel from "./admin/LinkCardPanel";
+import type { LinkCard } from "@/lib/mock-data";
 import { useExitAnimation } from "@/lib/use-exit-animation";
 
 interface ArticleEditorProps {
@@ -41,10 +43,8 @@ interface ArticleEditorProps {
   onChange: (html: string) => void;
   token: string;
   placeholder?: string;
-  onInsertLinkCard?: () => void;
   onInsertMusic?: () => void;
   onInsertVideo?: () => void;
-  hasLinkCard?: boolean;
   hasMusic?: boolean;
   hasVideo?: boolean;
 }
@@ -62,10 +62,8 @@ export default function ArticleEditor({
   onChange,
   token,
   placeholder = "开始写作...",
-  onInsertLinkCard,
   onInsertMusic,
   onInsertVideo,
-  hasLinkCard,
   hasMusic,
   hasVideo,
 }: ArticleEditorProps) {
@@ -81,6 +79,7 @@ export default function ArticleEditor({
   const [showMdImport, setShowMdImport] = useState(false);
   const [mdText, setMdText] = useState("");
   const [showEmoji, setShowEmoji] = useState(false);
+  const [showLinkCardPanel, setShowLinkCardPanel] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const linkBtnRef = useRef<HTMLButtonElement | null>(null);
@@ -554,7 +553,7 @@ export default function ArticleEditor({
           </div>
 
           {/* 链接卡片 */}
-          {onInsertLinkCard && renderBtn({ key: "linkCard", title: "插入链接卡片", icon: <LayoutTemplate className="h-4 w-4" />, onClick: () => { onInsertLinkCard(); setShowLink(false); setShowEmoji(false); }, active: hasLinkCard })}
+          {renderBtn({ key: "linkCard", title: "插入链接卡片", icon: <LayoutTemplate className="h-4 w-4" />, onClick: () => { saveSelection(); setShowLinkCardPanel(true); setShowLink(false); setShowEmoji(false); }, disabled: sourceMode })}
 
           {/* 表情 */}
           <div className="relative">
@@ -686,8 +685,43 @@ export default function ArticleEditor({
           </div>
         </div>
       )}
+
+      <LinkCardPanel
+        open={showLinkCardPanel}
+        onClose={() => setShowLinkCardPanel(false)}
+        onConfirm={(card) => {
+          insertHtml(buildLinkCardHtml(card));
+          setShowLinkCardPanel(false);
+        }}
+        token={token}
+      />
     </div>
   );
+}
+
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function buildLinkCardHtml(card: LinkCard): string {
+  const url = escapeHtml(card.url);
+  const title = escapeHtml(card.title || card.url);
+  const desc = card.description ? escapeHtml(card.description) : "";
+  const image = card.image ? escapeHtml(toAbsoluteUrl(card.image)) : "";
+  let html = `<a href="${url}" target="_blank" rel="noopener noreferrer" class="link-card">`;
+  if (image) {
+    html += `<span class="link-card-image"><img src="${image}" alt="" /></span>`;
+  }
+  html += `<span class="link-card-body"><span class="link-card-title">${title}</span>`;
+  if (desc) {
+    html += `<span class="link-card-desc">${desc}</span>`;
+  }
+  html += `</span></a>`;
+  return html;
 }
 
 function Divider() {

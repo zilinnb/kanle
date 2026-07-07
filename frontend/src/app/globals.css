@@ -780,3 +780,86 @@ img.inline-emoji.emoji-error {
   border: 1px solid var(--wechat-border);
   padding: 0.4em 0.6em;
 }
+
+/* 链接卡片（插入在文章正文中的内联卡片） */
+.article-editor-area a.link-card,
+.article-content a.link-card {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  max-width: 360px;
+  margin: 0.8em 0;
+  padding: 8px;
+  border: 1px solid var(--wechat-border);
+  border-radius: 8px;
+  background: var(--wechat-bubble);
+  color: var(--wechat-text);
+  text-decoration: none;
+  box-sizing: border-box;
+  transition: background 0.15s ease;
+  overflow: hidden;
+}
+.article-editor-area a.link-card:hover,
+.article-content a.link-card:hover {
+  background: var(--wechat-hover);
+  text-decoration: none;
+}
+.article-editor-area .link-card-image,
+.article-content .link-card-image {
+  flex-shrink: 0;
+  width: 64px;
+  height: 64px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--wechat-surface);
+}
+.article-editor-area .link-card-image img,
+.article-content .link-card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  margin: 0;
+  border-radius: 0;
+  display: block;
+}
+.article-editor-area .link-card-body,
+.article-content .link-card-body {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  flex: 1;
+  padding: 0 4px 0 10px;
+  gap: 4px;
+}
+.article-editor-area .link-card-title,
+.article-content .link-card-title {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--wechat-text);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: break-word;
+}
+.article-editor-area .link-card-desc,
+.article-content .link-card-desc {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--wechat-time);
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: break-word;
+}
+@media (max-width: 640px) {
+  .article-editor-area a.link-card,
+  .article-content a.link-card {
+    max-width: 100%;
+  }
+}
