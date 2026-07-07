@@ -728,7 +728,7 @@ function escapeHtml(str: string): string {
     .replace(/"/g, "&quot;");
 }
 
-function buildLinkCardHtml(card: LinkCard): string {
+export function buildLinkCardHtml(card: LinkCard): string {
   const url = escapeHtml(card.url);
   const title = escapeHtml(card.title || card.url);
   const desc = card.description ? escapeHtml(card.description) : "";
@@ -749,7 +749,7 @@ function encodePayload(obj: unknown): string {
   return btoa(encodeURIComponent(JSON.stringify(obj)));
 }
 
-function buildMusicEmbedHtml(music: PostMusic): string {
+export function buildMusicEmbedHtml(music: PostMusic): string {
   const payload = encodePayload(music);
   const cover = music.cover ? escapeHtml(toAbsoluteUrl(music.cover)) : "";
   const title = escapeHtml(music.name || "未知歌曲");
@@ -761,7 +761,7 @@ function buildMusicEmbedHtml(music: PostMusic): string {
     `</div>`;
 }
 
-function buildVideoEmbedHtml(video: PostVideo): string {
+export function buildVideoEmbedHtml(video: PostVideo): string {
   const payload = encodePayload(video);
   const cover = video.cover ? escapeHtml(toAbsoluteUrl(video.cover)) : "";
   const title = escapeHtml(video.title || "视频");

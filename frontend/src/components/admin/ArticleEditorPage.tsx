@@ -3,9 +3,10 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Loader2, X, Image as ImageIcon, MapPin, Heart, MessageSquare, Pin } from "lucide-react";
-import ArticleEditor from "@/components/ArticleEditor";
+import ArticleEditor, { buildMusicEmbedHtml, buildLinkCardHtml, buildVideoEmbedHtml } from "@/components/ArticleEditor";
 import { apiFetch, getToken } from "@/lib/api-fetch";
 import { uploadImage, toAbsoluteUrl } from "@/lib/upload";
+import type { PostMusic, PostVideo, LinkCard } from "@/lib/mock-data";
 
 interface ArticleEditorPageProps {
   articleId?: string;
@@ -39,14 +40,28 @@ export default function ArticleEditorPage({ articleId }: ArticleEditorPageProps)
         if (!res.ok) throw new Error("加载失败");
         const data = await res.json();
         setTitle(data.title || "");
-        setContent(data.content || "");
+        let mergedContent = data.content || "";
+
+        // 旧数据兼容：将独立的 music/linkCard/video 字段注入到 content 中作为内联嵌入块
+        // 新文章已内联到正文，这些字段为 null，不会触发注入
+        if (data.music && !/data-embed="music"/.test(mergedContent)) {
+          mergedContent += buildMusicEmbedHtml(data.music as PostMusic);
+        }
+        if (data.linkCard && !/class="[^"]*link-card[^"]*"/.test(mergedContent)) {
+          mergedContent += buildLinkCardHtml(data.linkCard as LinkCard);
+        }
+        if (data.video && !/data-embed="video"/.test(mergedContent)) {
+          mergedContent += buildVideoEmbedHtml(data.video as PostVideo);
+        }
+
+        setContent(mergedContent);
         setCover(data.cover || "");
         setArticleType(data.articleType || "original");
         setRegion(data.region || "");
         setLikesDisabled(!!data.likesDisabled);
         setCommentsDisabled(!!data.commentsDisabled);
         setPinned(!!data.pinned);
-        initialSnapshotRef.current = { title: data.title || "", content: data.content || "" };
+        initialSnapshotRef.current = { title: data.title || "", content: mergedContent };
       } catch (err) {
         alert(err instanceof Error ? err.message : "加载文章失败");
         router.push("/admin/articles");
@@ -122,7 +137,7 @@ export default function ArticleEditorPage({ articleId }: ArticleEditorPageProps)
         router.push("/admin");
         return;
       }
-      const body = {
+      const body: Record<string, unknown> = {
         type: "article" as const,
         title: title.trim(),
         content,
@@ -138,6 +153,11 @@ export default function ArticleEditorPage({ articleId }: ArticleEditorPageProps)
       };
 
       if (isEdit) {
+        // 编辑时清除独立的 music/linkCard/video 字段（已内联到 content 中）
+        // 避免文章详情页 fallback 渲染导致重复显示
+        body.music = null;
+        body.linkCard = null;
+        body.video = null;
         const res = await apiFetch(`/posts/${articleId}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
