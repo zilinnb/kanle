@@ -21,7 +21,7 @@ interface InteractionBubbleProps {
 const VISITOR_NAMES = new Set(["访客", "游客"]);
 
 const MAX_DISPLAY_NAMES = 5;
-/** 评论超过此数量时启用折叠/展开 */
+/** 评论达到此数量时启用折叠/展开（5 条即触发，折叠时显示 4 条，展开后多出至少 1 条） */
 const COMMENT_COLLAPSE_THRESHOLD = 5;
 
 /**
@@ -147,9 +147,9 @@ export default function InteractionBubble({
     : normalizedLikes;
   const likesText = formatLikes(normalizedLikes);
 
-  const shouldCollapse = comments.length > COMMENT_COLLAPSE_THRESHOLD;
+  const shouldCollapse = comments.length >= COMMENT_COLLAPSE_THRESHOLD;
   const displayedComments = shouldCollapse && !expanded
-    ? comments.slice(0, COMMENT_COLLAPSE_THRESHOLD)
+    ? comments.slice(0, COMMENT_COLLAPSE_THRESHOLD - 1)
     : comments;
 
   return (

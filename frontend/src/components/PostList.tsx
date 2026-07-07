@@ -179,19 +179,19 @@ export default function PostList({ initialPosts, initialHasMore, initialPage }: 
     );
   }
 
-  // 构建展示列表：仅在第 5 个位置后插入一条随机广告（类似微信朋友圈）
+  // 构建展示列表：在第 5 个位置插入一条随机广告（广告作为第 5 个展示项）
   // 后续不再插入广告，避免广告刷屏
   // 使用 useMemo 稳定随机选择，避免每次重渲染都换广告
   const displayList = useMemo(() => {
     const AD_POSITION = 5;
     const list: any[] = [];
     posts.forEach((post, idx) => {
-      list.push(post);
-      // 仅在第 AD_POSITION 条后插入一条广告，且不在最后一条后插入
-      if (idx + 1 === AD_POSITION && ads.length > 0 && idx < posts.length - 1) {
+      // 在第 AD_POSITION 条动态前插入广告，使广告成为第 5 个展示项
+      if (idx + 1 === AD_POSITION && ads.length > 0) {
         const randomAd = ads[Math.floor(Math.random() * ads.length)];
         list.push({ ...randomAd, _isAd: true });
       }
+      list.push(post);
     });
     return list;
   }, [posts, ads]);
