@@ -879,6 +879,7 @@ img.inline-emoji.emoji-error {
 }
 .article-editor-area .embed-block {
   cursor: default;
+  position: relative;
 }
 .embed-block .embed-cover {
   flex-shrink: 0;
@@ -923,4 +924,40 @@ img.inline-emoji.emoji-error {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* 编辑器内嵌入块的删除按钮 */
+.article-editor-area .embed-delete-btn {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #ef4444;
+  color: #fff;
+  font-size: 14px;
+  line-height: 18px;
+  text-align: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  z-index: 10;
+  user-select: none;
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+.article-editor-area .embed-block:hover .embed-delete-btn,
+.article-editor-area a.link-card:hover .embed-delete-btn {
+  opacity: 1;
+}
+
+/* 编辑器内嵌入块 hover 高亮 */
+.article-editor-area .embed-block:hover,
+.article-editor-area a.link-card:hover {
+  outline: 2px solid rgba(59, 130, 246, 0.4);
+  outline-offset: 1px;
 }

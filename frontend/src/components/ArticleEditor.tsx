@@ -117,6 +117,7 @@ export default function ArticleEditor({
     setMounted(true);
     if (editorRef.current && value) {
       editorRef.current.innerHTML = value;
+      enhanceEmbeds(editorRef.current);
     }
     refreshActive();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -136,6 +137,7 @@ export default function ArticleEditor({
       if (editorRef.current.innerHTML !== value) {
         editorRef.current.innerHTML = value;
       }
+      enhanceEmbeds(editorRef.current);
     }
   }, [sourceMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -160,7 +162,7 @@ export default function ArticleEditor({
 
   const emitChange = useCallback(() => {
     if (!editorRef.current) return;
-    onChange(editorRef.current.innerHTML);
+    onChange(stripEditorOnly(editorRef.current.innerHTML));
   }, [onChange]);
 
   const refreshActive = useCallback(() => {
@@ -231,6 +233,7 @@ export default function ArticleEditor({
       } catch {
         // ignore
       }
+      if (editorRef.current) enhanceEmbeds(editorRef.current);
       refreshActive();
       emitChange();
     },
@@ -314,6 +317,7 @@ export default function ArticleEditor({
           // ignore
         }
       }
+      if (editorRef.current) enhanceEmbeds(editorRef.current);
       refreshActive();
       emitChange();
     },
@@ -342,6 +346,7 @@ export default function ArticleEditor({
     if (editorRef.current) {
       // 替换整个编辑器内容
       editorRef.current.innerHTML = html;
+      enhanceEmbeds(editorRef.current);
       emitChange();
     }
     handleMdClose();
@@ -728,7 +733,7 @@ function buildLinkCardHtml(card: LinkCard): string {
   const title = escapeHtml(card.title || card.url);
   const desc = card.description ? escapeHtml(card.description) : "";
   const image = card.image ? escapeHtml(toAbsoluteUrl(card.image)) : "";
-  let html = `<a href="${url}" target="_blank" rel="noopener noreferrer" class="link-card">`;
+  let html = `<a href="${url}" target="_blank" rel="noopener noreferrer" class="link-card" contenteditable="false">`;
   if (image) {
     html += `<span class="link-card-image"><img src="${image}" alt="" /></span>`;
   }
@@ -764,6 +769,59 @@ function buildVideoEmbedHtml(video: PostVideo): string {
     `<span class="embed-cover">${cover ? `<img src="${cover}" alt="" />` : ""}</span>` +
     `<span class="embed-info"><span class="embed-title">${title}</span></span>` +
     `</div>`;
+}
+
+/**
+ * 增强编辑器中的嵌入块：确保 contenteditable="false"，添加删除按钮。
+ * 幂等：重复调用安全，不会重复添加删除按钮。
+ */
+function enhanceEmbeds(editor: HTMLElement) {
+  const embeds = editor.querySelectorAll<HTMLElement>(
+    '.embed-block, a.link-card'
+  );
+  embeds.forEach((el) => {
+    el.setAttribute("contenteditable", "false");
+    if (getComputedStyle(el).position === "static") {
+      el.style.position = "relative";
+    }
+    if (!el.querySelector('[data-editor-only="delete"]')) {
+      const btn = document.createElement("span");
+      btn.setAttribute("data-editor-only", "delete");
+      btn.setAttribute("contenteditable", "false");
+      btn.className = "embed-delete-btn";
+      btn.innerHTML = "&times;";
+      btn.title = "删除";
+      btn.addEventListener("mousedown", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      });
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        let next = el.nextSibling;
+        el.remove();
+        while (next && next.nodeType === Node.TEXT_NODE && /^\s*$/.test(next.textContent || "")) {
+          const after = next.nextSibling;
+          next.remove();
+          next = after;
+        }
+        const event = new InputEvent("input", { bubbles: true });
+        editor.dispatchEvent(event);
+      });
+      el.appendChild(btn);
+    }
+  });
+}
+
+/**
+ * 从编辑器 HTML 中移除编辑器专用元素（如删除按钮），返回干净的 HTML 供保存。
+ */
+function stripEditorOnly(html: string): string {
+  if (!html) return "";
+  const tmp = document.createElement("div");
+  tmp.innerHTML = html;
+  tmp.querySelectorAll('[data-editor-only]').forEach((el) => el.remove());
+  return tmp.innerHTML;
 }
 
 function Divider() {
