@@ -1,0 +1,12 @@
+# 使用预构建镜像（从 GHCR 拉取），无需本地构建
+# 用法: docker compose -f docker-compose.yml -f docker-compose.images.yml up -d
+# 注意: 预构建的前端镜像使用默认 API URL (http://localhost:4000/api)
+#       生产环境请自行构建前端镜像，传入你的 NEXT_PUBLIC_API_URL
+services:
+  backend:
+    build: !reset null
+    image: ghcr.io/zilinnb/kanle-next-backend:latest
+
+  frontend:
+    build: !reset null
+    image: ghcr.io/zilinnb/kanle-next-frontend:latest

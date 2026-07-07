@@ -62,6 +62,17 @@ docker compose up -d --build
 > docker compose up -d --build frontend
 > ```
 
+### 使用预构建镜像（GHCR）
+
+代码推送到 GitHub 后，GitHub Actions 会自动构建镜像并发布到 [GHCR](https://github.com/zilinnb/kanle-next/pkgs)：
+
+```bash
+# 拉取预构建镜像（无需本地编译）
+docker compose -f docker-compose.yml -f docker-compose.images.yml up -d
+```
+
+> 注意：预构建前端镜像使用默认 API URL（`http://localhost:4000/api`）。生产环境请自行构建前端镜像以注入正确的域名。
+
 ## 手动部署（PM2 + Nginx）
 
 ### 前置要求
@@ -276,4 +287,4 @@ npm run dev
 
 [MIT](LICENSE)
 
-Copyright (c) 2026 kanle
+Copyright (c) 2026 zilinnb
