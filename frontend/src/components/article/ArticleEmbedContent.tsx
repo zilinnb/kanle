@@ -46,15 +46,15 @@ function EmbedInner({ content, postId, className }: ArticleEmbedContentProps) {
       if (embeds.length > 0) setEmbeds([]);
       return;
     }
-    // 清除静态预览内容，为 React portal 腾出空间
-    els.forEach((el) => {
-      el.innerHTML = "";
-    });
     const items: EmbedItem[] = [];
     for (const el of els) {
       const type = el.getAttribute("data-embed") || "";
       const payload = decodePayload(el.getAttribute("data-payload") || "");
-      if (payload) items.push({ node: el, type, payload });
+      if (payload) {
+        // 仅在有有效 payload 时清空静态预览，避免解码失败导致空白
+        el.innerHTML = "";
+        items.push({ node: el, type, payload });
+      }
     }
     setEmbeds(items);
     // eslint-disable-next-line react-hooks/exhaustive-deps
