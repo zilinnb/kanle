@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { Music, Pause, Play, AlertCircle, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
+import { useEffect, useRef, useState, useCallback } from "react";
+import { Music, AlertCircle, ChevronDown, ChevronUp, Loader2, Play, Pause } from "lucide-react";
 import type { PostMusic } from "@/lib/mock-data";
 import { useMusicPlayer, resolvePostMusicUrl } from "@/lib/music-player-store";
 import { getGlobalAudio } from "@/lib/global-audio";
@@ -40,6 +40,13 @@ function formatMusicInfo(music: PostMusic): { title: string; subtitle?: string }
   return { title: name || "未知歌曲", subtitle: artist || undefined };
 }
 
+function formatTime(sec: number): string {
+  if (!isFinite(sec) || sec < 0) return "0:00";
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60);
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
 export default function MusicEmbedCard({ music, postId }: MusicEmbedCardProps) {
   const activePostId = useMusicPlayer((s) => s.activePostId);
   const isPlaying = useMusicPlayer((s) => s.isPlaying);
@@ -56,18 +63,21 @@ export default function MusicEmbedCard({ music, postId }: MusicEmbedCardProps) {
   const info = formatMusicInfo(music);
 
   const [showFullLyric, setShowFullLyric] = useState(false);
+  const [progress, setProgress] = useState(0); // 0-1
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
   const lyricScrollRef = useRef<HTMLDivElement>(null);
   const autoplayAttempted = useRef(false);
 
-  const handlePlayError = (err: unknown, context: string) => {
+  const handlePlayError = useCallback((err: unknown, context: string) => {
     console.error(`[MusicEmbedCard] ${context}:`, err, "music:", music);
     const st = useMusicPlayer.getState();
     st.setAudioError(true);
     st.setSwitching(false);
     st.setLoading(false);
-  };
+  }, [music]);
 
-  const startPlayback = () => {
+  const startPlayback = useCallback(() => {
     const audio = getGlobalAudio();
     if (!audio) return;
 
@@ -94,9 +104,9 @@ export default function MusicEmbedCard({ music, postId }: MusicEmbedCardProps) {
     audio.src = playUrl;
     audio.load();
     audio.play().catch((e) => handlePlayError(e, "initial play failed"));
-  };
+  }, [music, postId, setActiveMusic, handlePlayError]);
 
-  const handleClick = () => {
+  const handleClick = useCallback(() => {
     const audio = getGlobalAudio();
     if (!audio) return;
 
@@ -110,9 +120,9 @@ export default function MusicEmbedCard({ music, postId }: MusicEmbedCardProps) {
     }
 
     startPlayback();
-  };
+  }, [isThisActive, startPlayback, handlePlayError]);
 
-  // 自动播放：进入文章详情页时若 music.autoplay 且无其他活动音乐，自动播放
+  // 自动播放
   useEffect(() => {
     if (!music.autoplay || autoplayAttempted.current) return;
     autoplayAttempted.current = true;
@@ -124,6 +134,47 @@ export default function MusicEmbedCard({ music, postId }: MusicEmbedCardProps) {
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // 监听全局 audio 的进度
+  useEffect(() => {
+    if (!isThisActive) {
+      setProgress(0);
+      setCurrentTime(0);
+      setDuration(0);
+      return;
+    }
+    const audio = getGlobalAudio();
+    if (!audio) return;
+
+    const onTimeUpdate = () => {
+      setCurrentTime(audio.currentTime);
+      if (audio.duration > 0) {
+        setProgress(Math.min(1, audio.currentTime / audio.duration));
+      }
+    };
+    const onLoadedMeta = () => {
+      setDuration(audio.duration);
+    };
+    const onDurationChange = () => {
+      setDuration(audio.duration);
+    };
+
+    audio.addEventListener("timeupdate", onTimeUpdate);
+    audio.addEventListener("loadedmetadata", onLoadedMeta);
+    audio.addEventListener("durationchange", onDurationChange);
+    // 立即同步一次
+    setCurrentTime(audio.currentTime);
+    if (audio.duration > 0) {
+      setDuration(audio.duration);
+      setProgress(Math.min(1, audio.currentTime / audio.duration));
+    }
+
+    return () => {
+      audio.removeEventListener("timeupdate", onTimeUpdate);
+      audio.removeEventListener("loadedmetadata", onLoadedMeta);
+      audio.removeEventListener("durationchange", onDurationChange);
+    };
+  }, [isThisActive]);
 
   // 展开歌词面板时自动滚动到当前行
   useEffect(() => {
@@ -152,97 +203,132 @@ export default function MusicEmbedCard({ music, postId }: MusicEmbedCardProps) {
         ? lyric![0]?.text
         : "";
 
+  const progressPct = Math.round(progress * 100);
+
   return (
-    <div className="my-2 w-full max-w-[360px] md:max-w-[400px]">
-      {/* 音乐卡片 */}
+    <div className="group my-4 w-full">
+      {/* ===== 高级音乐卡片 ===== */}
       <div
         onClick={handleClick}
-        className="flex w-full cursor-pointer items-stretch overflow-hidden rounded-[8px] bg-[#f2f2f2] transition-opacity active:opacity-80 dark:bg-[#2a2a30]"
+        className="relative flex w-full cursor-pointer items-stretch overflow-hidden rounded-[12px] bg-gradient-to-br from-[#fafafa] to-[#f0f0f2] shadow-[0_2px_12px_-4px_rgba(0,0,0,0.1),0_1px_3px_-1px_rgba(0,0,0,0.06)] transition-all duration-300 hover:shadow-[0_6px_24px_-8px_rgba(0,0,0,0.15),0_2px_6px_-2px_rgba(0,0,0,0.08)] active:scale-[0.99] dark:from-[#2a2a30] dark:to-[#222228] dark:shadow-[0_2px_12px_-4px_rgba(0,0,0,0.4),0_1px_3px_-1px_rgba(0,0,0,0.3)]"
       >
-        {/* 封面 + 播放按钮叠加 */}
-        <div className="relative h-[64px] w-[64px] shrink-0 overflow-hidden bg-black/5 dark:bg-white/5 md:h-[72px] md:w-[72px]">
-          {coverSrc ? (
-            <LazyImage src={coverSrc} alt="" className="h-full w-full object-cover" />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center">
-              <Music className="h-5 w-5 text-black/30 dark:text-white/30" />
-            </div>
-          )}
-          {/* 半透明遮罩 + 播放/暂停/加载/错误按钮 */}
-          <div className="absolute inset-0 flex items-center justify-center bg-black/25">
-            {isThisLoading ? (
-              <Loader2 className="h-5 w-5 animate-spin text-white" strokeWidth={2.5} />
-            ) : isThisError ? (
-              <AlertCircle className="h-5 w-5 text-red-400" strokeWidth={2.5} />
-            ) : isThisPlaying ? (
-              <span className="flex items-end gap-[2px]">
-                {[0, 1, 2].map((i) => (
-                  <span
-                    key={i}
-                    className="w-[2.5px] animate-pulse rounded-full bg-white"
-                    style={{
-                      height: "14px",
-                      animationDelay: `${i * 0.15}s`,
-                      animationDuration: "0.6s",
-                    }}
-                  />
-                ))}
-              </span>
+        {/* 封面区 + 黑胶唱片效果 */}
+        <div className="relative h-[84px] w-[84px] shrink-0 overflow-hidden bg-black/5 dark:bg-white/5 md:h-[96px] md:w-[96px]">
+          {/* 黑胶唱片：播放时从右侧滑出旋转 */}
+          <div
+            className={`absolute top-1/2 left-[60%] z-0 h-[84px] w-[84px] -translate-y-1/2 rounded-full bg-gradient-to-br from-[#1a1a1a] to-[#333] transition-all duration-500 dark:from-[#0a0a0a] dark:to-[#222] md:h-[96px] md:w-[96px] ${
+              isThisPlaying
+                ? "opacity-100 [animation:vinyl-spin_4s_linear_infinite]"
+                : "opacity-0"
+            }`}
+            style={{
+              backgroundImage: `radial-gradient(circle at center, #1a1a1a 30%, #2a2a2a 30%, #2a2a2a 31%, #1a1a1a 31%, #1a1a1a 45%, #333 45%, #333 46%, #1a1a1a 46%)`,
+            }}
+          >
+            {/* 唱片中心圆点 */}
+            <div className="absolute top-1/2 left-1/2 h-[18px] w-[18px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-br from-[#666] to-[#444] md:h-[22px] md:w-[22px]" />
+            <div className="absolute top-1/2 left-1/2 h-[5px] w-[5px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#1a1a1a]" />
+          </div>
+
+          {/* 封面图（在唱片上方） */}
+          <div className="absolute top-1/2 left-0 z-10 h-full w-full -translate-y-1/2 overflow-hidden">
+            {coverSrc ? (
+              <LazyImage src={coverSrc} alt="" className="h-full w-full object-cover" />
             ) : (
-              <Play className="h-6 w-6 translate-x-[1px] text-white drop-shadow-md" fill="currentColor" strokeWidth={0} />
+              <div className="flex h-full w-full items-center justify-center">
+                <Music className="h-7 w-7 text-black/30 dark:text-white/30 md:h-8 md:w-8" />
+              </div>
+            )}
+            {/* 底部渐变遮罩，让播放按钮更清晰 */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
+          </div>
+
+          {/* 圆形播放/暂停/加载/错误按钮 */}
+          <div className="absolute top-1/2 left-1/2 z-20 flex h-[36px] w-[36px] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 shadow-lg backdrop-blur-sm transition-transform duration-200 group-hover:scale-105 dark:bg-white/90 md:h-[40px] md:w-[40px]">
+            {isThisLoading ? (
+              <Loader2 className="h-[18px] w-[18px] animate-spin text-gray-700 md:h-[20px] md:w-[20px]" strokeWidth={2.5} />
+            ) : isThisError ? (
+              <AlertCircle className="h-[18px] w-[18px] text-red-500 md:h-[20px] md:w-[20px]" strokeWidth={2.5} />
+            ) : isThisPlaying ? (
+              <Pause className="h-[16px] w-[16px] text-gray-800 md:h-[18px] md:w-[18px]" fill="currentColor" strokeWidth={0} />
+            ) : (
+              <Play className="h-[16px] w-[16px] translate-x-[1px] text-gray-800 md:h-[18px] md:w-[18px]" fill="currentColor" strokeWidth={0} />
             )}
           </div>
         </div>
-        {/* 标题 + 艺术家 */}
-        <div className="flex min-w-0 flex-1 items-center bg-white/35 px-3 dark:bg-white/[0.04]">
+
+        {/* 右侧内容区 */}
+        <div className="flex min-w-0 flex-1 flex-col justify-center px-4 py-2.5">
           <div className="min-w-0 flex-1">
-            <p className="truncate text-[14px] font-medium leading-[20px] text-black/[0.87] dark:text-white/90 md:text-[15px]">
+            <p className="truncate text-[15px] font-semibold leading-[21px] text-gray-900 dark:text-white/95 md:text-[16px] md:leading-[22px]">
               {info.title}
             </p>
             {info.subtitle && (
-              <p className="truncate text-[12px] leading-[16px] text-black/50 dark:text-white/50 md:text-[13px]">
+              <p className="mt-0.5 truncate text-[12.5px] leading-[17px] text-gray-500 dark:text-white/50 md:text-[13px] md:leading-[18px]">
                 {info.subtitle}
               </p>
             )}
           </div>
+
+          {/* 时间 + 进度条 */}
+          {isThisActive && !isThisError && (
+            <div className="mt-2 flex items-center gap-2">
+              <span className="shrink-0 text-[10.5px] tabular-nums text-gray-400 dark:text-white/40">
+                {formatTime(currentTime)}
+              </span>
+              {/* 进度条 */}
+              <div className="relative h-[3px] flex-1 overflow-hidden rounded-full bg-gray-200/70 dark:bg-white/10">
+                <div
+                  className="absolute top-0 left-0 h-full rounded-full bg-gradient-to-r from-gray-700 to-gray-500 transition-[width] duration-200 ease-linear dark:from-white/80 dark:to-white/60"
+                  style={{ width: `${progressPct}%` }}
+                />
+              </div>
+              <span className="shrink-0 text-[10.5px] tabular-nums text-gray-400 dark:text-white/40">
+                {formatTime(duration)}
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* 歌词面板 */}
+      {/* ===== 歌词面板 ===== */}
       {hasLyric && (
-        <div className="mt-1">
+        <div className="mt-2">
           {!showFullLyric ? (
+            /* 紧凑当前歌词行 */
             <button
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 setShowFullLyric(true);
               }}
-              className="flex w-full items-center justify-center gap-1 rounded-[6px] bg-[#f2f2f2]/60 px-3 py-1.5 text-[12px] leading-[16px] text-black/45 transition-colors hover:bg-[#f2f2f2] dark:bg-[#2a2a30]/60 dark:text-white/45 dark:hover:bg-[#2a2a30]"
+              className="flex w-full items-center justify-center gap-1.5 rounded-[10px] bg-gradient-to-br from-[#f8f8f8] to-[#f2f2f4] px-4 py-2.5 text-[13px] leading-[18px] text-gray-500 shadow-sm transition-all hover:shadow-md dark:from-[#2a2a30] dark:to-[#25252b] dark:text-white/50"
             >
-              <span className="min-w-0 flex-1 truncate text-center">
-                {currentLine || "♪"}
+              <span className="shrink-0 text-gray-400 dark:text-white/40">♪</span>
+              <span className="min-w-0 flex-1 truncate text-center font-medium text-gray-600 dark:text-white/70">
+                {currentLine || "暂无歌词"}
               </span>
-              <ChevronDown className="h-3 w-3 shrink-0" />
+              <ChevronDown className="h-3.5 w-3.5 shrink-0 text-gray-400 dark:text-white/40" />
             </button>
           ) : (
-            <div className="rounded-[8px] bg-[#f2f2f2]/60 p-2 dark:bg-[#2a2a30]/60">
+            /* 展开式完整歌词面板 */
+            <div className="rounded-[12px] bg-gradient-to-br from-[#f8f8f8] to-[#f2f2f4] p-3 shadow-sm dark:from-[#2a2a30] dark:to-[#25252b]">
               <div
                 ref={lyricScrollRef}
-                className="max-h-[160px] overflow-y-auto scroll-smooth py-1"
+                className="max-h-[200px] overflow-y-auto scroll-smooth py-2"
                 style={{
-                  maskImage: "linear-gradient(transparent, black 15%, black 85%, transparent)",
-                  WebkitMaskImage: "linear-gradient(transparent, black 15%, black 85%, transparent)",
+                  maskImage: "linear-gradient(transparent, black 12%, black 88%, transparent)",
+                  WebkitMaskImage: "linear-gradient(transparent, black 12%, black 88%, transparent)",
                 }}
               >
                 {lyric!.map((line, i) => (
                   <p
                     key={i}
                     data-lyric-idx={i}
-                    className={`px-2 py-[3px] text-center text-[13px] leading-[1.5] transition-colors duration-200 ${
+                    className={`px-2 py-[5px] text-center text-[14px] leading-[1.6] transition-all duration-300 ${
                       i === currentLyricIndex
-                        ? "font-medium text-wechat-link"
-                        : "text-black/35 dark:text-white/35"
+                        ? "scale-[1.02] font-semibold text-gray-900 dark:text-white/95"
+                        : "text-gray-400 dark:text-white/35"
                     }`}
                   >
                     {line.text || "♪"}
@@ -255,15 +341,16 @@ export default function MusicEmbedCard({ music, postId }: MusicEmbedCardProps) {
                   e.stopPropagation();
                   setShowFullLyric(false);
                 }}
-                className="mt-0.5 flex w-full items-center justify-center gap-1 py-0.5 text-[11px] text-black/35 dark:text-white/35"
+                className="mt-1 flex w-full items-center justify-center gap-1 py-1 text-[11.5px] text-gray-400 transition-colors hover:text-gray-600 dark:text-white/40 dark:hover:text-white/60"
               >
-                <ChevronUp className="h-3 w-3" />
-                <span>收起</span>
+                <ChevronUp className="h-3.5 w-3.5" />
+                <span>收起歌词</span>
               </button>
             </div>
           )}
         </div>
       )}
+
     </div>
   );
 }

@@ -979,3 +979,179 @@ img.inline-emoji.emoji-error {
   outline: 2px solid rgba(59, 130, 246, 0.4);
   outline-offset: 1px;
 }
+
+/* ===== 文章详情页嵌入块/链接卡片深度优化 ===== */
+/* 嵌入块容器透明化：让内部 React 组件 (MusicEmbedCard) 自行处理样式 */
+.article-content .embed-block {
+  border: none;
+  background: transparent;
+  border-radius: 0;
+  max-width: 100%;
+  margin: 0;
+  overflow: visible;
+  padding: 0;
+}
+
+/* 文章详情页链接卡片 — 高级样式（区别于动态页） */
+.article-content a.link-card {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  max-width: 440px;
+  margin: 1.2em 0;
+  padding: 0;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #fafafa, #f0f0f2);
+  color: var(--wechat-text);
+  text-decoration: none;
+  box-sizing: border-box;
+  overflow: hidden;
+  box-shadow: 0 2px 12px -4px rgba(0,0,0,0.1), 0 1px 3px -1px rgba(0,0,0,0.06);
+  transition: box-shadow 0.3s ease, transform 0.2s ease;
+}
+.article-content a.link-card:hover {
+  background: linear-gradient(135deg, #fafafa, #f0f0f2);
+  text-decoration: none;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px -8px rgba(0,0,0,0.18), 0 3px 8px -3px rgba(0,0,0,0.08);
+}
+.article-content a.link-card:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px -2px rgba(0,0,0,0.12);
+}
+
+.article-content .link-card-image {
+  flex-shrink: 0;
+  width: 96px;
+  height: 96px;
+  border-radius: 0;
+  overflow: hidden;
+  background: var(--wechat-surface);
+}
+.article-content .link-card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  margin: 0;
+  border-radius: 0;
+  display: block;
+  transition: transform 0.4s ease;
+}
+.article-content a.link-card:hover .link-card-image img {
+  transform: scale(1.05);
+}
+
+.article-content .link-card-body {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  flex: 1;
+  padding: 12px 14px;
+  gap: 5px;
+  position: relative;
+}
+.article-content .link-card-body::after {
+  content: "";
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  width: 14px;
+  height: 14px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 17 17 7'/%3E%3Cpath d='M7 7h10v10'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  opacity: 0.5;
+  transition: opacity 0.2s ease;
+}
+.article-content a.link-card:hover .link-card-body::after {
+  opacity: 0.8;
+}
+
+.article-content .link-card-title {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.45;
+  color: #1a1a1a;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: break-word;
+  padding-right: 20px;
+}
+.article-content .link-card-desc {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: #888;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: break-word;
+}
+
+/* 暗色模式 */
+@media (prefers-color-scheme: dark) {
+  .article-content a.link-card {
+    background: linear-gradient(135deg, #2a2a30, #222228);
+    box-shadow: 0 2px 12px -4px rgba(0,0,0,0.4), 0 1px 3px -1px rgba(0,0,0,0.3);
+  }
+  .article-content a.link-card:hover {
+    background: linear-gradient(135deg, #2a2a30, #222228);
+    box-shadow: 0 8px 28px -8px rgba(0,0,0,0.5), 0 3px 8px -3px rgba(0,0,0,0.3);
+  }
+  .article-content .link-card-title {
+    color: rgba(255,255,255,0.95);
+  }
+  .article-content .link-card-desc {
+    color: rgba(255,255,255,0.5);
+  }
+  .article-content .link-card-body::after {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23aaa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 17 17 7'/%3E%3Cpath d='M7 7h10v10'/%3E%3C/svg%3E");
+  }
+}
+
+/* 手动暗色模式（通过 .dark 类） */
+.dark .article-content a.link-card {
+  background: linear-gradient(135deg, #2a2a30, #222228);
+  box-shadow: 0 2px 12px -4px rgba(0,0,0,0.4), 0 1px 3px -1px rgba(0,0,0,0.3);
+}
+.dark .article-content a.link-card:hover {
+  background: linear-gradient(135deg, #2a2a30, #222228);
+  box-shadow: 0 8px 28px -8px rgba(0,0,0,0.5), 0 3px 8px -3px rgba(0,0,0,0.3);
+}
+.dark .article-content .link-card-title {
+  color: rgba(255,255,255,0.95);
+}
+.dark .article-content .link-card-desc {
+  color: rgba(255,255,255,0.5);
+}
+.dark .article-content .link-card-body::after {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23aaa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 17 17 7'/%3E%3Cpath d='M7 7h10v10'/%3E%3C/svg%3E");
+}
+
+@media (max-width: 640px) {
+  .article-content a.link-card {
+    max-width: 100%;
+  }
+  .article-content .link-card-image {
+    width: 84px;
+    height: 84px;
+  }
+  .article-content .link-card-body {
+    padding: 10px 12px;
+  }
+  .article-content .link-card-title {
+    font-size: 14px;
+  }
+}
+
+/* 黑胶唱片旋转动画（文章详情页音乐卡片） */
+@keyframes vinyl-spin {
+  from { transform: translateY(-50%) rotate(0deg); }
+  to { transform: translateY(-50%) rotate(360deg); }
+}
