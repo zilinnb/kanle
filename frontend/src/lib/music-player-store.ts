@@ -200,11 +200,13 @@ export const useMusicPlayer = create<MusicPlayerState>((set, get) => ({
 
   initMusic: (data) => {
     if (get().musicLoaded) return;
+    const hasActivePost = !!get().activePostMusic;
     set({
       musicUrl: data.mp3url,
       musicName: data.name,
       musicId: data.id,
-      lyric: data.lyric,
+      // activePostMusic 已设置时不覆盖歌词（由 GlobalMusicManager 异步获取）
+      lyric: hasActivePost ? get().lyric : data.lyric,
       playlist: data.playlist,
       currentIndex: data.currentIndex,
       musicLoaded: true,

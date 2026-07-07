@@ -241,7 +241,7 @@ export default function MusicPanel({
     <AdminModal
       open={open}
       onClose={onClose}
-      title="添加音乐"
+      title={initial ? "编辑音乐" : "添加音乐"}
       footer={
         tab === "upload" ? (
           <>
@@ -291,15 +291,13 @@ export default function MusicPanel({
       </div>
 
       {/* 自动播放开关（搜索/上传通用） */}
-      <label className="mb-3 flex cursor-pointer items-center justify-between rounded-lg bg-adm-input px-3 py-2">
+      <div className="mb-3 flex cursor-pointer items-center justify-between rounded-lg bg-adm-input px-3 py-2" onClick={() => setAutoplay((v) => !v)}>
         <span className="text-xs font-medium text-adm-text-secondary">
           进入文章自动播放
         </span>
-        <button
-          type="button"
+        <span
           role="switch"
           aria-checked={autoplay}
-          onClick={() => setAutoplay((v) => !v)}
           className={`relative h-5 w-9 shrink-0 rounded-full transition-colors ${
             autoplay ? "bg-gray-900 dark:bg-white" : "bg-gray-300 dark:bg-gray-600"
           }`}
@@ -309,8 +307,8 @@ export default function MusicPanel({
               autoplay ? "translate-x-4" : "translate-x-0.5"
             }`}
           />
-        </button>
-      </label>
+        </span>
+      </div>
 
       {/* Body content */}
       <div>

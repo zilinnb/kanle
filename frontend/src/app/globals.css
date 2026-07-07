@@ -671,6 +671,10 @@ img.inline-emoji.emoji-error {
 }
 
 /* Article typography — larger headings, generous spacing (WeChat style) */
+.article-content {
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
 .article-editor-area h1,
 .article-content h1 {
   font-size: 1.6em;
@@ -771,7 +775,11 @@ img.inline-emoji.emoji-error {
 .article-content table {
   border-collapse: collapse;
   width: 100%;
+  max-width: 100%;
   margin: 0.8em 0;
+  display: block;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 .article-editor-area th,
 .article-content th,
@@ -970,6 +978,33 @@ img.inline-emoji.emoji-error {
 }
 .article-editor-area .embed-block:hover .embed-delete-btn,
 .article-editor-area a.link-card:hover .embed-delete-btn {
+  opacity: 1;
+}
+
+/* 编辑器内嵌入块的编辑按钮（仅音乐嵌入） */
+.article-editor-area .embed-edit-btn {
+  position: absolute;
+  top: -8px;
+  right: 14px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #3b82f6;
+  color: #fff;
+  font-size: 12px;
+  line-height: 18px;
+  text-align: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  z-index: 10;
+  user-select: none;
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.article-editor-area .embed-block:hover .embed-edit-btn {
   opacity: 1;
 }
 

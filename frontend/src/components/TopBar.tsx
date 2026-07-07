@@ -391,16 +391,21 @@ export default function TopBar({ coverHeight = 300 }: TopBarProps) {
                     if (lyric && lyric.length > 0) setShowLyricPanel(true);
                   }}
                   disabled={!lyric || lyric.length === 0}
-                  className="max-w-[180px] truncate text-[11px] transition-opacity hover:opacity-80 disabled:cursor-default md:max-w-[260px]"
+                  className={`flex min-w-0 max-w-[180px] items-center gap-1 truncate text-[11px] transition-opacity hover:opacity-80 disabled:cursor-default md:max-w-[260px] ${currentLyric ? "font-medium" : ""}`}
                   title={lyric && lyric.length > 0 ? "点击查看歌词" : ""}
                 >
-                  {!musicUrl && !activePostMusic
-                    ? "未设置"
-                    : audioError
-                      ? "无音乐"
-                      : currentLyric
-                        ? currentLyric
-                        : activePostMusic?.name || musicName || "音乐"}
+                  {currentLyric && (
+                    <span className="shrink-0 text-[10px] opacity-60">♪</span>
+                  )}
+                  <span className="truncate">
+                    {!musicUrl && !activePostMusic
+                      ? "未设置"
+                      : audioError
+                        ? "无音乐"
+                        : currentLyric
+                          ? currentLyric
+                          : activePostMusic?.name || musicName || "音乐"}
+                  </span>
                 </button>
                 <button
                   type="button"

@@ -76,6 +76,8 @@ export default function ArticleEditor({
   const [showLinkCardPanel, setShowLinkCardPanel] = useState(false);
   const [showMusicPanel, setShowMusicPanel] = useState(false);
   const [showVideoPanel, setShowVideoPanel] = useState(false);
+  const [editingMusic, setEditingMusic] = useState<PostMusic | null>(null);
+  const editingEmbedRef = useRef<HTMLElement | null>(null);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const linkBtnRef = useRef<HTMLButtonElement | null>(null);
@@ -117,7 +119,7 @@ export default function ArticleEditor({
     setMounted(true);
     if (editorRef.current && value) {
       editorRef.current.innerHTML = value;
-      enhanceEmbeds(editorRef.current);
+      enhanceEmbeds(editorRef.current, handleEditMusic);
     }
     refreshActive();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -137,7 +139,7 @@ export default function ArticleEditor({
       if (editorRef.current.innerHTML !== value) {
         editorRef.current.innerHTML = value;
       }
-      enhanceEmbeds(editorRef.current);
+      enhanceEmbeds(editorRef.current, handleEditMusic);
     }
   }, [sourceMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -164,6 +166,18 @@ export default function ArticleEditor({
     if (!editorRef.current) return;
     onChange(stripEditorOnly(editorRef.current.innerHTML));
   }, [onChange]);
+
+  // 编辑音乐嵌入的回调（稳定引用，供 enhanceEmbeds 使用）
+  const handleEditMusic = useCallback((el: HTMLElement, music: PostMusic) => {
+    editingEmbedRef.current = el;
+    setEditingMusic(music);
+    setShowMusicPanel(true);
+  }, []);
+
+  // 重新增强嵌入块（带编辑回调）
+  const reEnhanceEmbeds = useCallback(() => {
+    if (editorRef.current) enhanceEmbeds(editorRef.current, handleEditMusic);
+  }, [handleEditMusic]);
 
   const refreshActive = useCallback(() => {
     if (typeof document === "undefined") return;
@@ -233,11 +247,11 @@ export default function ArticleEditor({
       } catch {
         // ignore
       }
-      if (editorRef.current) enhanceEmbeds(editorRef.current);
+      if (editorRef.current) enhanceEmbeds(editorRef.current, handleEditMusic);
       refreshActive();
       emitChange();
     },
-    [restoreSelection, refreshActive, emitChange, sourceMode]
+    [restoreSelection, refreshActive, emitChange, sourceMode, handleEditMusic]
   );
 
   const insertHyperlink = useCallback(() => {
@@ -317,11 +331,11 @@ export default function ArticleEditor({
           // ignore
         }
       }
-      if (editorRef.current) enhanceEmbeds(editorRef.current);
+      if (editorRef.current) enhanceEmbeds(editorRef.current, handleEditMusic);
       refreshActive();
       emitChange();
     },
-    [sourceMode, refreshActive, emitChange]
+    [sourceMode, refreshActive, emitChange, handleEditMusic]
   );
 
   // rAF 句柄：延迟 refreshActive，避免每次输入都同步执行多次 queryCommandState
@@ -346,11 +360,11 @@ export default function ArticleEditor({
     if (editorRef.current) {
       // 替换整个编辑器内容
       editorRef.current.innerHTML = html;
-      enhanceEmbeds(editorRef.current);
+      enhanceEmbeds(editorRef.current, handleEditMusic);
       emitChange();
     }
     handleMdClose();
-  }, [mdText, emitChange, handleMdClose]);
+  }, [mdText, emitChange, handleMdClose, handleEditMusic]);
 
   const insertEmoji = useCallback((name: string) => {
     const item = EMOJI_LIST.find((e) => e.name === name);
@@ -699,10 +713,30 @@ export default function ArticleEditor({
 
       <MusicPanel
         open={showMusicPanel}
-        onClose={() => setShowMusicPanel(false)}
-        onConfirm={(music) => {
-          insertHtml(buildMusicEmbedHtml(music));
+        initial={editingMusic}
+        onClose={() => {
           setShowMusicPanel(false);
+          setEditingMusic(null);
+          editingEmbedRef.current = null;
+        }}
+        onConfirm={(music) => {
+          if (editingEmbedRef.current) {
+            // 编辑模式：替换已有嵌入
+            const newHtml = buildMusicEmbedHtml(music);
+            const tmp = document.createElement("div");
+            tmp.innerHTML = newHtml;
+            const newEl = tmp.firstElementChild as HTMLElement;
+            if (newEl && editingEmbedRef.current.parentNode) {
+              editingEmbedRef.current.replaceWith(newEl);
+              if (editorRef.current) enhanceEmbeds(editorRef.current, handleEditMusic);
+              emitChange();
+            }
+          } else {
+            insertHtml(buildMusicEmbedHtml(music));
+          }
+          setShowMusicPanel(false);
+          setEditingMusic(null);
+          editingEmbedRef.current = null;
         }}
         token={token}
       />
@@ -749,6 +783,14 @@ function encodePayload(obj: unknown): string {
   return btoa(encodeURIComponent(JSON.stringify(obj)));
 }
 
+function decodePayload(str: string): any {
+  try {
+    return JSON.parse(decodeURIComponent(atob(str)));
+  } catch {
+    return null;
+  }
+}
+
 export function buildMusicEmbedHtml(music: PostMusic): string {
   const payload = encodePayload(music);
   const cover = music.cover ? escapeHtml(toAbsoluteUrl(music.cover)) : "";
@@ -772,10 +814,13 @@ export function buildVideoEmbedHtml(video: PostVideo): string {
 }
 
 /**
- * 增强编辑器中的嵌入块：确保 contenteditable="false"，添加删除按钮。
- * 幂等：重复调用安全，不会重复添加删除按钮。
+ * 增强编辑器中的嵌入块：确保 contenteditable="false"，添加删除/编辑按钮。
+ * 幂等：重复调用安全，不会重复添加按钮。
  */
-function enhanceEmbeds(editor: HTMLElement) {
+function enhanceEmbeds(
+  editor: HTMLElement,
+  onEditMusic?: (el: HTMLElement, music: PostMusic) => void
+) {
   const embeds = editor.querySelectorAll<HTMLElement>(
     '.embed-block, a.link-card'
   );
@@ -809,6 +854,33 @@ function enhanceEmbeds(editor: HTMLElement) {
         editor.dispatchEvent(event);
       });
       el.appendChild(btn);
+    }
+    // 音乐嵌入：添加编辑按钮
+    if (
+      el.getAttribute("data-embed") === "music" &&
+      onEditMusic &&
+      !el.querySelector('[data-editor-only="edit"]')
+    ) {
+      const editBtn = document.createElement("span");
+      editBtn.setAttribute("data-editor-only", "edit");
+      editBtn.setAttribute("contenteditable", "false");
+      editBtn.className = "embed-edit-btn";
+      editBtn.innerHTML = "&#9998;";
+      editBtn.title = "编辑";
+      editBtn.addEventListener("mousedown", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      });
+      editBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const payload = el.getAttribute("data-payload");
+        if (payload) {
+          const music = decodePayload(payload) as PostMusic;
+          if (music) onEditMusic(el, music);
+        }
+      });
+      el.appendChild(editBtn);
     }
   });
 }
