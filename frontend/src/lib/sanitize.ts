@@ -155,7 +155,8 @@ export function looksLikeHtml(text: string): boolean {
 
 /**
  * 渲染入口：自动判断纯文本或 HTML，返回安全的 HTML 字符串供 dangerouslySetInnerHTML 使用。
- * 当 canViewReply 为 false 时，把 .reply-to-view 块替换为"评论后可见"提示。
+ * - canViewReply=true：拆包 .reply-to-view，让内容自然融入正文（无任何特殊渲染）
+ * - canViewReply=false：把 .reply-to-view 块替换为"评论后可见"提示占位块
  */
 export function renderContent(content: string, canViewReply = true): string {
   if (!content) return "";
@@ -163,23 +164,93 @@ export function renderContent(content: string, canViewReply = true): string {
     ? sanitizeHtml(content)
     : plainTextToHtml(content);
   const withEmoji = replaceEmojiShortcodes(html);
-  if (canViewReply) return withEmoji;
+  if (canViewReply) return unwrapReplyContent(withEmoji);
   return hideReplyContent(withEmoji);
 }
 
 /**
+ * SSR 后备：用 div 深度计数定位 .reply-to-view 块的闭合 </div>，
+ * 支持块内嵌套 div（正则 [\s\S]*? 无法正确匹配嵌套结构）。
+ * 返回每个匹配块的 [start, end) 区间数组（含外层 div 标签）。
+ */
+function findReplyToViewBlocks(html: string): Array<[number, number]> {
+  const ranges: Array<[number, number]> = [];
+  const openRe = /<div\s+class="reply-to-view"[^>]*>/gi;
+  let m: RegExpExecArray | null;
+  while ((m = openRe.exec(html)) !== null) {
+    const start = m.index;
+    let pos = m.index + m[0].length;
+    let depth = 1;
+    while (depth > 0 && pos < html.length) {
+      const nextOpen = html.indexOf("<div", pos);
+      const nextClose = html.indexOf("</div>", pos);
+      if (nextClose === -1) break;
+      if (nextOpen !== -1 && nextOpen < nextClose) {
+        depth++;
+        pos = nextOpen + 4;
+      } else {
+        depth--;
+        pos = nextClose + 6;
+      }
+    }
+    ranges.push([start, pos]);
+    openRe.lastIndex = pos;
+  }
+  return ranges;
+}
+
+/**
+ * 拆包 .reply-to-view：移除外层 div 包裹，仅保留内部内容，
+ * 使解锁后的内容与正文完全一致（无任何特殊渲染）。
+ */
+function unwrapReplyContent(html: string): string {
+  if (html.indexOf("reply-to-view") === -1) return html;
+  if (typeof document === "undefined") {
+    const ranges = findReplyToViewBlocks(html);
+    if (ranges.length === 0) return html;
+    let result = "";
+    let cursor = 0;
+    for (const [start, end] of ranges) {
+      const openTagEnd = html.indexOf(">", start) + 1;
+      const closeTagStart = end - 6; // "</div>".length
+      result += html.slice(cursor, start);
+      result += html.slice(openTagEnd, closeTagStart);
+      cursor = end;
+    }
+    result += html.slice(cursor);
+    return result;
+  }
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(`<div id="__root">${html}</div>`, "text/html");
+  const root = doc.getElementById("__root");
+  if (!root) return html;
+  const blocks = root.querySelectorAll(".reply-to-view");
+  blocks.forEach((block) => {
+    const frag = doc.createDocumentFragment();
+    while (block.firstChild) frag.appendChild(block.firstChild);
+    block.replaceWith(frag);
+  });
+  return root.innerHTML;
+}
+
+/**
  * 把 .reply-to-view 块替换为"评论后可见"提示占位块。
- * 客户端用 DOMParser 精确定位；SSR 时用正则后备（处理无嵌套 div 的常见情况）。
+ * 客户端用 DOMParser 精确定位；SSR 时用 div 深度计数后备（支持嵌套 div）。
  */
 function hideReplyContent(html: string): string {
   if (html.indexOf("reply-to-view") === -1) return html;
   const placeholder = '<div class="reply-locked">评论后查看完整内容</div>';
   if (typeof document === "undefined") {
-    // SSR 后备：正则匹配无嵌套 div 的 reply-to-view 块
-    return html.replace(
-      /<div\s+class="reply-to-view"[^>]*>[\s\S]*?<\/div>/gi,
-      placeholder
-    );
+    const ranges = findReplyToViewBlocks(html);
+    if (ranges.length === 0) return html;
+    let result = "";
+    let cursor = 0;
+    for (const [start, end] of ranges) {
+      result += html.slice(cursor, start) + placeholder;
+      cursor = end;
+    }
+    result += html.slice(cursor);
+    return result;
   }
   const parser = new DOMParser();
   const doc = parser.parseFromString(`<div id="__root">${html}</div>`, "text/html");

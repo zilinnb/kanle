@@ -42,7 +42,7 @@ export default function ArticleReader({ post }: ArticleReaderProps) {
     const user = getCurrentUser();
     if (user?.isLoggedIn) {
       setIsAdmin(true);
-      const sameEmail = post.author.email && user.email && post.author.email === post.author.email;
+      const sameEmail = !!(post.author.email && user.email && user.email === post.author.email);
       const sameNickname = post.author.nickname === user.nickname;
       setCanEdit(sameEmail || sameNickname);
     }

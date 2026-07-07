@@ -782,35 +782,8 @@ img.inline-emoji.emoji-error {
 }
 
 /* ===== 评论可见内容块 ===== */
-/* 编辑器内：虚线边框 + 角标，让作者识别被标记的内容 */
-.article-editor-area .reply-to-view {
-  position: relative;
-  margin: 1em 0;
-  padding: 1em 1em 0.8em;
-  border: 1.5px dashed #f59e0b;
-  border-radius: 8px;
-  background: rgba(245, 158, 11, 0.06);
-}
-.article-editor-area .reply-to-view::before {
-  content: "评论可见";
-  position: absolute;
-  top: -10px;
-  left: 12px;
-  padding: 1px 8px;
-  font-size: 11px;
-  font-weight: 500;
-  color: #fff;
-  background: #f59e0b;
-  border-radius: 4px;
-}
-/* 渲染时：已解锁的内容也保留淡黄底色提示 */
-.article-content .reply-to-view {
-  margin: 1em 0;
-  padding: 0.8em 1em;
-  border-left: 3px solid #f59e0b;
-  border-radius: 4px;
-  background: rgba(245, 158, 11, 0.05);
-}
+/* 可见时无任何特殊渲染：.reply-to-view 仅作语义标记，内容与正文完全一致。
+   渲染入口 sanitize.ts 在解锁时会拆包 .reply-to-view div，内容自然融入正文。 */
 /* 未评论时的锁定占位块 */
 .article-content .reply-locked {
   display: flex;
