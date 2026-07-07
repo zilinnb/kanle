@@ -1,0 +1,827 @@
+@import "tailwindcss";
+
+/* Enable class-based dark mode for Tailwind v4 (next-themes adds .dark to <html>) */
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --wechat-bg: #f5f5f5;
+  --wechat-bg-rgb: 245, 245, 245;
+  --wechat-white: #ffffff;
+  --wechat-white-rgb: 255, 255, 255;
+  --wechat-text: #1a1a1a;
+  --wechat-nickname: #576b95;
+  --wechat-time: #b2b2b2;
+  --wechat-bubble: #f7f7f7;
+  --wechat-divider: #f5f5f5;
+  --wechat-link: #576b95;
+  --wechat-surface: #ededed;
+  --wechat-border: #e5e5e5;
+  --wechat-hover: #f0f0f0;
+
+  /* Admin dashboard semantic colors */
+  --adm-bg: #f3f4f6;
+  --adm-card: #ffffff;
+  --adm-card-hover: #f9fafb;
+  --adm-text: #111827;
+  --adm-text-secondary: #6b7280;
+  --adm-text-tertiary: #9ca3af;
+  --adm-border: #e5e7eb;
+  --adm-input: #f9fafb;
+  --adm-input-focus: #ffffff;
+  --adm-primary: #374151;
+  --adm-primary-text: #ffffff;
+  --adm-danger: #ef4444;
+  --adm-danger-bg: #fef2f2;
+
+  /* ImageGrid 单图尺寸 — 桌面端增大（配合 600px 卡片宽度） */
+  --single-img-max: 280px;
+  --single-img-height: 240px;
+}
+
+@media (min-width: 768px) {
+  :root {
+    --single-img-max: 320px;
+    --single-img-height: 280px;
+  }
+}
+
+/* Dark mode palette — WeChat-style dark theme */
+.dark {
+  --wechat-bg: #18181c;
+  --wechat-bg-rgb: 24, 24, 28;
+  --wechat-white: #232328;
+  --wechat-white-rgb: 35, 35, 40;
+  --wechat-text: #e0e0e0;
+  --wechat-nickname: #7d8fc4;
+  --wechat-time: #888888;
+  --wechat-bubble: #2a2a30;
+  --wechat-divider: #333338;
+  --wechat-link: #7d8fc4;
+  --wechat-surface: #2a2a30;
+  --wechat-border: #333338;
+  --wechat-hover: #333338;
+
+  /* Admin dashboard dark colors */
+  --adm-bg: #111827;
+  --adm-card: #1f2937;
+  --adm-card-hover: #374151;
+  --adm-text: #f9fafb;
+  --adm-text-secondary: #d1d5db;
+  --adm-text-tertiary: #9ca3af;
+  --adm-border: #374151;
+  --adm-input: #374151;
+  --adm-input-focus: #1f2937;
+  --adm-primary: #f3f4f6;
+  --adm-primary-text: #111827;
+  --adm-danger: #f87171;
+  --adm-danger-bg: rgba(239, 68, 68, 0.1);
+}
+
+@theme inline {
+  --color-wechat-bg: var(--wechat-bg);
+  --color-wechat-white: var(--wechat-white);
+  --color-wechat-text: var(--wechat-text);
+  --color-wechat-nickname: var(--wechat-nickname);
+  --color-wechat-time: var(--wechat-time);
+  --color-wechat-bubble: var(--wechat-bubble);
+  --color-wechat-divider: var(--wechat-divider);
+  --color-wechat-link: var(--wechat-link);
+  --color-wechat-surface: var(--wechat-surface);
+  --color-wechat-border: var(--wechat-border);
+  --color-wechat-hover: var(--wechat-hover);
+
+  /* Admin dashboard colors */
+  --color-adm-bg: var(--adm-bg);
+  --color-adm-card: var(--adm-card);
+  --color-adm-card-hover: var(--adm-card-hover);
+  --color-adm-text: var(--adm-text);
+  --color-adm-text-secondary: var(--adm-text-secondary);
+  --color-adm-text-tertiary: var(--adm-text-tertiary);
+  --color-adm-border: var(--adm-border);
+  --color-adm-input: var(--adm-input);
+  --color-adm-input-focus: var(--adm-input-focus);
+  --color-adm-primary: var(--adm-primary);
+  --color-adm-primary-text: var(--adm-primary-text);
+  --color-adm-danger: var(--adm-danger);
+  --color-adm-danger-bg: var(--adm-danger-bg);
+  --font-sans: -apple-system, BlinkMacSystemFont, "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* HarmonyOS Sans — 鸿蒙字体，字形比系统字体更细更现代（参考 kam.space） */
+@font-face {
+  font-family: 'HarmonyOS Sans';
+  src: url('/fonts/HarmonyOS_Sans_Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'HarmonyOS Sans';
+  src: url('/fonts/HarmonyOS_Sans_Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-display: swap;
+}
+
+body {
+  background-color: var(--wechat-bg);
+  color: var(--wechat-text);
+  font-family: 'HarmonyOS Sans', -apple-system, BlinkMacSystemFont, "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+body::-webkit-scrollbar {
+  display: none;
+}
+
+/* Social icons: switch brand color in dark mode for dark-colored brands */
+.social-icon-link {
+  color: var(--social-color);
+}
+.dark .social-icon-link {
+  color: var(--social-color-dark);
+}
+
+/* ── Initial page loading bar (gray, CSS-driven) ── */
+#initial-loading-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 2px;
+  width: 0%;
+  background: rgba(140, 140, 140, 0.5);
+  z-index: 9999;
+  pointer-events: none;
+  animation: loading-bar-grow 1.2s ease-out forwards;
+}
+@keyframes loading-bar-grow {
+  0%   { width: 0%; }
+  20%  { width: 35%; }
+  50%  { width: 65%; }
+  80%  { width: 80%; }
+  100% { width: 90%; }
+}
+#initial-loading-bar.complete {
+  width: 100% !important;
+  transition: width 0.25s ease, opacity 0.3s ease 0.15s;
+  opacity: 0;
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.3s ease-out forwards;
+}
+
+/* ── Profile page fade transition ──
+   纯 opacity 动画：不使用 transform，避免动画期间祖先成为
+   fixed 后代（如文章底部栏）的包含块，导致定位错乱抽搐。 */
+@keyframes profile-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes profile-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.profile-fade-in {
+  animation: profile-fade-in 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+  will-change: opacity;
+}
+
+.profile-fade-out {
+  animation: profile-fade-out 0.25s cubic-bezier(0.4, 0.0, 0.2, 1) forwards;
+  will-change: opacity;
+}
+
+/* Overlay backdrop: fast fade-in only (no blur for performance) */
+@keyframes overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-overlay-in {
+  animation: overlay-in 0.18s ease-out forwards;
+}
+
+@keyframes overlay-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.animate-overlay-out {
+  animation: overlay-out 0.18s ease-in forwards;
+}
+
+/* Modal content: quick scale + fade pop-in */
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-modal-in {
+  animation: modal-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}
+
+@keyframes modal-out {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.92) translateY(8px);
+  }
+}
+
+.animate-modal-out {
+  animation: modal-out 0.18s ease-in forwards;
+  will-change: transform, opacity;
+}
+
+/* Sheet that slides up from bottom (mobile publish) */
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.animate-sheet-up {
+  animation: sheet-up 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform;
+}
+
+/* Sheet exit: slide down (matches sheet-up) */
+@keyframes sheet-down {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(100%);
+  }
+}
+
+.animate-sheet-down {
+  animation: sheet-down 0.22s cubic-bezier(0.4, 0, 1, 1) forwards;
+  will-change: transform;
+}
+
+@utility divide-hairline {
+  & > :not([hidden]) ~ :not([hidden]) {
+    border-top-width: 0.5px;
+    border-color: var(--wechat-divider);
+  }
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scaleX(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+}
+
+.animate-pop-in {
+  animation: pop-in 0.18s ease-out forwards;
+}
+
+/* Inline panel: slide down + fade in (for MediaPicker inline panel) */
+@keyframes slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-slide-down {
+  animation: slide-down 0.2s ease-out forwards;
+}
+
+/* Emoji picker panel: pure fade in/out — natural and smooth */
+@keyframes emoji-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes emoji-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+.animate-emoji-fade-in {
+  animation: emoji-fade-in 0.2s ease-out forwards;
+}
+.animate-emoji-fade-out {
+  animation: emoji-fade-out 0.15s ease-in forwards;
+}
+
+/* Pop exit: scale down + fade (matches pop-in) */
+@keyframes pop-out {
+  from {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+  to {
+    opacity: 0;
+    transform: scaleX(0.6);
+  }
+}
+
+.animate-pop-out {
+  animation: pop-out 0.16s ease-in forwards;
+}
+
+@keyframes dropdown-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-dropdown-in {
+  animation: dropdown-in 0.16s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transform-origin: top right;
+}
+
+/* Dropdown exit (matches dropdown-in) */
+@keyframes dropdown-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.96);
+  }
+}
+
+.animate-dropdown-out {
+  animation: dropdown-out 0.14s ease-in forwards;
+  transform-origin: top right;
+}
+
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.32s ease-out forwards;
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-12px) rotate(2deg);
+  }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-float-slow {
+  animation: float 8s ease-in-out infinite;
+}
+
+.animate-float-delayed {
+  animation: float 7s ease-in-out infinite;
+  animation-delay: 1s;
+}
+
+@keyframes error-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-error-slide-in {
+  animation: error-slide-in 0.2s ease-out forwards;
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* TopBar: background opacity follows scroll progress via --topbar-bg-alpha */
+.topbar-surface {
+  background-color: rgba(var(--wechat-bg-rgb), var(--topbar-bg-alpha, 0)) !important;
+  background-image: none !important;
+}
+@media (min-width: 768px) {
+  .topbar-surface {
+    backdrop-filter: blur(var(--topbar-blur, 0px));
+    -webkit-backdrop-filter: blur(var(--topbar-blur, 0px));
+  }
+}
+
+/* TopBar 白色变体：用于文章详情页等白色卡片内部场景，
+   背景色跟随 --wechat-white-rgb，与底部栏、卡片背景统一 */
+.topbar-surface-white {
+  background-color: rgba(var(--wechat-white-rgb), var(--topbar-bg-alpha, 0)) !important;
+  background-image: none !important;
+}
+@media (min-width: 768px) {
+  .topbar-surface-white {
+    backdrop-filter: blur(var(--topbar-blur, 0px));
+    -webkit-backdrop-filter: blur(var(--topbar-blur, 0px));
+  }
+}
+
+/* ===== Rich text editor & content rendering ===== */
+
+/* Editor placeholder — shown when contentEditable is empty */
+.rich-editor-area[data-empty="true"]:before {
+  content: attr(data-placeholder);
+  color: var(--wechat-time);
+  pointer-events: none;
+  position: absolute;
+}
+
+/* Shared rich content styles — apply to both editor area and rendered content */
+.rich-editor-area h1,
+.rich-content h1 {
+  font-size: 1.5em;
+  font-weight: 700;
+  margin: 0.6em 0 0.3em;
+  line-height: 1.3;
+}
+.rich-editor-area h2,
+.rich-content h2 {
+  font-size: 1.3em;
+  font-weight: 700;
+  margin: 0.6em 0 0.3em;
+  line-height: 1.3;
+}
+.rich-editor-area h3,
+.rich-content h3 {
+  font-size: 1.15em;
+  font-weight: 600;
+  margin: 0.5em 0 0.3em;
+  line-height: 1.3;
+}
+.rich-editor-area p,
+.rich-content p {
+  margin: 0.3em 0;
+}
+.rich-editor-area ul,
+.rich-content ul {
+  list-style: disc;
+  padding-left: 1.5em;
+  margin: 0.4em 0;
+}
+.rich-editor-area ol,
+.rich-content ol {
+  list-style: decimal;
+  padding-left: 1.5em;
+  margin: 0.4em 0;
+}
+.rich-editor-area li,
+.rich-content li {
+  margin: 0.15em 0;
+}
+.rich-editor-area blockquote,
+.rich-content blockquote {
+  border-left: 3px solid var(--wechat-nickname);
+  padding-left: 0.8em;
+  margin: 0.5em 0;
+  color: var(--wechat-time);
+}
+.rich-editor-area a,
+.rich-content a {
+  color: var(--wechat-link);
+  text-decoration: none;
+}
+.rich-editor-area a:hover,
+.rich-content a:hover {
+  text-decoration: underline;
+}
+.rich-editor-area code,
+.rich-content code {
+  background: var(--wechat-bubble);
+  padding: 0.1em 0.3em;
+  border-radius: 3px;
+  font-size: 0.9em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.rich-editor-area pre,
+.rich-content pre {
+  background: var(--wechat-bubble);
+  padding: 0.6em 0.8em;
+  border-radius: 6px;
+  overflow-x: auto;
+  margin: 0.5em 0;
+}
+.rich-editor-area pre code,
+.rich-content pre code {
+  background: transparent;
+  padding: 0;
+}
+.rich-editor-area img,
+.rich-content img {
+  max-width: 100%;
+  border-radius: 4px;
+}
+
+/* 内联表情：与文字等高，行内对齐，渐显动画 */
+img.inline-emoji {
+  display: inline-block;
+  height: 1.4em;
+  width: auto;
+  max-width: none;
+  vertical-align: text-bottom;
+  margin: 0 1px;
+  border-radius: 0;
+  opacity: 0;
+  transition: opacity 300ms ease;
+}
+img.inline-emoji.emoji-loaded {
+  opacity: 1;
+}
+img.inline-emoji.emoji-error {
+  opacity: 0.4;
+}
+
+/* contentEditable 评论框 placeholder */
+.comment-editor[data-empty="true"]:before {
+  content: attr(data-placeholder);
+  color: var(--wechat-time);
+  pointer-events: none;
+}
+.comment-editor {
+  min-height: 80px;
+  word-break: break-word;
+}
+.rich-editor-area hr,
+.rich-content hr {
+  border: none;
+  border-top: 1px solid var(--wechat-border);
+  margin: 0.8em 0;
+}
+.rich-editor-area table,
+.rich-content table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0.5em 0;
+}
+.rich-editor-area th,
+.rich-content th,
+.rich-editor-area td,
+.rich-content td {
+  border: 1px solid var(--wechat-border);
+  padding: 0.3em 0.5em;
+}
+
+/* 富文本内容基础样式：显式 normal 避免继承导致的中文字偏粗 */
+.rich-content {
+  font-weight: 400;
+}
+
+/* 折叠状态：line-clamp 让浏览器在截断处自动显示 "..."，紧跟最后可见文字 */
+/* line-clamp 行数由 PostCard 通过 inline style 动态设置（基于折叠字数） */
+.rich-content.collapsed {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+/* 折叠时移除子元素上下外边距，让内容作为连续文本流截断 */
+.rich-content.collapsed > * {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+/* ===== Article editor — 仿微信公众号编辑器排版 ===== */
+
+/* Editor placeholder */
+.article-editor-area:empty:before {
+  content: attr(data-placeholder);
+  color: var(--wechat-time);
+  pointer-events: none;
+}
+
+/* Article typography — larger headings, generous spacing (WeChat style) */
+.article-editor-area h1,
+.article-content h1 {
+  font-size: 1.6em;
+  font-weight: 700;
+  margin: 1.2em 0 0.5em;
+  line-height: 1.35;
+}
+.article-editor-area h2,
+.article-content h2 {
+  font-size: 1.4em;
+  font-weight: 700;
+  margin: 1em 0 0.4em;
+  line-height: 1.35;
+}
+.article-editor-area h3,
+.article-content h3 {
+  font-size: 1.2em;
+  font-weight: 600;
+  margin: 0.8em 0 0.3em;
+  line-height: 1.35;
+}
+.article-editor-area p,
+.article-content p {
+  margin: 0.6em 0;
+  line-height: 1.8;
+}
+.article-editor-area ul,
+.article-content ul {
+  list-style: disc;
+  padding-left: 1.8em;
+  margin: 0.6em 0;
+}
+.article-editor-area ol,
+.article-content ol {
+  list-style: decimal;
+  padding-left: 1.8em;
+  margin: 0.6em 0;
+}
+.article-editor-area li,
+.article-content li {
+  margin: 0.25em 0;
+  line-height: 1.7;
+}
+.article-editor-area blockquote,
+.article-content blockquote {
+  border-left: 3px solid var(--wechat-nickname);
+  padding-left: 1em;
+  margin: 0.8em 0;
+  color: var(--wechat-time);
+  font-style: italic;
+}
+.article-editor-area a,
+.article-content a {
+  color: var(--wechat-link);
+  text-decoration: none;
+}
+.article-editor-area a:hover,
+.article-content a:hover {
+  text-decoration: underline;
+}
+.article-editor-area code,
+.article-content code {
+  background: var(--wechat-bubble);
+  padding: 0.15em 0.35em;
+  border-radius: 3px;
+  font-size: 0.9em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.article-editor-area pre,
+.article-content pre {
+  background: var(--wechat-bubble);
+  padding: 0.8em 1em;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 0.8em 0;
+}
+.article-editor-area pre code,
+.article-content pre code {
+  background: transparent;
+  padding: 0;
+  font-size: 0.9em;
+  line-height: 1.6;
+}
+.article-editor-area img,
+.article-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  margin: 0.6em 0;
+}
+.article-editor-area hr,
+.article-content hr {
+  border: none;
+  border-top: 1px solid var(--wechat-border);
+  margin: 1.2em 0;
+}
+.article-editor-area table,
+.article-content table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0.8em 0;
+}
+.article-editor-area th,
+.article-content th,
+.article-editor-area td,
+.article-content td {
+  border: 1px solid var(--wechat-border);
+  padding: 0.4em 0.6em;
+}
+
+/* ===== 评论可见内容块 ===== */
+/* 编辑器内：虚线边框 + 角标，让作者识别被标记的内容 */
+.article-editor-area .reply-to-view {
+  position: relative;
+  margin: 1em 0;
+  padding: 1em 1em 0.8em;
+  border: 1.5px dashed #f59e0b;
+  border-radius: 8px;
+  background: rgba(245, 158, 11, 0.06);
+}
+.article-editor-area .reply-to-view::before {
+  content: "评论可见";
+  position: absolute;
+  top: -10px;
+  left: 12px;
+  padding: 1px 8px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #fff;
+  background: #f59e0b;
+  border-radius: 4px;
+}
+/* 渲染时：已解锁的内容也保留淡黄底色提示 */
+.article-content .reply-to-view {
+  margin: 1em 0;
+  padding: 0.8em 1em;
+  border-left: 3px solid #f59e0b;
+  border-radius: 4px;
+  background: rgba(245, 158, 11, 0.05);
+}
+/* 未评论时的锁定占位块 */
+.article-content .reply-locked {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 1em 0;
+  padding: 1.2em 1em;
+  border: 1px dashed var(--wechat-border);
+  border-radius: 8px;
+  background: var(--wechat-bubble);
+  color: var(--wechat-time);
+  font-size: 14px;
+  text-align: center;
+}

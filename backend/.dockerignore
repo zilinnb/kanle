@@ -1,0 +1,15 @@
+node_modules
+dist
+.env
+.env.*
+!.env.example
+logs
+public/uploads/*
+!public/uploads/.gitkeep
+plugins/*
+!plugins/.gitkeep
+ecosystem.config.js
+.git
+.gitignore
+.gitattributes
+*.md

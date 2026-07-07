@@ -1,0 +1,66 @@
+services:
+  mysql:
+    image: mysql:8.0
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpass}
+      MYSQL_DATABASE: ${DB_NAME:-moment_blog}
+      MYSQL_USER: ${DB_USER:-kanle}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-change-me}
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-rootpass}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  backend:
+    build: ./backend
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: ${DB_USER:-kanle}
+      DB_PASSWORD: ${DB_PASSWORD:-change-me}
+      DB_NAME: ${DB_NAME:-moment_blog}
+      JWT_SECRET: ${JWT_SECRET:-please-change-me}
+      JWT_EXPIRES_IN: 7d
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@example.com}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-change-me}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      CLIENT_URL: ${CLIENT_URL:-http://localhost:3000}
+      REVALIDATE_SECRET: ${REVALIDATE_SECRET:-kanle-revalidate}
+    volumes:
+      - backend-uploads:/app/backend/public/uploads
+      - backend-plugins:/app/backend/plugins
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "4000:4000"
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:4000/api}
+        NEXT_PUBLIC_TWIKOO_ENV_ID: ${NEXT_PUBLIC_TWIKOO_ENV_ID:-}
+        NEXT_PUBLIC_REVALIDATE_SECRET: ${REVALIDATE_SECRET:-kanle-revalidate}
+    environment:
+      REVALIDATE_SECRET: ${REVALIDATE_SECRET:-kanle-revalidate}
+      PORT: 3000
+      HOSTNAME: 0.0.0.0
+    depends_on:
+      - backend
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+
+volumes:
+  mysql-data:
+  backend-uploads:
+  backend-plugins:

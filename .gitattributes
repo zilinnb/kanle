@@ -1,0 +1,12 @@
+# Ensure shell scripts use LF line endings (required for Docker alpine / Linux)
+*.sh text eol=lf
+
+# Normalize text files
+*.ts text eol=lf
+*.tsx text eol=lf
+*.js text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+Dockerfile text eol=lf
