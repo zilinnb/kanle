@@ -730,10 +730,21 @@ img.inline-emoji.emoji-error {
 .article-editor-area blockquote,
 .article-content blockquote {
   border-left: 3px solid var(--wechat-nickname);
-  padding-left: 1em;
+  padding: 0.4em 1em;
   margin: 0.8em 0;
   color: var(--wechat-time);
   font-style: italic;
+  background: var(--wechat-bubble);
+  border-radius: 0 4px 4px 0;
+}
+.dark .article-editor-area blockquote,
+.dark .article-content blockquote {
+  background: rgba(255, 255, 255, 0.04);
+}
+.article-editor-area mark,
+.article-content mark {
+  padding: 0.1em 0.2em;
+  border-radius: 2px;
 }
 .article-editor-area a,
 .article-content a {

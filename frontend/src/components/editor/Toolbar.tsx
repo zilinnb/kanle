@@ -31,6 +31,8 @@ import {
   Smile,
   Film,
   FileText,
+  Highlighter,
+  Palette,
 } from "lucide-react";
 import { EMOJI_LIST } from "@/lib/emoji";
 import EmojiPicker from "@/components/EmojiPicker";
@@ -42,6 +44,16 @@ const PARAGRAPH_STYLES = [
   { label: "标题2", tag: "h2" as const },
   { label: "标题3", tag: "h3" as const },
   { label: "引用", tag: "blockquote" as const },
+];
+
+const TEXT_COLORS = [
+  "#ef4444", "#f97316", "#eab308", "#22c55e", "#06b6d4",
+  "#3b82f6", "#8b5cf6", "#ec4899", "#6b7280", "#1a1a1a",
+];
+
+const HIGHLIGHT_COLORS = [
+  "#fef08a", "#bbf7d0", "#bfdbfe", "#fbcfe8", "#fed7aa",
+  "#fef9c3", "#d9f99d", "#a5f3fc", "#fce7f3", "#fed7aa",
 ];
 
 interface ToolbarProps {
@@ -84,6 +96,8 @@ export default function Toolbar({
   const [linkUrl, setLinkUrl] = useState("");
   const [showParaMenu, setShowParaMenu] = useState(false);
   const [showEmoji, setShowEmoji] = useState(false);
+  const [showColorPicker, setShowColorPicker] = useState(false);
+  const [showHighlightPicker, setShowHighlightPicker] = useState(false);
   const linkBtnRef = useRef<HTMLButtonElement | null>(null);
   const [linkPos, setLinkPos] = useState<{ top: number; left: number } | null>(null);
 
@@ -107,6 +121,19 @@ export default function Toolbar({
     }
     setLinkPos({ top: rect.bottom + GAP, left });
   }, [showLink]);
+
+  // Close color/highlight pickers when clicking outside
+  useEffect(() => {
+    if (!showColorPicker && !showHighlightPicker) return;
+    const onDocClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.closest("[data-color-picker]") || target.closest("[data-highlight-picker]")) return;
+      setShowColorPicker(false);
+      setShowHighlightPicker(false);
+    };
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, [showColorPicker, showHighlightPicker]);
 
   const preventBlur = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -138,7 +165,7 @@ export default function Toolbar({
 
   if (!editor) {
     return (
-      <div className="sticky top-14 z-10 flex h-12 items-center border-b border-gray-200 bg-gray-50/95 px-2 backdrop-blur dark:border-white/10 dark:bg-[#26262b]/95">
+      <div className="sticky top-[120px] z-10 flex h-12 items-center border-b border-gray-200 bg-gray-50/95 px-2 backdrop-blur dark:border-white/10 dark:bg-[#26262b]/95">
         <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
       </div>
     );
@@ -189,7 +216,7 @@ export default function Toolbar({
   };
 
   return (
-    <div className="sticky top-14 z-10 flex flex-wrap items-center gap-0.5 border-b border-gray-200 bg-gray-50/95 px-2 py-1.5 backdrop-blur dark:border-white/10 dark:bg-[#26262b]/95">
+    <div className="sticky top-[120px] z-10 flex flex-wrap items-center gap-0.5 border-b border-gray-200 bg-gray-50/95 px-2 py-1.5 backdrop-blur dark:border-white/10 dark:bg-[#26262b]/95">
       {/* 段落样式下拉 */}
       <div className="relative">
         <button
@@ -244,6 +271,90 @@ export default function Toolbar({
         {renderBtn({ key: "italic", title: "斜体", icon: <Italic className="h-4 w-4" />, onClick: () => editor.chain().focus().toggleItalic().run(), active: editor.isActive("italic"), disabled: sourceMode })}
         {renderBtn({ key: "underline", title: "下划线", icon: <Underline className="h-4 w-4" />, onClick: () => editor.chain().focus().toggleUnderline().run(), active: editor.isActive("underline"), disabled: sourceMode })}
         {renderBtn({ key: "strike", title: "删除线", icon: <Strikethrough className="h-4 w-4" />, onClick: () => editor.chain().focus().toggleStrike().run(), active: editor.isActive("strike"), disabled: sourceMode })}
+      </div>
+
+      {/* 文字高亮 */}
+      <div className="relative" data-highlight-picker>
+        <button
+          type="button"
+          title="文字高亮"
+          onMouseDown={preventBlur}
+          onClick={() => { setShowHighlightPicker((v) => !v); setShowColorPicker(false); }}
+          disabled={sourceMode}
+          className={`flex h-8 w-8 items-center justify-center rounded transition-colors ${
+            editor.isActive("highlight")
+              ? "bg-gray-200 text-gray-900 dark:bg-white/15 dark:text-white"
+              : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/10"
+          } disabled:cursor-not-allowed disabled:text-gray-300 dark:disabled:text-gray-600`}
+        >
+          <Highlighter className="h-4 w-4" />
+        </button>
+        {showHighlightPicker && (
+          <div className="absolute left-0 top-9 z-30 w-44 rounded-lg border border-gray-200 bg-white p-2 shadow-lg dark:border-white/10 dark:bg-[#2a2a30]">
+            <div className="grid grid-cols-5 gap-1.5">
+              {HIGHLIGHT_COLORS.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onMouseDown={preventBlur}
+                  onClick={() => { editor.chain().focus().setHighlight({ color: c }).run(); setShowHighlightPicker(false); }}
+                  className="h-6 w-6 rounded border border-gray-200 transition-transform hover:scale-110 dark:border-white/10"
+                  style={{ backgroundColor: c }}
+                />
+              ))}
+            </div>
+            <button
+              type="button"
+              onMouseDown={preventBlur}
+              onClick={() => { editor.chain().focus().unsetHighlight().run(); setShowHighlightPicker(false); }}
+              className="mt-2 w-full rounded py-1 text-xs text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/10"
+            >
+              清除高亮
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* 文字颜色 */}
+      <div className="relative" data-color-picker>
+        <button
+          type="button"
+          title="文字颜色"
+          onMouseDown={preventBlur}
+          onClick={() => { setShowColorPicker((v) => !v); setShowHighlightPicker(false); }}
+          disabled={sourceMode}
+          className={`flex h-8 w-8 items-center justify-center rounded transition-colors ${
+            showColorPicker
+              ? "bg-gray-200 text-gray-900 dark:bg-white/15 dark:text-white"
+              : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/10"
+          } disabled:cursor-not-allowed disabled:text-gray-300 dark:disabled:text-gray-600`}
+        >
+          <Palette className="h-4 w-4" />
+        </button>
+        {showColorPicker && (
+          <div className="absolute left-0 top-9 z-30 w-44 rounded-lg border border-gray-200 bg-white p-2 shadow-lg dark:border-white/10 dark:bg-[#2a2a30]">
+            <div className="grid grid-cols-5 gap-1.5">
+              {TEXT_COLORS.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onMouseDown={preventBlur}
+                  onClick={() => { editor.chain().focus().setColor(c).run(); setShowColorPicker(false); }}
+                  className="h-6 w-6 rounded border border-gray-200 transition-transform hover:scale-110 dark:border-white/10"
+                  style={{ backgroundColor: c }}
+                />
+              ))}
+            </div>
+            <button
+              type="button"
+              onMouseDown={preventBlur}
+              onClick={() => { editor.chain().focus().unsetColor().run(); setShowColorPicker(false); }}
+              className="mt-2 w-full rounded py-1 text-xs text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/10"
+            >
+              清除颜色
+            </button>
+          </div>
+        )}
       </div>
 
       <Divider />

@@ -14,6 +14,7 @@ import {
   ExternalLink,
   LayoutTemplate,
   Smile,
+  Film,
 } from "lucide-react";
 import { sanitizeHtml } from "@/lib/sanitize";
 import { EMOJI_LIST } from "@/lib/emoji";
@@ -30,6 +31,8 @@ interface RichTextEditorProps {
   linkCardLoading?: boolean;
   /** 已有链接卡片时禁用链接按钮 */
   hasLinkCard?: boolean;
+  /** 豆瓣卡片回调：打开豆瓣选择器 */
+  onDouban?: () => void;
 }
 
 export default function RichTextEditor({
@@ -40,6 +43,7 @@ export default function RichTextEditor({
   onLinkCard,
   linkCardLoading = false,
   hasLinkCard = false,
+  onDouban,
 }: RichTextEditorProps) {
   const editorRef = useRef<HTMLDivElement | null>(null);
   const savedRange = useRef<Range | null>(null);
@@ -287,6 +291,19 @@ export default function RichTextEditor({
         <Divider />
         {/* 加粗 / 斜体 / 下划线 / 删除线 */}
         <div className="flex items-center gap-0.5">{groupFormat.map(renderBtn)}</div>
+        <Divider />
+        {/* 豆瓣卡片 */}
+        {onDouban && (
+          <button
+            type="button"
+            title="插入豆瓣卡片"
+            onMouseDown={preventBlur}
+            onClick={onDouban}
+            className="flex h-8 w-8 items-center justify-center rounded text-wechat-text transition-colors hover:bg-wechat-hover dark:text-gray-200 dark:hover:bg-white/10"
+          >
+            <Film className="h-4 w-4" />
+          </button>
+        )}
         <Divider />
         {/* 链接：超链接 / 链接卡片 */}
         <div className="relative">

@@ -6,6 +6,7 @@ import { ArrowLeft, Loader2, X, Image as ImageIcon, MapPin, Heart, MessageSquare
 import ArticleEditor, { buildMusicEmbedHtml, buildLinkCardHtml, buildVideoEmbedHtml } from "@/components/ArticleEditor";
 import { apiFetch, getToken } from "@/lib/api-fetch";
 import { uploadImage, toAbsoluteUrl } from "@/lib/upload";
+import { wgs84ToGcj02 } from "@/lib/coord-transform";
 import type { PostMusic, PostVideo, LinkCard } from "@/lib/mock-data";
 
 interface ArticleEditorPageProps {
@@ -74,6 +75,31 @@ export default function ArticleEditorPage({ articleId }: ArticleEditorPageProps)
   const handleAutoLocate = useCallback(async () => {
     setLocating(true);
     try {
+      // 优先使用浏览器 GPS 定位（精度最高）
+      if (navigator.geolocation) {
+        try {
+          const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+              enableHighAccuracy: true,
+              timeout: 20000,
+              maximumAge: 0,
+            });
+          });
+          const { longitude, latitude } = pos.coords;
+          const [gcjLng, gcjLat] = wgs84ToGcj02(longitude, latitude);
+          const regeoRes = await apiFetch(`/location/regeo?lng=${gcjLng}&lat=${gcjLat}`);
+          if (regeoRes.ok) {
+            const regeoData = await regeoRes.json();
+            if (regeoData.province) {
+              setRegion(regeoData.province);
+              return;
+            }
+          }
+        } catch {
+          // GPS 失败（权限拒绝或超时），降级到 IP
+        }
+      }
+      // IP 定位兜底
       const res = await apiFetch("/location/ip");
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
@@ -243,8 +269,8 @@ export default function ArticleEditorPage({ articleId }: ArticleEditorPageProps)
 
   return (
     <div className="mx-auto max-w-[1400px] px-4 py-4">
-      {/* 顶部一行：返回 + 标题 + 草稿 + 发布按钮 */}
-      <div className="mb-3 flex items-center gap-2">
+      {/* 顶部一行：返回 + 标题 + 草稿 + 发布按钮 — 吸顶固定，滚动时始终可见 */}
+      <div className="sticky top-14 z-20 -mx-4 mb-3 flex items-center gap-2 bg-adm-bg px-4 py-2">
         <button
           type="button"
           onClick={handleBack}
@@ -318,8 +344,8 @@ export default function ArticleEditorPage({ articleId }: ArticleEditorPageProps)
           />
         </div>
 
-        {/* 封面 + 定位 + 互动 + 卡片预览 */}
-        <aside className="lg:w-80 lg:shrink-0">
+        {/* 封面 + 定位 + 互动 + 卡片预览 — 桌面端吸顶，滚动时始终可见 */}
+        <aside className="lg:sticky lg:top-[120px] lg:self-start lg:w-80 lg:shrink-0">
           <div className="space-y-4">
             {/* 封面 */}
             <div className="rounded-xl border border-adm-border bg-adm-card p-4">

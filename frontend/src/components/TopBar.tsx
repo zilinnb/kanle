@@ -1420,6 +1420,7 @@ export function PublishModal({
           onLinkCard={handleFetchLinkCard}
           linkCardLoading={linkCardLoading}
           hasLinkCard={!!linkCard}
+          onDouban={() => setShowDoubanPicker(true)}
         />
 
         {/* Image grid - 微信风格 3 列网格 */}
@@ -1984,10 +1985,10 @@ export function PublishModal({
             )}
           </div>
 
-          {/* 豆瓣卡片 */}
-          <div className="flex items-center gap-3 border-t border-black/5 py-3 dark:border-white/5">
-            <Film className="h-5 w-5 shrink-0 text-wechat-time" />
-            {douban ? (
+          {/* 豆瓣卡片 — 已选时显示预览，添加入口在工具栏 */}
+          {douban && (
+            <div className="flex items-center gap-3 border-t border-black/5 py-3 dark:border-white/5">
+              <Film className="h-5 w-5 shrink-0 text-wechat-time" />
               <div className="flex min-w-0 flex-1 items-center gap-2">
                 <div className="min-w-0 flex-1">
                   <DoubanEmbedCard item={douban} className="mt-0 max-w-none" />
@@ -1999,16 +2000,8 @@ export function PublishModal({
                   <X className="h-4 w-4" />
                 </button>
               </div>
-            ) : (
-              <button
-                onClick={() => setShowDoubanPicker(true)}
-                className="flex flex-1 items-center justify-between text-[15px] text-wechat-time hover:text-wechat-text"
-              >
-                <span>添加豆瓣卡片</span>
-                <ChevronRight className="h-4 w-4" />
-              </button>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* 作为广告发布 — 勾选后该动态以广告形式展示在信息流广告位 */}
           <div className="flex items-center gap-3 border-t border-black/5 py-3 dark:border-white/5">

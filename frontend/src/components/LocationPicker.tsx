@@ -220,9 +220,9 @@ export default function LocationPicker({
     }
   };
 
-  // GPS 定位 + IP 定位 fallback
-  // 使用 AMap.Geolocation 获取 GCJ-02 坐标（与高德地图匹配）
-  // 失败或精度过低时自动降级到 IP 定位（城市级别）
+  // 深度优化定位流程：浏览器 GPS → 高德 GPS → IP 兜底
+  // 移动端优先使用浏览器原生 GPS（精度最高，调用设备 GPS+WiFi+基站）
+  // noIpLocate:1 强制高德只返回 GPS 结果，不返回 IP（避免误判城市中心为"定位成功"）
   const tryLocate = () => {
     const AMap = (window as any).AMap;
 
@@ -235,13 +235,11 @@ export default function LocationPicker({
         if (data.lng && data.lat) {
           const { lng, lat } = data;
           if (mapRef.current) {
-            // IP 定位精度低，缩小 zoom 让用户看到整个城市范围
             mapRef.current.setZoomAndCenter(12, [lng, lat]);
             markerRef.current?.setPosition([lng, lat]);
             setCurrentLatLng({ lng, lat });
             reverseGeocode(lng, lat);
           }
-          // IP 定位返回了城市名，立即填充（即使 regeo 失败也有默认值）
           if (data.city) {
             setCurrentCity(data.city);
             setCustomName((prev) => prev || data.city);
@@ -259,119 +257,88 @@ export default function LocationPicker({
       return false;
     };
 
-    // 无 AMap.Geolocation 插件时，用浏览器 API + IP fallback
-    if (!AMap?.Geolocation) {
-      if (!navigator.geolocation) {
-        setLocating(true);
-        ipLocate().finally(() => setLocating(false));
+    // 浏览器原生 GPS 定位（移动端最可靠，直接调用设备 GPS 芯片）
+    const browserLocate = (): Promise<boolean> => {
+      return new Promise((resolve) => {
+        if (!navigator.geolocation) {
+          resolve(false);
+          return;
+        }
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            const { longitude, latitude, accuracy } = pos.coords;
+            const [gcjLng, gcjLat] = wgs84ToGcj02(longitude, latitude);
+            if (mapRef.current) {
+              mapRef.current.setZoomAndCenter(16, [gcjLng, gcjLat]);
+              markerRef.current?.setPosition([gcjLng, gcjLat]);
+              setCurrentLatLng({ lng: gcjLng, lat: gcjLat });
+              reverseGeocode(gcjLng, gcjLat);
+            }
+            setLocationType("browser");
+            setLocationAccuracy(accuracy || null);
+            resolve(true);
+          },
+          () => resolve(false),
+          { enableHighAccuracy: true, timeout: 25000, maximumAge: 0 }
+        );
+      });
+    };
+
+    // 高德 GPS 定位（noIpLocate:1 强制 GPS，不返回 IP 结果）
+    const amapLocate = (): Promise<boolean> => {
+      return new Promise((resolve) => {
+        if (!AMap?.Geolocation) {
+          resolve(false);
+          return;
+        }
+        const geolocation = new AMap.Geolocation({
+          enableHighAccuracy: true,
+          timeout: 25000,
+          GeoLocationFirst: true,
+          showButton: false,
+          showMarker: false,
+          noIpLocate: 1,
+        });
+        geolocation.getCurrentPosition((status: string, result: any) => {
+          if (status === "complete" && result?.position) {
+            const { lng, lat } = result.position;
+            const accuracy = result.accuracy;
+            if (mapRef.current) {
+              mapRef.current.setZoomAndCenter(16, [lng, lat]);
+              markerRef.current?.setPosition([lng, lat]);
+              setCurrentLatLng({ lng, lat });
+              reverseGeocode(lng, lat);
+            }
+            setLocationType(result.location_type || "gps");
+            setLocationAccuracy(accuracy || null);
+            resolve(true);
+          } else {
+            resolve(false);
+          }
+        });
+      });
+    };
+
+    // 主流程：浏览器 GPS → 高德 GPS → IP
+    setLocating(true);
+    (async () => {
+      const browserOk = await browserLocate();
+      if (browserOk) {
+        setLocating(false);
         return;
       }
-      setLocating(true);
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          const { longitude, latitude, accuracy } = pos.coords;
-          const [gcjLng, gcjLat] = wgs84ToGcj02(longitude, latitude);
-          if (mapRef.current) {
-            mapRef.current.setZoomAndCenter(16, [gcjLng, gcjLat]);
-            markerRef.current?.setPosition([gcjLng, gcjLat]);
-            setCurrentLatLng({ lng: gcjLng, lat: gcjLat });
-            reverseGeocode(gcjLng, gcjLat);
-          }
-          setLocationType("browser");
-          setLocationAccuracy(accuracy || null);
-          // 浏览器定位精度过低（>1km）时，提示用户
-          setLocating(false);
-        },
-        () => {
-          // 浏览器定位失败 → IP 定位 fallback
-          ipLocate().finally(() => setLocating(false));
-        },
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
-      );
-      return;
-    }
-
-    setLocating(true);
-    const geolocation = new AMap.Geolocation({
-      enableHighAccuracy: true,
-      timeout: 15000,
-      GeoLocationFirst: true,
-      showButton: false,
-      showMarker: false,
-      noIpLocate: 0, // 允许 IP 定位作为 fallback
-    });
-    geolocation.getCurrentPosition(async (status: string, result: any) => {
-      if (status === "complete" && result?.position) {
-        const { lng, lat } = result.position;
-        const accuracy = result.accuracy;
-        const locType = result.location_type || "browser";
-
-        if (mapRef.current) {
-          mapRef.current.setZoomAndCenter(16, [lng, lat]);
-          markerRef.current?.setPosition([lng, lat]);
-          setCurrentLatLng({ lng, lat });
-          reverseGeocode(lng, lat);
-        }
-        setLocationType(locType);
-        setLocationAccuracy(accuracy || null);
+      const amapOk = await amapLocate();
+      if (amapOk) {
         setLocating(false);
-
-        // 如果是 IP 定位（精度低），尝试用浏览器 API 获取更精确位置
-        if (locType === "ip" && navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
-            (pos) => {
-              const { longitude, latitude, accuracy: acc } = pos.coords;
-              const [gcjLng, gcjLat] = wgs84ToGcj02(longitude, latitude);
-              if (mapRef.current) {
-                mapRef.current.setZoomAndCenter(16, [gcjLng, gcjLat]);
-                markerRef.current?.setPosition([gcjLng, gcjLat]);
-                setCurrentLatLng({ lng: gcjLng, lat: gcjLat });
-                reverseGeocode(gcjLng, gcjLat);
-              }
-              setLocationType("browser");
-              setLocationAccuracy(acc || null);
-            },
-            () => {},
-            { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
-          );
-        }
-      } else {
-        // AMap.Geolocation 失败 → 尝试浏览器 API → 再失败用 IP 定位
-        if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
-            (pos) => {
-              const { longitude, latitude, accuracy } = pos.coords;
-              const [gcjLng, gcjLat] = wgs84ToGcj02(longitude, latitude);
-              if (mapRef.current) {
-                mapRef.current.setZoomAndCenter(16, [gcjLng, gcjLat]);
-                markerRef.current?.setPosition([gcjLng, gcjLat]);
-                setCurrentLatLng({ lng: gcjLng, lat: gcjLat });
-                reverseGeocode(gcjLng, gcjLat);
-              }
-              setLocationType("browser");
-              setLocationAccuracy(accuracy || null);
-              setLocating(false);
-            },
-            async () => {
-              const ok = await ipLocate();
-              if (!ok) {
-                setLocationType("");
-                setLocationAccuracy(null);
-              }
-              setLocating(false);
-            },
-            { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
-          );
-        } else {
-          const ok = await ipLocate();
-          if (!ok) {
-            setLocationType("");
-            setLocationAccuracy(null);
-          }
-          setLocating(false);
-        }
+        return;
       }
-    });
+      const ipOk = await ipLocate();
+      if (!ipOk) {
+        setLocationType("");
+        setLocationAccuracy(null);
+      }
+      setLocating(false);
+    })();
   };
 
   // 搜索地点

@@ -82,8 +82,9 @@ export default function AdminLayoutClient({
         { href: "/admin/articles", label: "文章管理", icon: BookText },
         { href: "/admin/ads", label: "广告管理", icon: Megaphone },
         { href: "/admin/comments", label: "评论管理", icon: MessageCircle },
-        { href: "/admin/blacklist", label: "黑名单管理", icon: ShieldBan },
+        { href: "/admin/blacklist", label: "黑名单", icon: ShieldBan },
         { href: "/admin/media", label: "媒体库", icon: Images },
+        { href: "/admin/douban", label: "豆瓣书影", icon: Film },
       ],
     },
     {
@@ -93,7 +94,6 @@ export default function AdminLayoutClient({
         { href: "/admin/friends", label: "友情链接", icon: BookUser },
         { href: "/admin/plugins", label: "音乐管理", icon: Music },
         { href: "/admin/storage", label: "云端存储", icon: Cloud },
-        { href: "/admin/douban", label: "豆瓣", icon: Film },
         { href: "/admin/settings", label: "网站设置", icon: Settings2 },
       ],
     },

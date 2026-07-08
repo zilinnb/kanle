@@ -11,10 +11,13 @@
   "dependencies": {
     "@bprogress/next": "^3.2.12",
     "@tiptap/core": "^3.27.3",
+    "@tiptap/extension-color": "^3.27.3",
+    "@tiptap/extension-highlight": "^3.27.3",
     "@tiptap/extension-image": "^3.27.3",
     "@tiptap/extension-link": "^3.27.3",
     "@tiptap/extension-placeholder": "^3.27.3",
     "@tiptap/extension-text-align": "^3.27.3",
+    "@tiptap/extension-text-style": "^3.27.3",
     "@tiptap/extension-underline": "^3.27.3",
     "@tiptap/pm": "^3.27.3",
     "@tiptap/react": "^3.27.3",

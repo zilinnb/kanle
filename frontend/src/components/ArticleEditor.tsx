@@ -7,6 +7,9 @@ import Underline from "@tiptap/extension-underline";
 import Link from "@tiptap/extension-link";
 import TextAlign from "@tiptap/extension-text-align";
 import Placeholder from "@tiptap/extension-placeholder";
+import Highlight from "@tiptap/extension-highlight";
+import { TextStyle } from "@tiptap/extension-text-style";
+import Color from "@tiptap/extension-color";
 import { X } from "lucide-react";
 
 import { CustomImage } from "./editor/nodes/custom-image";
@@ -95,6 +98,9 @@ export default function ArticleEditor({
       }),
       CustomImage,
       TextAlign.configure({ types: ["heading", "paragraph"] }),
+      TextStyle,
+      Color,
+      Highlight.configure({ multicolor: true }),
       Placeholder.configure({
         placeholder: ({ node }) => {
           if (node.type.name === "codeBlock") return "输入代码... 按 Ctrl+Enter 退出";
