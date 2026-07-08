@@ -902,12 +902,47 @@ export function PublishModal({
     return null;
   };
 
+  // 上传动态照片（单个 JPEG 内嵌 MP4）：后端自动拆分图片+视频
+  const uploadMotionPhoto = async (
+    file: File
+  ): Promise<{ image: string; video: string | null; isLivePhoto: boolean } | null> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await fetch(`${API_URL}/upload/motion-photo`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
+    });
+    if (res.ok) {
+      return await res.json();
+    }
+    const err = await res.json().catch(() => ({}));
+    setError(err.message || `上传失败 (${res.status})`);
+    return null;
+  };
+
   const handleUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     setUploading(true);
     setError("");
     try {
       const fileArr = Array.from(files);
+
+      // 实况图模式 + 单个图片文件 → 尝试动态照片提取
+      if (uploadMode === "live" && fileArr.length === 1 && fileArr[0].type.startsWith("image/")) {
+        const result = await uploadMotionPhoto(fileArr[0]);
+        if (result) {
+          if (result.isLivePhoto && result.video) {
+            setImages((prev) => [...prev, { src: result.image, video: result.video }].slice(0, 9));
+          } else {
+            // 无嵌入视频，降级为普通图片
+            setImages((prev) => [...prev, result.image].slice(0, 9));
+            setError("未检测到嵌入视频，已作为普通图片上传。如需实况图，请同时选择配对的图片和视频文件");
+          }
+        }
+        return;
+      }
+
       // 按文件名（去扩展名）分组配对实况图
       const groups = new Map<string, { image?: File; video?: File }>();
       for (const file of fileArr) {
@@ -917,6 +952,23 @@ export function PublishModal({
         if (file.type.startsWith("image/")) g.image = file;
         else if (file.type.startsWith("video/")) g.video = file;
       }
+
+      // 如果按文件名未能配对，回退到按选择顺序配对
+      const pairedGroups = Array.from(groups.values());
+      const hasAnyPair = pairedGroups.some((g) => g.image && g.video);
+      if (!hasAnyPair && uploadMode === "live") {
+        const imageFiles = fileArr.filter((f) => f.type.startsWith("image/"));
+        const videoFiles = fileArr.filter((f) => f.type.startsWith("video/"));
+        if (imageFiles.length > 0 && videoFiles.length > 0) {
+          // 按顺序配对
+          imageFiles.forEach((img, i) => {
+            if (videoFiles[i]) {
+              groups.set(`__fallback_${i}`, { image: img, video: videoFiles[i] });
+            }
+          });
+        }
+      }
+
       const newImages: PostImage[] = [];
       for (const [, g] of groups) {
         if (images.length + newImages.length >= 9) break;
@@ -1414,9 +1466,16 @@ export function PublishModal({
         </div>
 
         {uploadMode === "live" && (
-          <p className="mt-1.5 text-[11px] leading-relaxed text-wechat-time">
-            请同时选择配对的图片(JPEG)和视频(MOV/MP4)，系统按文件名自动配对。iOS 用户需先在"照片"中将实况图导出为独立的图片和视频文件。
-          </p>
+          <div className="mt-1.5 space-y-1 text-[11px] leading-relaxed text-wechat-time">
+            <p>
+              <strong className="text-wechat-text">单文件上传（推荐安卓）：</strong>
+              直接选择一张实况图，系统自动提取内嵌视频。OPPO/小米/三星等安卓手机拍摄的动态照片可直接上传。
+            </p>
+            <p>
+              <strong className="text-wechat-text">配对上传（iOS/手动）：</strong>
+              同时选择图片(JPEG)和视频(MP4/MOV)，按文件名自动配对。iOS 需先导出为独立文件。
+            </p>
+          </div>
         )}
 
         {uploadMode !== "video" && (
@@ -1461,8 +1520,8 @@ export function PublishModal({
                 type="file"
                 accept={
                   uploadMode === "live"
-                    ? "image/jpeg,image/png,image/webp,video/quicktime,video/mp4"
-                    : "image/jpeg,image/png,image/gif,image/webp"
+                    ? "image/jpeg,image/jpg,image/png,image/webp,video/mp4,video/quicktime,video/3gpp,video/3gp"
+                    : "image/jpeg,image/jpg,image/png,image/gif,image/webp"
                 }
                 multiple
                 className="hidden"

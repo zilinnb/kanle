@@ -17,6 +17,7 @@ import {
   getUpyunConfig,
 } from "../services/upyun-service";
 import { migrateLocalToUpyun } from "../services/migrate-service";
+import { extractMotionPhoto } from "../services/motion-photo";
 
 const router = Router();
 
@@ -29,12 +30,17 @@ if (!fs.existsSync(uploadDir)) {
 // memoryStorage：由路由处理器决定存储位置
 const storage = multer.memoryStorage();
 
+const IMAGE_MIMES = ["image/jpeg", "image/png", "image/gif", "image/webp", "image/jpg"];
+const IMAGE_EXTS = [".jpg", ".jpeg", ".png", ".gif", ".webp"];
+const VIDEO_MIMES = ["video/quicktime", "video/mp4", "video/webm", "video/3gpp", "video/3gp", "video/x-m4v"];
+const VIDEO_EXTS = [".mp4", ".mov", ".webm", ".3gp", ".m4v"];
+
 const imageUpload = multer({
   storage,
   limits: { fileSize: 20 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
-    const allowed = ["image/jpeg", "image/png", "image/gif", "image/webp"];
-    if (allowed.includes(file.mimetype)) {
+    const ext = path.extname(file.originalname || "").toLowerCase();
+    if (IMAGE_MIMES.includes(file.mimetype) || IMAGE_EXTS.includes(ext)) {
       cb(null, true);
     } else {
       cb(new Error("仅支持 jpg/png/gif/webp 图片"));
@@ -66,11 +72,27 @@ const videoUpload = multer({
   storage,
   limits: { fileSize: 100 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
-    const allowed = ["video/quicktime", "video/mp4", "video/webm"];
-    if (allowed.includes(file.mimetype)) {
+    const ext = path.extname(file.originalname || "").toLowerCase();
+    if (VIDEO_MIMES.includes(file.mimetype) || VIDEO_EXTS.includes(ext)) {
       cb(null, true);
     } else {
       cb(new Error("仅支持 mov/mp4/webm 视频"));
+    }
+  },
+});
+
+// 动态照片（Motion Photo）：单个 JPEG 内嵌 MP4，文件可能较大
+const motionPhotoUpload = multer({
+  storage,
+  limits: { fileSize: 60 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const ext = path.extname(file.originalname || "").toLowerCase();
+    const isImage =
+      IMAGE_MIMES.includes(file.mimetype) || IMAGE_EXTS.includes(ext);
+    if (isImage) {
+      cb(null, true);
+    } else {
+      cb(new Error("动态照片需为 JPEG 格式"));
     }
   },
 });
@@ -222,6 +244,62 @@ router.post(
       res.json({ url });
     } catch (err: any) {
       res.status(500).json({ message: err.message || "上传失败" });
+    }
+  }
+);
+
+// POST /api/upload/motion-photo - upload a motion photo (single JPEG with embedded MP4)
+// 自动拆分为图片+视频，返回配对 URL。如果文件不含嵌入视频则降级为普通图片。
+router.post(
+  "/motion-photo",
+  authenticate,
+  requireAdmin,
+  motionPhotoUpload.single("file"),
+  async (req: AuthRequest, res) => {
+    if (!req.file) {
+      res.status(400).json({ message: "没有上传文件" });
+      return;
+    }
+    try {
+      const extracted = extractMotionPhoto(req.file.buffer);
+
+      if (extracted) {
+        // 成功提取：分别存储图片和视频
+        const imageName = `${path.basename(
+          req.file.originalname,
+          path.extname(req.file.originalname)
+        )}.jpg`;
+        const videoName = `${path.basename(
+          req.file.originalname,
+          path.extname(req.file.originalname)
+        )}.mp4`;
+
+        const [imageResult, videoResult] = await Promise.all([
+          storeFile(extracted.image, imageName, extracted.imageMime, req.user!.id),
+          storeFile(extracted.video, videoName, extracted.videoMime, req.user!.id),
+        ]);
+
+        res.json({
+          image: imageResult.url,
+          video: videoResult.url,
+          isLivePhoto: true,
+        });
+      } else {
+        // 无嵌入视频：降级为普通图片
+        const { url } = await storeFile(
+          req.file.buffer,
+          req.file.originalname,
+          req.file.mimetype,
+          req.user!.id
+        );
+        res.json({
+          image: url,
+          video: null,
+          isLivePhoto: false,
+        });
+      }
+    } catch (err: any) {
+      res.status(500).json({ message: err.message || "动态照片处理失败" });
     }
   }
 );
