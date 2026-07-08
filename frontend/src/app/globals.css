@@ -838,6 +838,29 @@ img.inline-emoji.emoji-error {
 .article-content td {
   border: 1px solid var(--wechat-border);
   padding: 0.4em 0.6em;
+  text-align: left;
+  vertical-align: top;
+}
+.article-editor-area th,
+.article-content th {
+  background: var(--wechat-bubble);
+  font-weight: 600;
+}
+.article-editor-area td,
+.article-content td {
+  min-width: 80px;
+}
+/* 编辑器中选中单元格高亮 */
+.article-editor-area .selectedCell:after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(59, 130, 246, 0.1);
+  pointer-events: none;
+}
+.article-editor-area .selectedCell,
+.article-content .selectedCell {
+  position: relative;
 }
 
 /* 链接卡片（插入在文章正文中的内联卡片） */

@@ -276,13 +276,15 @@ export default function AdminBlacklist() {
             onClick={handleToggleEnabled}
             disabled={switching}
             className={`relative h-7 w-12 shrink-0 rounded-full transition-colors disabled:opacity-50 ${
-              enabled ? "bg-adm-primary" : "bg-adm-border"
+              enabled
+                ? "bg-adm-primary"
+                : "bg-gray-300 dark:bg-gray-600"
             }`}
             aria-label={enabled ? "关闭防刷" : "开启防刷"}
           >
             <span
-              className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform ${
-                enabled ? "translate-x-5" : "translate-x-0.5"
+              className={`absolute left-0.5 top-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform duration-200 ${
+                enabled ? "translate-x-5" : "translate-x-0"
               }`}
             />
           </button>

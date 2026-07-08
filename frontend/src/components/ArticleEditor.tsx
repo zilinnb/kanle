@@ -10,6 +10,10 @@ import Placeholder from "@tiptap/extension-placeholder";
 import Highlight from "@tiptap/extension-highlight";
 import { TextStyle } from "@tiptap/extension-text-style";
 import Color from "@tiptap/extension-color";
+import { Table } from "@tiptap/extension-table";
+import { TableRow } from "@tiptap/extension-table-row";
+import { TableCell } from "@tiptap/extension-table-cell";
+import { TableHeader } from "@tiptap/extension-table-header";
 import { X } from "lucide-react";
 
 import { CustomImage } from "./editor/nodes/custom-image";
@@ -101,6 +105,15 @@ export default function ArticleEditor({
       TextStyle,
       Color,
       Highlight.configure({ multicolor: true }),
+      Table.configure({
+        resizable: false,
+        HTMLAttributes: {
+          class: "article-table",
+        },
+      }),
+      TableRow,
+      TableCell,
+      TableHeader,
       Placeholder.configure({
         placeholder: ({ node }) => {
           if (node.type.name === "codeBlock") return "输入代码... 按 Ctrl+Enter 退出";

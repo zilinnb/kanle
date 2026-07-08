@@ -56,10 +56,9 @@ function renderHtmlSegment(html: string): string {
   return replaceEmojiShortcodes(processed);
 }
 
-// 编辑器生成的 embed div 内部使用 <span>（无嵌套 <div>），
-// 因此非贪婪匹配到第一个 </div> 即为该 embed div 的闭合标签。
-const EMBED_REGEX =
-  /<div\s+data-embed="(music|video|douban|article)"\s+data-payload="([^"]*)"[^>]*>[\s\S]*?<\/div>/gi;
+// 匹配带有 data-embed 属性的 div 开标签（属性顺序不限）
+const EMBED_OPEN_REGEX =
+  /<div\s+[^>]*?data-embed="(music|video|douban|article)"[^>]*>/gi;
 
 function splitContent(content: string): Segment[] {
   if (!content) return [];
@@ -67,13 +66,28 @@ function splitContent(content: string): Segment[] {
   let lastIndex = 0;
   let match: RegExpExecArray | null;
 
-  EMBED_REGEX.lastIndex = 0;
-  while ((match = EMBED_REGEX.exec(content)) !== null) {
+  EMBED_OPEN_REGEX.lastIndex = 0;
+  while ((match = EMBED_OPEN_REGEX.exec(content)) !== null) {
+    const openTag = match[0];
+    const embedType = match[1] as "music" | "video" | "douban" | "article";
+
+    // 从开标签中提取 data-payload
+    const payloadMatch = openTag.match(/data-payload="([^"]*)"/i);
+    const payloadStr = payloadMatch ? payloadMatch[1] : "";
+
+    // 查找对应的 </div> 闭合标签
+    // embed div 内部使用 <span>（无嵌套 <div>），所以第一个 </div> 即为闭合标签
+    const afterOpen = content.slice(match.index + openTag.length);
+    const closeIdx = afterOpen.indexOf("</div>");
+    if (closeIdx === -1) continue; // 没有闭合标签，跳过
+
+    const fullMatchEnd = match.index + openTag.length + closeIdx + 6;
+
     if (match.index > lastIndex) {
       segments.push({ kind: "html", html: content.slice(lastIndex, match.index) });
     }
-    const embedType = match[1] as "music" | "video" | "douban" | "article";
-    const payload = decodePayload(match[2]);
+
+    const payload = decodePayload(payloadStr);
     if (payload) {
       if (embedType === "music") {
         segments.push({ kind: "music", payload: payload as PostMusic });
@@ -86,9 +100,9 @@ function splitContent(content: string): Segment[] {
       }
     } else {
       // 解码失败：保留原始 HTML 作为兜底
-      segments.push({ kind: "html", html: match[0] });
+      segments.push({ kind: "html", html: content.slice(match.index, fullMatchEnd) });
     }
-    lastIndex = match.index + match[0].length;
+    lastIndex = fullMatchEnd;
   }
   if (lastIndex < content.length) {
     segments.push({ kind: "html", html: content.slice(lastIndex) });

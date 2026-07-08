@@ -33,6 +33,10 @@ import {
   FileText,
   Highlighter,
   Palette,
+  Table as TableIcon,
+  Plus as PlusIcon,
+  Minus as MinusIcon,
+  Trash2,
 } from "lucide-react";
 import { EMOJI_LIST } from "@/lib/emoji";
 import EmojiPicker from "@/components/EmojiPicker";
@@ -384,6 +388,43 @@ export default function Toolbar({
 
       {/* 分隔线 */}
       {renderBtn({ key: "hr", title: "分隔线", icon: <Minus className="h-4 w-4" />, onClick: () => editor.chain().focus().setHorizontalRule().run(), disabled: sourceMode })}
+
+      {/* 表格 */}
+      <Divider />
+      <div className="flex items-center gap-0.5">
+        {renderBtn({
+          key: "table",
+          title: "插入表格",
+          icon: <TableIcon className="h-4 w-4" />,
+          onClick: () => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run(),
+          disabled: sourceMode,
+        })}
+        {editor.isActive("table") && (
+          <>
+            {renderBtn({
+              key: "addRow",
+              title: "在下方添加行",
+              icon: <PlusIcon className="h-4 w-4" />,
+              onClick: () => editor.chain().focus().addRowAfter().run(),
+              disabled: sourceMode,
+            })}
+            {renderBtn({
+              key: "addCol",
+              title: "在右侧添加列",
+              icon: <MinusIcon className="h-4 w-4 rotate-90" />,
+              onClick: () => editor.chain().focus().addColumnAfter().run(),
+              disabled: sourceMode,
+            })}
+            {renderBtn({
+              key: "delTable",
+              title: "删除表格",
+              icon: <Trash2 className="h-4 w-4" />,
+              onClick: () => editor.chain().focus().deleteTable().run(),
+              disabled: sourceMode,
+            })}
+          </>
+        )}
+      </div>
 
       <Divider />
 

@@ -13,6 +13,11 @@ export const VideoEmbed = Node.create({
     return {
       payload: {
         default: "",
+        parseHTML: (element: HTMLElement) => element.getAttribute("data-payload") || "",
+        renderHTML: (attributes: Record<string, any>) => {
+          if (!attributes.payload) return {};
+          return { "data-payload": attributes.payload };
+        },
       },
     };
   },
@@ -26,7 +31,6 @@ export const VideoEmbed = Node.create({
       "div",
       mergeAttributes(HTMLAttributes, {
         "data-embed": "video",
-        "data-payload": HTMLAttributes.payload || "",
         contenteditable: "false",
         class: "embed-block embed-video",
       }),
