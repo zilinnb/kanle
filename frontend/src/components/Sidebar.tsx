@@ -488,7 +488,7 @@ export default function Sidebar({ owner }: SidebarProps) {
               <p className="text-xs">暂无友情链接</p>
             </div>
           ) : (
-            <ul className="max-h-[280px] space-y-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <ul className="space-y-1">
               {friendLinks.map((link) => (
                 <li key={link.id}>
                   <a
