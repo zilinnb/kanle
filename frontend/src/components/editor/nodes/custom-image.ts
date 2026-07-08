@@ -20,4 +20,13 @@ export const CustomImage = Image.extend({
       },
     };
   },
+
+  // 排除 inline-emoji 类的图片，由 InlineEmoji 节点处理
+  parseHTML() {
+    return [
+      {
+        tag: "img[src]:not(.inline-emoji)",
+      },
+    ];
+  },
 });

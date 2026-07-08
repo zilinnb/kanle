@@ -14,6 +14,7 @@ import { TableKit } from "@tiptap/extension-table";
 import { X } from "lucide-react";
 
 import { CustomImage } from "./editor/nodes/custom-image";
+import { InlineEmoji } from "./editor/nodes/inline-emoji";
 import { MusicEmbed } from "./editor/nodes/music-embed";
 import { VideoEmbed } from "./editor/nodes/video-embed";
 import { DoubanEmbed } from "./editor/nodes/douban-embed";
@@ -33,6 +34,7 @@ import VideoPanel from "./admin/VideoPanel";
 import DoubanPicker from "./DoubanPicker";
 import { uploadImage, toAbsoluteUrl } from "@/lib/upload";
 import { markdownToHtml } from "@/lib/markdown";
+import { normalizeInlineEmoji } from "@/lib/emoji";
 import { useExitAnimation } from "@/lib/use-exit-animation";
 import type { PostMusic, PostVideo, PostDouban, LinkCard } from "@/lib/mock-data";
 
@@ -98,6 +100,7 @@ export default function ArticleEditor({
         },
       }),
       CustomImage,
+      InlineEmoji,
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       TextStyle,
       Color,
@@ -125,7 +128,7 @@ export default function ArticleEditor({
       TrailingParagraph,
       CodeBlockExit,
     ],
-    content: value || "",
+    content: normalizeInlineEmoji(value || ""),
     immediatelyRender: false,
     onUpdate: ({ editor }) => {
       onChangeRef.current(editor.getHTML());
@@ -136,7 +139,7 @@ export default function ArticleEditor({
   useEffect(() => {
     if (!editor) return;
     if (!initializedRef.current && value) {
-      editor.commands.setContent(value);
+      editor.commands.setContent(normalizeInlineEmoji(value));
       initializedRef.current = true;
     }
   }, [editor, value]);

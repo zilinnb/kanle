@@ -118,6 +118,44 @@ export const EMOJI_LIST: EmojiItem[] = [
 
 const EMOJI_MAP = new Map(EMOJI_LIST.map((e) => [e.name, e]));
 
+/**
+ * 规范化已有文章 HTML 中的表情图片。
+ *
+ * 旧文章通过 Tiptap 块级 Image 节点（setImage）插入表情，
+ * 导致 <img> 作为块级元素夹在 </p><p> 之间，独占一行。
+ * 此函数将独立的表情 img 合并到相邻段落中，使其行内显示。
+ */
+export function normalizeInlineEmoji(html: string): string {
+  if (!html) return html;
+
+  const emojiImg = '<img[^>]*?(?:inline-emoji|/emoji/)[^>]*?/?>';
+  const emojiSeq = `(?:${emojiImg}\\s*)+`;
+  const blockClose = '</(?:p|h[1-6]|blockquote|li)>';
+  const blockOpen = '<(?:p|h[1-6]|blockquote|li)(?:\\s[^>]*)?>';
+
+  let result = html;
+
+  // 表情夹在两个块级元素之间 → 合并到前一个块级元素末尾
+  result = result.replace(
+    new RegExp(`(${blockClose})\\s*(${emojiSeq})(${blockOpen})`, "gi"),
+    "$2$1$3"
+  );
+
+  // 表情在块级元素之后（内容末尾）→ 合并到前一个块级元素末尾
+  result = result.replace(
+    new RegExp(`(${blockClose})\\s*(${emojiSeq})$`, "gi"),
+    "$2$1"
+  );
+
+  // 表情在块级元素之前（内容开头）→ 合并到后一个块级元素开头
+  result = result.replace(
+    new RegExp(`^(${emojiSeq})(${blockOpen})`, "gi"),
+    "$2$1"
+  );
+
+  return result;
+}
+
 /** 生成内联表情 img 标签（与文字等高，行内对齐） */
 export function emojiImgTag(name: string): string {
   const item = EMOJI_MAP.get(name);

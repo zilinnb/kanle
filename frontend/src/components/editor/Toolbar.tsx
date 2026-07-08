@@ -157,11 +157,10 @@ export default function Toolbar({
       if (!editor) return;
       const item = EMOJI_LIST.find((e) => e.name === name);
       if (!item) return;
-      editor.chain().focus().setImage({
-        src: item.url,
-        alt: name,
-        class: "inline-emoji",
-      } as any).run();
+      editor.chain().focus().insertContent({
+        type: "inlineEmoji",
+        attrs: { src: item.url, alt: name },
+      }).run();
       setShowEmoji(false);
     },
     [editor]

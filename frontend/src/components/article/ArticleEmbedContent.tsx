@@ -6,7 +6,7 @@ import {
   plainTextToHtml,
   looksLikeHtml,
 } from "@/lib/sanitize";
-import { replaceEmojiShortcodes } from "@/lib/emoji";
+import { replaceEmojiShortcodes, normalizeInlineEmoji } from "@/lib/emoji";
 import type { PostMusic, PostVideo, PostDouban } from "@/lib/mock-data";
 import MusicEmbedCard from "./MusicEmbedCard";
 import VideoPlayer from "@/components/VideoPlayer";
@@ -53,7 +53,7 @@ function decodePayload(str: string): PostMusic | PostVideo | PostDouban | Articl
 function renderHtmlSegment(html: string): string {
   if (!html) return "";
   const processed = looksLikeHtml(html) ? sanitizeHtml(html) : plainTextToHtml(html);
-  return replaceEmojiShortcodes(processed);
+  return normalizeInlineEmoji(replaceEmojiShortcodes(processed));
 }
 
 // 匹配带有 data-embed 属性的 div 开标签（属性顺序不限）

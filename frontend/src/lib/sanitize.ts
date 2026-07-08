@@ -1,7 +1,7 @@
 // HTML 消毒器：基于 DOMParser，允许安全标签与属性，剥离脚本/事件处理器/危险 URL。
 // 用于富文本编辑器输出内容与后端返回内容的渲染前过滤，防止 XSS。
 
-import { replaceEmojiShortcodes } from "./emoji";
+import { replaceEmojiShortcodes, normalizeInlineEmoji } from "./emoji";
 
 const ALLOWED_TAGS = new Set([
   "p", "br", "strong", "b", "em", "i", "u", "s", "strike", "sub", "sup",
@@ -165,5 +165,5 @@ export function renderContent(content: string): string {
   const html = looksLikeHtml(content)
     ? sanitizeHtml(content)
     : plainTextToHtml(content);
-  return replaceEmojiShortcodes(html);
+  return normalizeInlineEmoji(replaceEmojiShortcodes(html));
 }
