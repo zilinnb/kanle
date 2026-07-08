@@ -15,7 +15,7 @@
 - 滑动切换图片，双击放大，捏合缩放
 
 ### 文章系统
-- 富文本编辑器（标题/列表/代码/引用/图片）
+- 富文本编辑器（标题/列表/代码/引用/图片/表情）
 - 文章目录、封面、标签
 - 归档页时间线，微信式正方形图片拼图
 
@@ -63,11 +63,11 @@
 | 前端 | Next.js 16 · React 19 · Tailwind CSS v4 · Zustand |
 | 后端 | Express 5 · Sequelize 6 · TypeScript 6 |
 | 数据库 | MySQL 8 |
-| 部署 | Docker Compose（推荐）/ PM2 + Nginx |
+| 部署 | Docker Compose / Docker CLI / PM2 + Nginx |
 
 ## 快速部署
 
-### 方式一：Docker Compose（推荐，5 分钟搞定）
+### 方式一：Docker Compose（推荐）
 
 ```bash
 # 1. 下载配置文件
@@ -84,17 +84,79 @@ docker compose up -d
 docker compose logs -f
 ```
 
-启动完成后：
-- 前端：http://localhost:3000
-- 后台：http://localhost:3000/admin/login
-- 默认账号：`admin@example.com`
-- 默认密码：`123456`
+### 方式二：Docker CLI（自定义配置）
+
+不想用 yml 文件？用 `docker run` 命令逐个启动，完全自定义端口和数据库配置：
+
+```bash
+# 1. 创建网络
+docker network create kanle-net
+
+# 2. 启动 MySQL（替换 your_db_password）
+docker run -d \
+  --name kanle-mysql \
+  --network kanle-net \
+  -e MYSQL_ROOT_PASSWORD=your_root_password \
+  -e MYSQL_DATABASE=moment_blog \
+  -e MYSQL_USER=kanle \
+  -e MYSQL_PASSWORD=your_db_password \
+  -v kanle-mysql-data:/var/lib/mysql \
+  --restart unless-stopped \
+  mysql:8.0
+
+# 3. 启动后端（替换 your_db_password、your_jwt_secret）
+docker run -d \
+  --name kanle-backend \
+  --network kanle-net \
+  -e DB_HOST=kanle-mysql \
+  -e DB_USER=kanle \
+  -e DB_PASSWORD=your_db_password \
+  -e DB_NAME=moment_blog \
+  -e JWT_SECRET=your_jwt_secret \
+  -e ADMIN_EMAIL=admin@example.com \
+  -e ADMIN_PASSWORD=123456 \
+  -e CLIENT_URL=http://localhost:3000 \
+  -p 4000:4000 \
+  -v kanle-uploads:/app/backend/public/uploads \
+  -v kanle-plugins:/app/backend/plugins \
+  --restart unless-stopped \
+  zilinnb/kanle-backend:latest
+
+# 4. 启动前端（自定义端口：-p 8080:3000 把前端映射到 8080）
+docker run -d \
+  --name kanle-frontend \
+  --network kanle-net \
+  -e REVALIDATE_SECRET=kanle-revalidate \
+  -p 3000:3000 \
+  --restart unless-stopped \
+  zilinnb/kanle-frontend:latest
+```
+
+常用操作：
+
+```bash
+# 查看日志
+docker logs -f kanle-backend
+docker logs -f kanle-frontend
+
+# 停止
+docker stop kanle-frontend kanle-backend kanle-mysql
+
+# 启动（已创建的容器）
+docker start kanle-mysql kanle-backend kanle-frontend
+
+# 删除容器（数据保留在 volume 中）
+docker rm -f kanle-frontend kanle-backend kanle-mysql
+
+# 自定义端口：前端映射到 8080
+docker run -d ... -p 8080:3000 ... zilinnb/kanle-frontend:latest
+```
 
 镜像标签可选：
 - `latest`：稳定版
 - `dev`：开发版，功能前沿但相对不稳定
 
-### 方式二：从源码构建（自定义域名时使用）
+### 方式三：从源码构建（自定义域名时使用）
 
 预构建镜像中 `NEXT_PUBLIC_API_URL=http://localhost:4000/api`，适合本地体验。生产环境使用域名时需从源码构建：
 
@@ -112,7 +174,7 @@ cp .env.example .env
 docker compose up -d --build
 ```
 
-### 方式三：手动部署（PM2 + Nginx）
+### 方式四：手动部署（PM2 + Nginx）
 
 前置要求：Node.js 22 LTS、MySQL 8.0、PM2、Nginx
 
@@ -139,13 +201,23 @@ sudo nginx -t && sudo nginx -s reload
 sudo certbot --nginx -d yourdomain.com   # SSL 证书
 ```
 
+### 访问
+
+启动完成后：
+- 前端：http://localhost:3000
+- 后台：http://localhost:3000/admin/login
+- 默认账号：`admin@example.com`
+- 默认密码：`123456`
+
+> 生产环境务必修改 `ADMIN_PASSWORD`、`JWT_SECRET`、`DB_PASSWORD`。
+
 ## 环境变量
 
 ### 后端
 
 | 变量 | 必填 | 默认值 | 说明 |
 |---|---|---|---|
-| `DB_HOST` | 是 | `127.0.0.1` | MySQL 地址（Docker 中为 `mysql`）|
+| `DB_HOST` | 是 | `127.0.0.1` | MySQL 地址（Docker 中为 `kanle-mysql`）|
 | `DB_PORT` | 否 | `3306` | MySQL 端口 |
 | `DB_USER` | 是 | - | MySQL 用户名 |
 | `DB_PASSWORD` | 是 | - | MySQL 密码 |
@@ -189,7 +261,7 @@ sudo certbot --nginx -d yourdomain.com   # SSL 证书
 `NEXT_PUBLIC_*` 变量在构建时内联，运行时修改无效。需要重新构建前端：
 
 ```bash
-docker compose up -d --build frontend           # Docker
+docker compose up -d --build frontend           # Docker Compose
 cd frontend && npm run build && pm2 restart kanle-frontend  # 手动
 ```
 </details>
@@ -206,6 +278,9 @@ cd frontend && npm run build && pm2 restart kanle-frontend  # 手动
 ```bash
 # 后端目录下执行，密码会重置为 .env 中的 ADMIN_PASSWORD
 node dist/scripts/reset-password.js
+
+# Docker 中执行
+docker exec kanle-backend node dist/scripts/reset-password.js
 ```
 </details>
 
@@ -213,6 +288,7 @@ node dist/scripts/reset-password.js
 <summary>MySQL 连不上？</summary>
 
 - Docker Compose：`DB_HOST` 应为 `mysql`（service 名）
+- Docker CLI：`DB_HOST` 应为 `kanle-mysql`（容器名）
 - 手动部署：`DB_HOST` 应为 `127.0.0.1`
 - 确认 MySQL 已启动且用户有权限
 </details>
@@ -222,6 +298,13 @@ node dist/scripts/reset-password.js
 
 1. 检查 Nginx 是否将 `/uploads/` 代理到后端
 2. 如果使用 CDN 域名，需在 `frontend/next.config.ts` 的 `images.remotePatterns` 中添加域名
+</details>
+
+<details>
+<summary>如何自定义端口？</summary>
+
+- Docker Compose：修改 `docker-compose.yml` 中的 `ports: - "3000:3000"` 和 `ports: - "4000:4000"`
+- Docker CLI：`docker run -p 8080:3000`（前端映射到 8080）和 `-p 4001:4000`（后端映射到 4001）
 </details>
 
 ## 开发
