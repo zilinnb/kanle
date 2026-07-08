@@ -891,10 +891,14 @@ img.inline-emoji.emoji-error {
 }
 /* 内联表情在文章编辑器/详情页中保持行内尺寸（覆盖上面的 img 默认样式） */
 .article-editor-area img.inline-emoji,
-.article-content img.inline-emoji {
+.article-content img.inline-emoji,
+.article-editor-area img[src*="/emoji/"],
+.article-content img[src*="/emoji/"] {
+  display: inline-block;
   height: 1.4em;
   width: auto;
   max-width: none;
+  vertical-align: text-bottom;
   border-radius: 0;
   margin: 0 1px;
 }
