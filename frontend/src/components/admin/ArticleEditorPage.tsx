@@ -268,9 +268,9 @@ export default function ArticleEditorPage({ articleId }: ArticleEditorPageProps)
   }
 
   return (
-    <div className="mx-auto max-w-[1400px] px-4 py-4">
-      {/* 顶部一行：返回 + 标题 + 草稿 + 发布按钮 — 吸顶固定，滚动时始终可见 */}
-      <div className="sticky top-14 z-20 -mx-4 mb-3 flex items-center gap-2 bg-adm-bg px-4 py-2">
+    <div className="mx-auto max-w-[1400px] px-4 py-4 lg:flex lg:h-[calc(100dvh-100px)] lg:flex-col lg:overflow-hidden lg:py-0">
+      {/* 顶部一行：返回 + 标题 + 草稿 + 发布按钮 — 移动端吸顶，桌面端固定不滚动 */}
+      <div className="sticky top-14 z-20 -mx-4 mb-3 flex items-center gap-2 bg-adm-bg px-4 py-2 lg:static lg:z-auto lg:mb-0 lg:shrink-0 lg:border-b lg:border-adm-border lg:py-2.5">
         <button
           type="button"
           onClick={handleBack}
@@ -308,7 +308,7 @@ export default function ArticleEditorPage({ articleId }: ArticleEditorPageProps)
       </div>
 
       {/* 文章类型选择 */}
-      <div className="mb-3 flex items-center gap-2">
+      <div className="mb-3 flex items-center gap-2 lg:-mx-4 lg:mb-0 lg:shrink-0 lg:border-b lg:border-adm-border lg:px-4 lg:py-2">
         <span className="shrink-0 text-xs font-medium text-adm-text-secondary">类型</span>
         <div className="flex gap-1">
           {[
@@ -332,10 +332,10 @@ export default function ArticleEditorPage({ articleId }: ArticleEditorPageProps)
         </div>
       </div>
 
-      {/* 左右分栏：编辑器（左/中） + 封面（右） */}
-      <div className="flex flex-col gap-4 lg:flex-row">
-        {/* 编辑区域 */}
-        <div className="min-w-0 flex-1">
+      {/* 左右分栏：编辑器（左/中） + 封面（右） — 桌面端各自独立滚动 */}
+      <div className="flex flex-col gap-4 lg:min-h-0 lg:flex-1 lg:flex-row lg:gap-4 lg:overflow-hidden lg:py-4">
+        {/* 编辑区域 — 桌面端独立滚动 */}
+        <div className="min-w-0 flex-1 lg:overflow-y-auto lg:pr-1">
           <ArticleEditor
             value={content}
             onChange={setContent}
@@ -344,9 +344,9 @@ export default function ArticleEditorPage({ articleId }: ArticleEditorPageProps)
           />
         </div>
 
-        {/* 封面 + 定位 + 互动 + 卡片预览 — 桌面端吸顶，滚动时始终可见 */}
-        <aside className="lg:sticky lg:top-[120px] lg:self-start lg:w-80 lg:shrink-0">
-          <div className="space-y-4">
+        {/* 封面 + 定位 + 互动 — 桌面端固定不滚动，内容多时内部滚动 */}
+        <aside className="lg:w-80 lg:shrink-0 lg:overflow-y-auto lg:pl-1">
+          <div className="space-y-4 lg:pb-2">
             {/* 封面 */}
             <div className="rounded-xl border border-adm-border bg-adm-card p-4">
               <label className="mb-2 block text-xs font-medium text-adm-text-secondary">
