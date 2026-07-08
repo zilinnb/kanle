@@ -340,6 +340,33 @@ body::-webkit-scrollbar {
   will-change: transform;
 }
 
+/* Drawer: slide in from left (mobile admin nav) */
+@keyframes slide-in-left {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+.animate-slide-in-left {
+  animation: slide-in-left 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform;
+}
+
+@keyframes slide-out-left {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-100%);
+  }
+}
+.animate-slide-out-left {
+  animation: slide-out-left 0.22s cubic-bezier(0.4, 0, 1, 1) forwards;
+  will-change: transform;
+}
+
 /* Tab 切换内容淡入 */
 @keyframes content-fade-in {
   from {

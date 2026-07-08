@@ -3,11 +3,12 @@
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-import { LayoutDashboard, FileText, BookText, User, LogOut, MessageCircle, PenLine, Settings2, BookUser, Music, Megaphone, PanelLeftClose, ChevronDown, Home, Images, Cloud, ShieldBan, Film } from "lucide-react";
+import { LayoutDashboard, FileText, BookText, User, LogOut, MessageCircle, PenLine, Settings2, BookUser, Music, Megaphone, PanelLeftClose, ChevronDown, Home, Images, Cloud, ShieldBan, Film, Menu } from "lucide-react";
 import Image from "next/image";
 import EditPostModal from "@/components/EditPostModal";
 import ThemeToggleButton from "@/components/admin/ThemeToggleButton";
 import AdminMusicPlayer from "@/components/admin/AdminMusicPlayer";
+import { useExitAnimation } from "@/lib/use-exit-animation";
 import { useSiteSettings } from "@/lib/site-settings-store";
 import { useMusicPlayer } from "@/lib/music-player-store";
 import { toAbsoluteUrl } from "@/lib/upload";
@@ -22,6 +23,8 @@ export default function AdminLayoutClient({
   const [loading, setLoading] = useState(true);
   const [collapsed, setCollapsed] = useState(false);
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const mobileNav = useExitAnimation(() => setMobileNavOpen(false), 250);
   const siteName = useSiteSettings((s) => s.siteName);
   const faviconUrl = useSiteSettings((s) => s.faviconUrl);
   const fetchSettings = useSiteSettings((s) => s.fetchSettings);
@@ -57,6 +60,12 @@ export default function AdminLayoutClient({
   const toggleGroup = (label: string) => {
     setCollapsedGroups((prev) => ({ ...prev, [label]: !prev[label] }));
   };
+
+  // 路由变化时关闭移动端抽屉
+  useEffect(() => {
+    if (mobileNavOpen) mobileNav.handleClose();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
 
   if (loading) {
     return (
@@ -228,6 +237,13 @@ export default function AdminLayoutClient({
       <header className="sticky top-0 z-30 border-b border-adm-border bg-adm-card/90 backdrop-blur-xl md:hidden">
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex min-w-0 items-center gap-2">
+            <button
+              onClick={() => setMobileNavOpen(true)}
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-adm-text-secondary transition-colors hover:bg-adm-card-hover hover:text-adm-text"
+              aria-label="打开菜单"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
             <div className={`flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg ${faviconUrl ? "border border-adm-border bg-adm-card" : "bg-adm-primary"}`}>
               {faviconUrl ? (
                 <Image
@@ -245,7 +261,7 @@ export default function AdminLayoutClient({
             {hasMusic ? (
               <AdminMusicPlayer />
             ) : (
-              <span className="truncate text-sm font-semibold text-adm-text">{siteName}</span>
+              <span className="truncate text-sm font-semibold text-adm-text">{currentPageTitle}</span>
             )}
           </div>
           <div className="flex shrink-0 items-center gap-1">
@@ -268,28 +284,92 @@ export default function AdminLayoutClient({
         </div>
       </header>
 
-      {/* Mobile bottom nav */}
-      <nav className="fixed bottom-0 left-0 right-0 z-30 flex items-center justify-around border-t border-adm-border bg-adm-card/95 backdrop-blur-xl md:hidden">
-        {nav.map((item) => {
-          const active = pathname === item.href;
-          const Icon = item.icon;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex flex-1 flex-col items-center gap-1 py-2.5 text-xs transition-colors ${
-                active ? "text-adm-text" : "text-adm-text-tertiary"
-              }`}
-            >
-              <Icon className="h-5 w-5" />
-              {item.label}
-            </Link>
-          );
-        })}
-      </nav>
+      {/* Mobile slide-out drawer */}
+      {mobileNavOpen && (
+        <div className="fixed inset-0 z-50 md:hidden">
+          <div
+            className={`absolute inset-0 bg-black/50 ${mobileNav.closing ? "animate-overlay-out" : "animate-overlay-in"}`}
+            onClick={mobileNav.handleClose}
+          />
+          <aside
+            className={`absolute left-0 top-0 flex h-full w-72 flex-col bg-adm-card shadow-2xl ${
+              mobileNav.closing ? "animate-slide-out-left" : "animate-slide-in-left"
+            }`}
+          >
+            <div className="flex items-center gap-2.5 border-b border-adm-border px-5 py-4">
+              <div className={`flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl ${faviconUrl ? "border border-adm-border bg-adm-card" : "bg-adm-primary shadow-lg"}`}>
+                {faviconUrl ? (
+                  <Image
+                    src={toAbsoluteUrl(faviconUrl)}
+                    alt={siteName}
+                    width={20}
+                    height={20}
+                    className="h-5 w-5 object-contain"
+                    unoptimized
+                  />
+                ) : (
+                  <PenLine className="h-5 w-5 text-adm-primary-text" />
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold text-adm-text">{siteName}</p>
+                <p className="text-xs text-adm-text-tertiary">管理后台</p>
+              </div>
+              <button
+                onClick={mobileNav.handleClose}
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-adm-text-tertiary transition-colors hover:bg-adm-card-hover hover:text-adm-text"
+                aria-label="关闭菜单"
+              >
+                <PanelLeftClose className="h-5 w-5" />
+              </button>
+            </div>
+            <nav className="flex-1 overflow-y-auto px-3 py-2">
+              {navGroups.map((group, gi) => {
+                const isGroupCollapsed = group.label ? !!collapsedGroups[group.label] : false;
+                const showItems = !group.label || !isGroupCollapsed;
+                return (
+                  <div key={gi} className={gi > 0 ? "mt-3" : ""}>
+                    {group.label && (
+                      <button
+                        onClick={() => toggleGroup(group.label!)}
+                        className="mb-1 flex w-full items-center gap-2 px-3 py-1 text-[11px] font-medium uppercase tracking-wider text-adm-text-tertiary transition-colors hover:text-adm-text-secondary"
+                      >
+                        <ChevronDown className={`h-3 w-3 shrink-0 transition-transform duration-200 ${isGroupCollapsed ? "-rotate-90" : ""}`} />
+                        {group.label}
+                      </button>
+                    )}
+                    {showItems && (
+                      <div className="space-y-1">
+                        {group.items.map((item) => {
+                          const active = pathname === item.href;
+                          const Icon = item.icon;
+                          return (
+                            <Link
+                              key={item.href}
+                              href={item.href}
+                              className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-all ${
+                                active
+                                  ? "bg-adm-primary font-medium text-adm-primary-text"
+                                  : "text-adm-text-secondary hover:bg-adm-card-hover hover:text-adm-text"
+                              }`}
+                            >
+                              <Icon className={`h-[18px] w-[18px] shrink-0 ${active ? "text-adm-primary-text" : "text-adm-text-tertiary"}`} />
+                              {item.label}
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </nav>
+          </aside>
+        </div>
+      )}
 
       {/* Main content — 边距随侧栏状态变化 */}
-      <main className={`px-4 py-4 pb-24 transition-all duration-300 md:py-5 md:pb-6 md:px-6 ${collapsed ? "md:ml-0" : "md:ml-60"}`}>
+      <main className={`px-4 py-4 pb-6 transition-all duration-300 md:py-5 md:pb-6 md:px-6 ${collapsed ? "md:ml-0" : "md:ml-60"}`}>
         <div className="mx-auto max-w-6xl">{children}</div>
       </main>
 

@@ -173,7 +173,7 @@ export default function EmailConfigSection() {
           </span>
           <span
             className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ${
-              config.emailNotifyEnabled ? "bg-adm-primary" : "bg-gray-300 dark:bg-gray-600"
+              config.emailNotifyEnabled ? "bg-green-500" : "bg-gray-300 dark:bg-gray-600"
             }`}
           >
             <span
@@ -295,7 +295,7 @@ export default function EmailConfigSection() {
         >
           <span
             className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ${
-              config.smtpSecure ? "bg-adm-primary" : "bg-gray-300 dark:bg-gray-600"
+              config.smtpSecure ? "bg-green-500" : "bg-gray-300 dark:bg-gray-600"
             }`}
           >
             <span

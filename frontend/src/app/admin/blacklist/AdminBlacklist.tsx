@@ -277,7 +277,7 @@ export default function AdminBlacklist() {
             disabled={switching}
             className={`relative h-7 w-12 shrink-0 rounded-full transition-colors disabled:opacity-50 ${
               enabled
-                ? "bg-adm-primary"
+                ? "bg-green-500"
                 : "bg-gray-300 dark:bg-gray-600"
             }`}
             aria-label={enabled ? "关闭防刷" : "开启防刷"}
