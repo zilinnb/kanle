@@ -142,7 +142,7 @@ export default function ArticleEmbedContent({
         }
         if (seg.kind === "douban") {
           return (
-            <DoubanEmbedCard key={i} item={seg.payload} className="my-3 max-w-none" />
+            <DoubanEmbedCard key={i} item={seg.payload} />
           );
         }
         if (seg.kind === "article") {

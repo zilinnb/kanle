@@ -26,22 +26,27 @@ export default function DoubanEmbedNodeView({
   return (
     <NodeViewWrapper
       as="div"
-      className={`embed-node-wrapper ${selected ? "is-selected" : ""}`}
+      className={`embed-node-wrapper link-card-wrapper ${selected ? "is-selected" : ""}`}
     >
-      <div className="embed-block embed-douban" data-drag-handle>
-        <span className="embed-cover">
-          {cover ? (
-            // eslint-disable-next-line @next/next/no-img-element
+      <a
+        className="link-card"
+        contentEditable={false}
+        data-drag-handle
+        onClick={(e) => e.preventDefault()}
+      >
+        {cover ? (
+          <span className="link-card-image">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={cover} alt="" />
-          ) : (
-            <span className="embed-cover-placeholder">
-              <Film className="h-5 w-5" />
-            </span>
-          )}
-        </span>
-        <span className="embed-info">
-          <span className="embed-title">{title}</span>
-          {statusLabel && <span className="embed-subtitle">{statusLabel}</span>}
+          </span>
+        ) : (
+          <span className="link-card-image link-card-image-placeholder">
+            <Film className="h-5 w-5" />
+          </span>
+        )}
+        <span className="link-card-body">
+          <span className="link-card-title">{title}</span>
+          {statusLabel && <span className="link-card-desc">{statusLabel}</span>}
         </span>
         <span
           className="embed-delete-btn"
@@ -55,7 +60,7 @@ export default function DoubanEmbedNodeView({
         >
           ×
         </span>
-      </div>
+      </a>
     </NodeViewWrapper>
   );
 }

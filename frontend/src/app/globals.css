@@ -822,15 +822,20 @@ img.inline-emoji.emoji-error {
   border-top: 1px solid var(--wechat-border);
   margin: 1.2em 0;
 }
+.article-editor-area .tableWrapper,
+.article-content .tableWrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 0.8em 0;
+  border-radius: 6px;
+}
 .article-editor-area table,
 .article-content table {
   border-collapse: collapse;
   width: 100%;
   max-width: 100%;
-  margin: 0.8em 0;
-  display: block;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
+  margin: 0;
+  table-layout: fixed;
 }
 .article-editor-area th,
 .article-content th,
@@ -869,7 +874,6 @@ img.inline-emoji.emoji-error {
   display: flex;
   align-items: stretch;
   width: 100%;
-  max-width: 360px;
   margin: 0.8em 0;
   padding: 8px;
   border: 1px solid var(--wechat-border);
@@ -880,6 +884,13 @@ img.inline-emoji.emoji-error {
   box-sizing: border-box;
   transition: background 0.15s ease;
   overflow: hidden;
+}
+/* 文章正文：链接卡片限制宽度，编辑器：全宽适配 */
+.article-content a.link-card {
+  max-width: 360px;
+}
+.article-editor-area a.link-card {
+  max-width: 100%;
 }
 .article-editor-area a.link-card:hover,
 .article-content a.link-card:hover {
@@ -903,6 +914,13 @@ img.inline-emoji.emoji-error {
   margin: 0;
   border-radius: 0;
   display: block;
+}
+.article-editor-area .link-card-image-placeholder,
+.article-content .link-card-image-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--wechat-time);
 }
 .article-editor-area .link-card-body,
 .article-content .link-card-body {
@@ -951,7 +969,7 @@ img.inline-emoji.emoji-error {
 .article-content .embed-block {
   display: flex;
   align-items: stretch;
-  max-width: 360px;
+  max-width: 100%;
   margin: 0.8em 0;
   border: 1px solid var(--wechat-border);
   border-radius: 8px;
