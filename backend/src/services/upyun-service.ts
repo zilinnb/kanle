@@ -87,7 +87,7 @@ export async function uploadToUpyun(
         Authorization: auth,
         "Content-Type": mimeType || "application/octet-stream",
       },
-      timeout: 60000,
+      timeout: 180000,
       maxRedirects: 5,
       validateStatus: () => true,
     });
