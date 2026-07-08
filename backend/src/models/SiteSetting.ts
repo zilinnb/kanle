@@ -49,11 +49,13 @@ interface SiteSettingAttributes {
   rssIncludeMoments: boolean;
   /** 豆瓣用户 ID，用于抓取电影/图书/音乐收藏 */
   doubanId: string;
+  /** 评论违禁词列表，JSON 数组字符串 */
+  bannedWords: string;
 }
 
 interface SiteSettingCreationAttributes extends Optional<
   SiteSettingAttributes,
-  "id" | "siteName" | "description" | "keywords" | "domain" | "beian" | "faviconUrl" | "ogImage" | "musicUrl" | "musicId" | "musicSource" | "playlistId" | "backgroundImages" | "darkModeEnabled" | "darkModeStartTime" | "darkModeEndTime" | "emailNotifyEnabled" | "notifyEmail" | "smtpHost" | "smtpPort" | "smtpSecure" | "smtpUser" | "smtpPass" | "smtpFrom" | "emailTemplate" | "upyunEnabled" | "upyunBucket" | "upyunOperator" | "upyunPassword" | "upyunDomain" | "upyunPath" | "amapJsKey" | "amapSecurityJsCode" | "amapKey" | "beianUrl" | "socialLinks" | "postCollapseLength" | "fontUrl" | "adOnArchives" | "commentAntiSpamEnabled" | "rssEnabled" | "rssIncludeMoments" | "doubanId"
+  "id" | "siteName" | "description" | "keywords" | "domain" | "beian" | "faviconUrl" | "ogImage" | "musicUrl" | "musicId" | "musicSource" | "playlistId" | "backgroundImages" | "darkModeEnabled" | "darkModeStartTime" | "darkModeEndTime" | "emailNotifyEnabled" | "notifyEmail" | "smtpHost" | "smtpPort" | "smtpSecure" | "smtpUser" | "smtpPass" | "smtpFrom" | "emailTemplate" | "upyunEnabled" | "upyunBucket" | "upyunOperator" | "upyunPassword" | "upyunDomain" | "upyunPath" | "amapJsKey" | "amapSecurityJsCode" | "amapKey" | "beianUrl" | "socialLinks" | "postCollapseLength" | "fontUrl" | "adOnArchives" | "commentAntiSpamEnabled" | "rssEnabled" | "rssIncludeMoments" | "doubanId" | "bannedWords"
 > {}
 
 class SiteSetting
@@ -103,6 +105,7 @@ class SiteSetting
   declare rssEnabled: boolean;
   declare rssIncludeMoments: boolean;
   declare doubanId: string;
+  declare bannedWords: string;
   declare readonly createdAt: Date;
   declare readonly updatedAt: Date;
 }
@@ -325,6 +328,11 @@ SiteSetting.init(
       type: DataTypes.STRING(100),
       allowNull: false,
       defaultValue: "",
+    },
+    bannedWords: {
+      type: DataTypes.TEXT,
+      allowNull: false,
+      defaultValue: "[]",
     },
   },
   {

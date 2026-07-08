@@ -2,7 +2,7 @@ import { Router, Response } from "express";
 import bcrypt from "bcryptjs";
 import { body, param, validationResult } from "express-validator";
 import sequelize from "../config/database";
-import { User, Post, Comment, Like } from "../models";
+import { User, Post, Comment, Like, SiteSetting } from "../models";
 import { authenticate, requireAdmin, AuthRequest } from "../middleware/auth";
 import { blacklistService } from "../services/blacklist-service";
 
@@ -406,6 +406,44 @@ router.delete(
       return;
     }
     res.status(204).send();
+  }
+);
+
+// GET /api/admin/blacklist/banned-words - 获取违禁词列表
+router.get("/blacklist/banned-words", authenticate, requireAdmin, async (_req: AuthRequest, res: Response) => {
+  const setting = await SiteSetting.findByPk(1);
+  let words: string[] = [];
+  if (setting?.bannedWords) {
+    try {
+      words = JSON.parse(setting.bannedWords);
+      if (!Array.isArray(words)) words = [];
+    } catch {
+      words = [];
+    }
+  }
+  res.json({ words });
+});
+
+// PUT /api/admin/blacklist/banned-words - 更新违禁词列表
+router.put(
+  "/blacklist/banned-words",
+  authenticate,
+  requireAdmin,
+  body("words").isArray(),
+  async (req: AuthRequest, res: Response) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      res.status(400).json({ errors: errors.array() });
+      return;
+    }
+    const rawWords: string[] = req.body.words;
+    const words = rawWords
+      .map((w) => String(w).trim())
+      .filter((w) => w.length > 0 && w.length <= 100)
+      .slice(0, 500);
+    const [setting] = await SiteSetting.findOrCreate({ where: { id: 1 }, defaults: { id: 1 } });
+    await setting.update({ bannedWords: JSON.stringify(words) });
+    res.json({ words });
   }
 );
 

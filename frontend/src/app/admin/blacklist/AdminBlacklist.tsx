@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
   ShieldBan, ShieldCheck, Trash2, Plus, Mail, Globe, Clock, Infinity as InfinityIcon,
-  Search, AlertTriangle, Loader2,
+  Search, AlertTriangle, Loader2, X, ShieldAlert,
 } from "lucide-react";
 import { apiFetch, getToken } from "@/lib/api-fetch";
 
@@ -56,6 +56,12 @@ export default function AdminBlacklist() {
   const [formError, setFormError] = useState("");
   const [switching, setSwitching] = useState(false);
 
+  // 违禁词管理
+  const [bannedWords, setBannedWords] = useState<string[]>([]);
+  const [bannedWordInput, setBannedWordInput] = useState("");
+  const [savingBannedWords, setSavingBannedWords] = useState(false);
+  const [bannedWordError, setBannedWordError] = useState("");
+
   const token = getToken();
 
   const fetchAll = useCallback(() => {
@@ -64,10 +70,12 @@ export default function AdminBlacklist() {
     Promise.all([
       apiFetch("/admin/blacklist").then((r) => r.json()),
       apiFetch("/admin/blacklist/status").then((r) => r.json()),
+      apiFetch("/admin/blacklist/banned-words").then((r) => r.json()),
     ])
-      .then(([blist, st]) => {
+      .then(([blist, st, bw]) => {
         setList(Array.isArray(blist) ? blist : []);
         setEnabled(st?.enabled ?? true);
+        setBannedWords(Array.isArray(bw?.words) ? bw.words : []);
       })
       .catch(() => {
         setList([]);
@@ -154,6 +162,64 @@ export default function AdminBlacklist() {
     }
   };
 
+  // ===== 违禁词管理 =====
+  const saveBannedWords = async (words: string[]) => {
+    setSavingBannedWords(true);
+    setBannedWordError("");
+    try {
+      const res = await apiFetch("/admin/blacklist/banned-words", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ words }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setBannedWords(Array.isArray(data?.words) ? data.words : words);
+      } else {
+        setBannedWordError("保存失败，请重试");
+      }
+    } catch {
+      setBannedWordError("网络错误，请重试");
+    } finally {
+      setSavingBannedWords(false);
+    }
+  };
+
+  const handleAddBannedWord = () => {
+    setBannedWordError("");
+    const raw = bannedWordInput.trim();
+    if (!raw) return;
+    // 支持批量添加：按逗号、换行、空格分隔
+    const newWords = raw
+      .split(/[,，\n\s、]+/)
+      .map((w) => w.trim())
+      .filter(Boolean);
+    if (newWords.length === 0) return;
+    const existing = new Set(bannedWords.map((w) => w.toLowerCase()));
+    const unique = newWords.filter((w) => !existing.has(w.toLowerCase()));
+    if (unique.length === 0) {
+      setBannedWordError("这些违禁词已存在");
+      return;
+    }
+    const next = [...bannedWords, ...unique];
+    setBannedWords(next);
+    setBannedWordInput("");
+    saveBannedWords(next);
+  };
+
+  const handleRemoveBannedWord = (w: string) => {
+    const next = bannedWords.filter((x) => x !== w);
+    setBannedWords(next);
+    saveBannedWords(next);
+  };
+
+  const handleClearAllBannedWords = () => {
+    if (bannedWords.length === 0) return;
+    if (!confirm(`确定清空全部 ${bannedWords.length} 个违禁词吗？`)) return;
+    setBannedWords([]);
+    saveBannedWords([]);
+  };
+
   const filtered = list.filter(
     (b) =>
       b.value.toLowerCase().includes(search.toLowerCase()) ||
@@ -225,6 +291,88 @@ export default function AdminBlacklist() {
           <div className="mt-3 flex items-start gap-2 rounded-lg bg-adm-danger-bg/50 px-3 py-2 text-xs text-adm-danger">
             <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
             <span>当前处于关闭状态，存在被刷评论的风险，建议保持开启。</span>
+          </div>
+        )}
+      </div>
+
+      {/* 违禁词管理 */}
+      <div className="rounded-2xl border border-adm-border bg-adm-card p-4">
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <ShieldAlert className="h-4 w-4 text-adm-text-secondary" />
+            <h3 className="text-sm font-semibold text-adm-text">违禁词管理</h3>
+            {bannedWords.length > 0 && (
+              <span className="rounded-full bg-adm-primary/10 px-2 py-0.5 text-[10px] font-medium text-adm-primary">
+                {bannedWords.length} 个
+              </span>
+            )}
+          </div>
+          {bannedWords.length > 0 && (
+            <button
+              onClick={handleClearAllBannedWords}
+              disabled={savingBannedWords}
+              className="text-xs text-adm-text-tertiary transition-colors hover:text-adm-danger disabled:opacity-50"
+            >
+              清空全部
+            </button>
+          )}
+        </div>
+        <p className="mb-3 text-xs text-adm-text-secondary">
+          设置评论违禁词后，用户评论包含这些词时将被拦截，并提示具体触发的违禁词。支持批量添加（用逗号、空格或换行分隔）。
+        </p>
+
+        {/* 添加输入框 */}
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={bannedWordInput}
+            onChange={(e) => setBannedWordInput(e.target.value)}
+            placeholder="输入违禁词，多个用逗号或空格分隔"
+            className="flex-1 rounded-lg border border-adm-border bg-adm-input px-3 py-2 text-sm text-adm-text focus:border-adm-text-secondary focus:outline-none"
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                if (!savingBannedWords) handleAddBannedWord();
+              }
+            }}
+          />
+          <button
+            onClick={handleAddBannedWord}
+            disabled={savingBannedWords || !bannedWordInput.trim()}
+            className="flex items-center gap-1.5 rounded-lg bg-adm-primary px-4 py-2 text-sm font-medium text-adm-primary-text transition-opacity hover:opacity-90 disabled:opacity-50"
+          >
+            {savingBannedWords ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+            添加
+          </button>
+        </div>
+
+        {/* 错误提示 */}
+        {bannedWordError && <p className="mt-2 text-xs text-adm-danger">{bannedWordError}</p>}
+
+        {/* 违禁词标签列表 */}
+        {bannedWords.length > 0 ? (
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {bannedWords.map((w) => (
+              <span
+                key={w}
+                className="group flex items-center gap-1 rounded-md border border-adm-border bg-adm-input/50 py-1 pl-2.5 pr-1 text-xs text-adm-text"
+              >
+                <span className="break-all">{w}</span>
+                <button
+                  onClick={() => handleRemoveBannedWord(w)}
+                  disabled={savingBannedWords}
+                  className="flex h-4 w-4 shrink-0 items-center justify-center rounded text-adm-text-tertiary transition-colors hover:bg-adm-danger/10 hover:text-adm-danger disabled:opacity-50"
+                  aria-label={`删除违禁词 ${w}`}
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            ))}
+          </div>
+        ) : (
+          <div className="mt-3 rounded-lg border border-dashed border-adm-border py-6 text-center">
+            <ShieldCheck className="mx-auto mb-1.5 h-6 w-6 text-adm-text-tertiary" />
+            <p className="text-xs text-adm-text-tertiary">暂未设置违禁词</p>
           </div>
         )}
       </div>

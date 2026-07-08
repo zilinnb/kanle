@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
 import { body, param, validationResult } from "express-validator";
 import { Op, fn, col } from "sequelize";
-import { Post, Comment, Like, CommentLike, User } from "../models";
+import { Post, Comment, Like, CommentLike, User, SiteSetting } from "../models";
 import { authenticate, authenticateOptional, AuthRequest, requireAdmin } from "../middleware/auth";
 import { getClientIp } from "../utils/ip";
 import { getRegionByIp } from "../utils/region";
@@ -716,6 +716,30 @@ router.post(
           retryAfter: rate.retryAfter,
         });
         return;
+      }
+    }
+
+    // 3. 违禁词检查：评论内容包含违禁词时拒绝发布
+    const setting = await SiteSetting.findByPk(1);
+    if (setting?.bannedWords) {
+      let bannedWords: string[] = [];
+      try {
+        bannedWords = JSON.parse(setting.bannedWords);
+        if (!Array.isArray(bannedWords)) bannedWords = [];
+      } catch {
+        bannedWords = [];
+      }
+      if (bannedWords.length > 0) {
+        const lowerContent = (req.body.content || "").toLowerCase();
+        const hit = bannedWords.find((w) => w && lowerContent.includes(w.toLowerCase()));
+        if (hit) {
+          res.status(403).json({
+            message: `评论包含违禁词「${hit}」，请修改后重新发布`,
+            code: "BANNED_WORD",
+            word: hit,
+          });
+          return;
+        }
       }
     }
 
