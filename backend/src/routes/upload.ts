@@ -30,7 +30,7 @@ const storage = multer.memoryStorage();
 
 const imageUpload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 },
+  limits: { fileSize: 20 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     const allowed = ["image/jpeg", "image/png", "image/gif", "image/webp"];
     if (allowed.includes(file.mimetype)) {
@@ -43,7 +43,7 @@ const imageUpload = multer({
 
 const audioUpload = multer({
   storage,
-  limits: { fileSize: 20 * 1024 * 1024 },
+  limits: { fileSize: 50 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     const allowed = [
       "audio/mpeg",
@@ -63,7 +63,7 @@ const audioUpload = multer({
 
 const videoUpload = multer({
   storage,
-  limits: { fileSize: 50 * 1024 * 1024 },
+  limits: { fileSize: 100 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     const allowed = ["video/quicktime", "video/mp4", "video/webm"];
     if (allowed.includes(file.mimetype)) {
@@ -221,6 +221,40 @@ router.post(
       res.json({ url });
     } catch (err: any) {
       res.status(500).json({ message: err.message || "上传失败" });
+    }
+  }
+);
+
+// POST /api/upload/test-upyun - test Upyun connection (admin only)
+router.post(
+  "/test-upyun",
+  authenticate,
+  requireAdmin,
+  async (_req: AuthRequest, res) => {
+    try {
+      const ready = await isUpyunReady();
+      if (!ready) {
+        res.status(400).json({
+          success: false,
+          message: "又拍云未启用或配置不完整（需要启用 + bucket + 操作员 + 密码 + 域名）",
+        });
+        return;
+      }
+      const cfg = await getUpyunConfig();
+      const testBuffer = Buffer.from("upyun-connection-test");
+      const testPath = `test/conn-${Date.now()}.txt`;
+      const url = await uploadToUpyun(testBuffer, testPath, "text/plain");
+      res.json({
+        success: true,
+        message: "连接成功，文件已上传到又拍云",
+        url,
+        https: url.startsWith("https://"),
+      });
+    } catch (err: any) {
+      res.status(400).json({
+        success: false,
+        message: err.message || "又拍云连接失败",
+      });
     }
   }
 );

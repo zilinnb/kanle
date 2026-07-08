@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Cloud, Save, Check, Eye, EyeOff, ExternalLink } from "lucide-react";
+import { Cloud, Save, Check, Eye, EyeOff, ExternalLink, Zap, AlertTriangle } from "lucide-react";
 import { apiFetch } from "@/lib/api-fetch";
 
 export default function UpyunConfigSection() {
@@ -15,6 +15,8 @@ export default function UpyunConfigSection() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<{ success: boolean; message: string; https?: boolean } | null>(null);
 
   useEffect(() => {
     apiFetch("/settings/upyun-config")
@@ -62,6 +64,20 @@ export default function UpyunConfigSection() {
       }
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleTest = async () => {
+    setTesting(true);
+    setTestResult(null);
+    try {
+      const res = await apiFetch("/upload/test-upyun", { method: "POST" });
+      const data = await res.json();
+      setTestResult({ success: data.success, message: data.message, https: data.https });
+    } catch {
+      setTestResult({ success: false, message: "请求失败，请检查网络" });
+    } finally {
+      setTesting(false);
     }
   };
 
@@ -206,6 +222,15 @@ export default function UpyunConfigSection() {
           <p className="mt-1.5 text-xs text-adm-text-tertiary">
             绑定到该存储服务的 CDN 域名，需包含 http:// 或 https:// 前缀。
           </p>
+          {enabled && domain && domain.startsWith("http://") && (
+            <div className="mt-2 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-xs text-amber-700 dark:border-amber-900 dark:bg-amber-950/50 dark:text-amber-300">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>
+                当前使用 HTTP 域名，在 HTTPS 网站上图片会被浏览器拦截（Mixed Content）。
+                请在又拍云控制台绑定自定义域名并开启 HTTPS，然后将域名改为 https:// 开头。
+              </span>
+            </div>
+          )}
 
           {/* 存储路径前缀 */}
           <div className="mb-2 mt-4">
@@ -225,25 +250,66 @@ export default function UpyunConfigSection() {
             <code className="rounded bg-adm-input px-1">/media/2024/01/xxx.jpg</code>。留空则使用根目录。
           </p>
 
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="mt-5 flex items-center gap-1.5 rounded-lg bg-adm-primary px-4 py-2 text-sm font-medium text-adm-primary-text transition-colors hover:opacity-90 disabled:opacity-50"
-          >
-            {saving ? (
-              "保存中..."
-            ) : saved ? (
-              <>
-                <Check className="h-4 w-4" />
-                已保存
-              </>
-            ) : (
-              <>
-                <Save className="h-4 w-4" />
-                保存
-              </>
+          <div className="mt-5 flex items-center gap-2">
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="flex items-center gap-1.5 rounded-lg bg-adm-primary px-4 py-2 text-sm font-medium text-adm-primary-text transition-colors hover:opacity-90 disabled:opacity-50"
+            >
+              {saving ? (
+                "保存中..."
+              ) : saved ? (
+                <>
+                  <Check className="h-4 w-4" />
+                  已保存
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4" />
+                  保存
+                </>
+              )}
+            </button>
+            {enabled && (
+              <button
+                onClick={handleTest}
+                disabled={testing}
+                className="flex items-center gap-1.5 rounded-lg border border-adm-border bg-adm-card px-4 py-2 text-sm font-medium text-adm-text-secondary transition-colors hover:bg-adm-card-hover disabled:opacity-50"
+              >
+                {testing ? (
+                  "测试中..."
+                ) : (
+                  <>
+                    <Zap className="h-4 w-4" />
+                    测试连接
+                  </>
+                )}
+              </button>
             )}
-          </button>
+          </div>
+          {testResult && (
+            <div
+              className={`mt-3 flex items-start gap-2 rounded-lg p-3 text-sm ${
+                testResult.success
+                  ? "border border-green-200 bg-green-50 text-green-700 dark:border-green-900 dark:bg-green-950/50 dark:text-green-400"
+                  : "border border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950/50 dark:text-red-400"
+              }`}
+            >
+              {testResult.success ? (
+                <Check className="mt-0.5 h-4 w-4 shrink-0" />
+              ) : (
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+              )}
+              <div>
+                <p>{testResult.message}</p>
+                {testResult.success && testResult.https === false && (
+                  <p className="mt-1 text-xs opacity-80">
+                    注意：CDN 域名使用 HTTP，在 HTTPS 网站上图片会被浏览器拦截。请绑定 HTTPS 域名。
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>

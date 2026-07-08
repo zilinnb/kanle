@@ -66,6 +66,15 @@ app.use("/api/admin/plugins", pluginsRoutes);
 
 // Error handler
 app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  if (err?.code === "LIMIT_FILE_SIZE") {
+    const limitMB = Math.round((err.limit || 0) / 1024 / 1024);
+    res.status(400).json({ message: `文件过大，最大支持 ${limitMB}MB` });
+    return;
+  }
+  if (err?.name === "MulterError") {
+    res.status(400).json({ message: err.message || "文件上传失败" });
+    return;
+  }
   console.error(err.stack);
   res.status(500).json({ message: err.message || "服务器内部错误" });
 });
