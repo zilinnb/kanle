@@ -83,7 +83,7 @@ function RatingStars({ rating }: { rating: number }) {
   );
 }
 
-export default function DoubanSidebar() {
+export default function DoubanSidebar({ embedded = false }: { embedded?: boolean } = {}) {
   const [data, setData] = useState<DoubanData | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>("movie");
@@ -135,6 +135,137 @@ export default function DoubanSidebar() {
   const isEmpty =
     !loading && (!data || (!data.movies.length && !data.books.length && !data.music.length));
 
+  const innerContent = isEmpty ? (
+    <div className="flex flex-col items-center py-4 text-wechat-time">
+      <Film className="mb-1 h-5 w-5" />
+      <p className="text-xs">暂无豆瓣数据</p>
+    </div>
+  ) : (
+    <>
+      {/* 主分类 Tab */}
+      <div className="mb-2 flex gap-1 rounded-lg bg-wechat-bubble p-1 dark:bg-white/5">
+        {TABS.map((tab) => {
+          const Icon = tab.icon;
+          const count =
+            tab.key === "movie"
+              ? data?.movies.length
+              : tab.key === "book"
+              ? data?.books.length
+              : data?.music.length;
+          if (!count) return null;
+          return (
+            <button
+              key={tab.key}
+              onClick={() => switchTab(tab.key)}
+              className={`flex flex-1 items-center justify-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors ${
+                activeTab === tab.key
+                  ? "bg-wechat-white text-wechat-text shadow-sm dark:bg-white/10 dark:text-white"
+                  : "text-wechat-time hover:text-wechat-text"
+              }`}
+            >
+              <Icon className="h-3 w-3" />
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* 状态筛选 */}
+      {!loading && allItems.length > 0 && (
+        <div className="mb-3 flex gap-1">
+          <button
+            onClick={() => setStatusFilter("all")}
+            className={`flex-1 rounded-md px-1 py-1 text-[10px] font-medium transition-colors ${
+              statusFilter === "all"
+                ? "bg-wechat-text text-wechat-white dark:bg-white dark:text-black"
+                : "bg-wechat-bubble text-wechat-time hover:text-wechat-text dark:bg-white/5"
+            }`}
+          >
+            全部 {statusCounts.all}
+          </button>
+          {STATUS_FILTERS[activeTab].map((sf) => {
+            const count = statusCounts[sf.key] || 0;
+            if (count === 0) return null;
+            return (
+              <button
+                key={sf.key}
+                onClick={() => setStatusFilter(sf.key)}
+                className={`flex-1 rounded-md px-1 py-1 text-[10px] font-medium transition-colors ${
+                  statusFilter === sf.key
+                    ? "bg-wechat-text text-wechat-white dark:bg-white dark:text-black"
+                    : "bg-wechat-bubble text-wechat-time hover:text-wechat-text dark:bg-white/5"
+                }`}
+              >
+                {sf.label} {count}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* 列表 */}
+      {loading ? (
+        <div className="space-y-2">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="flex items-center gap-2.5 px-2 py-1.5">
+              <div className="h-10 w-8 shrink-0 animate-pulse rounded bg-wechat-bubble dark:bg-white/5" />
+              <div className="flex-1 space-y-1.5">
+                <div className="h-3 w-3/4 animate-pulse rounded bg-wechat-bubble dark:bg-white/5" />
+                <div className="h-2.5 w-1/2 animate-pulse rounded bg-wechat-bubble dark:bg-white/5" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : filteredItems.length === 0 ? (
+        <div className="py-4 text-center text-xs text-wechat-time">暂无数据</div>
+      ) : (
+        <ul className="space-y-0.5">
+          {filteredItems.map((item, i) => (
+            <li key={i}>
+              <a
+                href={item.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group flex items-start gap-2.5 rounded-lg px-2 py-1.5 transition-colors hover:bg-wechat-hover dark:hover:bg-white/5"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={toAbsoluteUrl(item.cover)}
+                  alt={item.title}
+                  loading="lazy"
+                  className="h-12 w-9 shrink-0 rounded-md object-cover bg-wechat-bubble dark:bg-white/5"
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="line-clamp-2 text-[13px] font-medium leading-snug text-wechat-nickname">
+                    {item.title}
+                  </p>
+                  <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
+                    {item.rating > 0 && <RatingStars rating={item.rating} />}
+                    <span
+                      className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${STATUS_STYLES[item.status]}`}
+                    >
+                      {item.statusLabel}
+                    </span>
+                    {item.date && (
+                      <span className="whitespace-nowrap text-[11px] text-wechat-time/70">
+                        {formatDate(item.date)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <ExternalLink className="mt-0.5 h-3 w-3 shrink-0 text-wechat-time transition-colors group-hover:text-wechat-text" />
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
+    </>
+  );
+
+  if (embedded) {
+    return <div>{innerContent}</div>;
+  }
+
   return (
     <div className="rounded-2xl bg-wechat-white p-4 shadow-[0_8px_40px_-12px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.4)]">
       <div className="mb-3 flex items-center gap-1.5">
@@ -149,133 +280,7 @@ export default function DoubanSidebar() {
           </span>
         )}
       </div>
-
-      {isEmpty ? (
-        <div className="flex flex-col items-center py-4 text-wechat-time">
-          <Film className="mb-1 h-5 w-5" />
-          <p className="text-xs">暂无豆瓣数据</p>
-        </div>
-      ) : (
-        <>
-          {/* 主分类 Tab */}
-          <div className="mb-2 flex gap-1 rounded-lg bg-wechat-bubble p-1 dark:bg-white/5">
-            {TABS.map((tab) => {
-              const Icon = tab.icon;
-              const count =
-                tab.key === "movie"
-                  ? data?.movies.length
-                  : tab.key === "book"
-                  ? data?.books.length
-                  : data?.music.length;
-              if (!count) return null;
-              return (
-                <button
-                  key={tab.key}
-                  onClick={() => switchTab(tab.key)}
-                  className={`flex flex-1 items-center justify-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors ${
-                    activeTab === tab.key
-                      ? "bg-wechat-white text-wechat-text shadow-sm dark:bg-white/10 dark:text-white"
-                      : "text-wechat-time hover:text-wechat-text"
-                  }`}
-                >
-                  <Icon className="h-3 w-3" />
-                  {tab.label}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* 状态筛选 */}
-          {!loading && allItems.length > 0 && (
-            <div className="mb-3 flex flex-wrap gap-1">
-              <button
-                onClick={() => setStatusFilter("all")}
-                className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium transition-colors ${
-                  statusFilter === "all"
-                    ? "bg-wechat-text text-wechat-white dark:bg-white dark:text-black"
-                    : "bg-wechat-bubble text-wechat-time hover:text-wechat-text dark:bg-white/5"
-                }`}
-              >
-                全部 {statusCounts.all}
-              </button>
-              {STATUS_FILTERS[activeTab].map((sf) => {
-                const count = statusCounts[sf.key] || 0;
-                if (count === 0) return null;
-                return (
-                  <button
-                    key={sf.key}
-                    onClick={() => setStatusFilter(sf.key)}
-                    className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium transition-colors ${
-                      statusFilter === sf.key
-                        ? "bg-wechat-text text-wechat-white dark:bg-white dark:text-black"
-                        : "bg-wechat-bubble text-wechat-time hover:text-wechat-text dark:bg-white/5"
-                    }`}
-                  >
-                    {sf.label} {count}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-
-          {/* 列表 */}
-          {loading ? (
-            <div className="space-y-2">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="flex items-center gap-2.5 px-2 py-1.5">
-                  <div className="h-10 w-8 shrink-0 animate-pulse rounded bg-wechat-bubble dark:bg-white/5" />
-                  <div className="flex-1 space-y-1.5">
-                    <div className="h-3 w-3/4 animate-pulse rounded bg-wechat-bubble dark:bg-white/5" />
-                    <div className="h-2.5 w-1/2 animate-pulse rounded bg-wechat-bubble dark:bg-white/5" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : filteredItems.length === 0 ? (
-            <div className="py-4 text-center text-xs text-wechat-time">暂无数据</div>
-          ) : (
-            <ul className="space-y-0.5">
-              {filteredItems.map((item, i) => (
-                <li key={i}>
-                  <a
-                    href={item.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="group flex items-start gap-2.5 rounded-lg px-2 py-1.5 transition-colors hover:bg-wechat-hover dark:hover:bg-white/5"
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={toAbsoluteUrl(item.cover)}
-                      alt={item.title}
-                      loading="lazy"
-                      className="h-12 w-9 shrink-0 rounded-md object-cover bg-wechat-bubble dark:bg-white/5"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <p className="line-clamp-2 text-[13px] font-medium leading-snug text-wechat-nickname">
-                        {item.title}
-                      </p>
-                      <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
-                        {item.rating > 0 && <RatingStars rating={item.rating} />}
-                        <span
-                          className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${STATUS_STYLES[item.status]}`}
-                        >
-                          {item.statusLabel}
-                        </span>
-                        {item.date && (
-                          <span className="whitespace-nowrap text-[11px] text-wechat-time/70">
-                            {formatDate(item.date)}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <ExternalLink className="mt-0.5 h-3 w-3 shrink-0 text-wechat-time transition-colors group-hover:text-wechat-text" />
-                  </a>
-                </li>
-              ))}
-            </ul>
-          )}
-        </>
-      )}
+      {innerContent}
     </div>
   );
 }

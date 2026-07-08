@@ -384,7 +384,7 @@ export default function ImageGrid({ images }: ImageGridProps) {
       <div
         className={`mt-2 grid gap-[4px] ${
           cols === 2
-            ? "max-w-[min(48vw,178px)] md:max-w-[min(42vw,224px)]"
+            ? "max-w-[min(60vw,240px)] md:max-w-[min(50vw,300px)]"
             : "max-w-[min(72vw,270px)] md:max-w-[min(64vw,340px)]"
         }`}
         style={{
@@ -430,7 +430,7 @@ export default function ImageGrid({ images }: ImageGridProps) {
                   className="object-cover transition-transform duration-200 hover:scale-105"
                   sizes={
                     cols === 2
-                      ? "(max-width: 640px) 18vw, 110px"
+                      ? "(max-width: 640px) 28vw, 140px"
                       : "(max-width: 640px) 20vw, 115px"
                   }
                 />

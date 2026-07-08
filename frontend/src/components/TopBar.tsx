@@ -51,6 +51,7 @@ import LyricPanel from "./LyricPanel";
 import MediaPicker, { type PickerMediaItem } from "./MediaPicker";
 import DoubanPicker from "./DoubanPicker";
 import DoubanEmbedCard from "./article/DoubanEmbedCard";
+import DoubanSidebar from "./DoubanSidebar";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
 const AUDIO_BASE = API_URL.replace("/api", "");
@@ -105,6 +106,7 @@ export default function TopBar({ coverHeight = 300 }: TopBarProps) {
   const [scrollProgress, setScrollProgress] = useState(0);
   const [bgAlpha, setBgAlpha] = useState(0);
   const [showFriends, setShowFriends] = useState(false);
+  const [friendsTab, setFriendsTab] = useState<"friends" | "douban">("friends");
   const friendsAnim = useExitAnimation(() => setShowFriends(false), 250);
   const coverHeightRef = useRef(coverHeight);
   useEffect(() => {
@@ -197,7 +199,7 @@ export default function TopBar({ coverHeight = 300 }: TopBarProps) {
     );
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [loadMoreFriends, showFriends]);
+  }, [loadMoreFriends, showFriends, friendsTab]);
 
   // audio 事件绑定、歌词 fetch、onEnded 切歌逻辑由 GlobalMusicManager 全局管理
 
@@ -448,7 +450,7 @@ export default function TopBar({ coverHeight = 300 }: TopBarProps) {
           <div className="flex shrink-0 items-center gap-1.5">
             <button
               type="button"
-              onClick={() => setShowFriends(true)}
+              onClick={() => { setFriendsTab("friends"); setShowFriends(true); }}
               className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors md:hidden ${iconClass}`}
               aria-label="友链"
             >
@@ -513,120 +515,150 @@ export default function TopBar({ coverHeight = 300 }: TopBarProps) {
         />
       )}
 
-      {/* ===== Friends Modal — 微信风格底部弹出 + Cravatar 头像 ===== */}
+      {/* ===== Friends & Douban Modal — 从顶部滑下 + Tab 切换 ===== */}
       {(showFriends || friendsAnim.closing) && typeof document !== "undefined" && createPortal(
         <div
           data-modal="overlay"
-          className={`fixed inset-0 z-[100] flex items-end justify-center bg-black/40 md:items-center md:p-4 ${friendsAnim.closing ? "animate-overlay-out" : "animate-overlay-in"}`}
+          className={`fixed inset-0 z-[100] flex items-start justify-center bg-black/40 md:items-center md:p-4 ${friendsAnim.closing ? "animate-overlay-out" : "animate-overlay-in"}`}
           onClick={friendsAnim.handleClose}
         >
           <div
-            className={`w-full max-w-[520px] rounded-t-2xl bg-wechat-white pb-[env(safe-area-inset-bottom)] md:rounded-2xl md:pb-0 md:shadow-xl dark:bg-[#232328] ${friendsAnim.closing ? "animate-sheet-down md:animate-modal-out" : "animate-sheet-up md:animate-modal-in"}`}
+            className={`w-full max-w-[520px] rounded-b-2xl bg-wechat-white pt-[env(safe-area-inset-top)] md:rounded-2xl md:pt-0 md:shadow-xl dark:bg-[#232328] ${friendsAnim.closing ? "animate-sheet-to-top md:animate-modal-out" : "animate-sheet-from-top md:animate-modal-in"}`}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b border-wechat-border px-4 py-3 dark:border-white/10">
-              <h3 className="text-base font-semibold text-wechat-text">友情链接</h3>
+            {/* Tab 切换：友链 / 豆瓣 */}
+            <div className="flex items-center border-b border-wechat-border px-2 dark:border-white/10">
+              <button
+                onClick={() => setFriendsTab("friends")}
+                className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium transition-colors ${
+                  friendsTab === "friends"
+                    ? "border-b-2 border-wechat-nickname text-wechat-text"
+                    : "text-wechat-time hover:text-wechat-text"
+                }`}
+              >
+                <BookUser className="h-4 w-4" />
+                友链
+              </button>
+              <button
+                onClick={() => setFriendsTab("douban")}
+                className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium transition-colors ${
+                  friendsTab === "douban"
+                    ? "border-b-2 border-wechat-nickname text-wechat-text"
+                    : "text-wechat-time hover:text-wechat-text"
+                }`}
+              >
+                <Film className="h-4 w-4" />
+                豆瓣
+              </button>
               <button
                 onClick={friendsAnim.handleClose}
-                className="text-wechat-time transition-colors hover:text-wechat-text"
+                className="ml-auto mr-2 text-wechat-time transition-colors hover:text-wechat-text"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <div className="max-h-[60vh] overflow-y-auto p-2">
-              {!friendsLoaded ? (
-                <div className="space-y-1">
-                  {[...Array(5)].map((_, i) => (
-                    <div key={i} className="flex items-center gap-3 rounded-lg px-2 py-2.5">
-                      <div className="h-10 w-10 shrink-0 animate-pulse rounded-[8px] bg-wechat-bubble dark:bg-white/5" />
-                      <div className="flex-1 space-y-1.5">
-                        <div className="h-3.5 w-1/3 animate-pulse rounded bg-wechat-bubble dark:bg-white/5" />
-                        <div className="h-2.5 w-1/2 animate-pulse rounded bg-wechat-bubble dark:bg-white/5" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : friendLinks.length === 0 ? (
-                <div className="py-8 text-center text-sm text-wechat-time">暂无友情链接</div>
-              ) : (
-                <ul>
-                  {friendLinks.map((link) => (
-                    <li key={link.id}>
-                      <a
-                        href={link.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-3 rounded-lg px-2 py-2.5 transition-colors hover:bg-wechat-hover"
-                      >
-                        <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-[8px] bg-wechat-bubble">
-                          {resolveFriendAvatar(link, 80) ? (
-                            <LazyImage
-                              src={resolveFriendAvatar(link, 80)}
-                              alt={link.name}
-                              className="h-full w-full object-cover"
-                            />
-                          ) : (
-                            <div className="flex h-full w-full items-center justify-center">
-                              <BookUser className="h-4 w-4 text-wechat-time" />
-                            </div>
-                          )}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-[14px] font-medium text-wechat-nickname">
-                            {link.name}
-                          </p>
-                          {link.desc && (
-                            <p className="truncate text-xs text-wechat-time">{link.desc}</p>
-                          )}
-                        </div>
-                        <ExternalLink className="h-4 w-4 shrink-0 text-wechat-time" />
-                      </a>
-                    </li>
-                  ))}
-                  {friendsLoadingMore &&
-                    [...Array(3)].map((_, i) => (
-                      <li key={`fsk-${i}`} className="flex items-center gap-3 rounded-lg px-2 py-2.5">
-                        <div className="h-10 w-10 shrink-0 animate-pulse rounded-[8px] bg-wechat-bubble dark:bg-white/5" />
-                        <div className="flex-1 space-y-1.5">
-                          <div className="h-3.5 w-1/3 animate-pulse rounded bg-wechat-bubble dark:bg-white/5" />
-                          <div className="h-2.5 w-1/2 animate-pulse rounded bg-wechat-bubble dark:bg-white/5" />
-                        </div>
-                      </li>
-                    ))}
-                </ul>
-              )}
-              <div ref={friendsSentinelRef} className="h-1" />
 
-              {/* 后台管理 + 退出登录（仅登录时显示，移动端从顶栏三点菜单迁移至此） */}
-              {loggedIn && (
-                <div className="mt-1 border-t border-wechat-border pt-1 dark:border-white/10 lg:hidden">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      friendsAnim.handleClose();
-                      window.open("/admin", "_blank", "noopener,noreferrer");
-                    }}
-                    className="flex w-full items-center gap-3 rounded-lg px-2 py-2.5 text-sm text-wechat-text transition-colors hover:bg-wechat-hover dark:hover:bg-white/10"
-                  >
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] bg-wechat-bubble dark:bg-white/5">
-                      <LayoutDashboard className="h-4 w-4 text-wechat-time" />
+            {/* Content */}
+            <div className="max-h-[60vh] overflow-y-auto p-2">
+              {friendsTab === "friends" ? (
+                <>
+                  {!friendsLoaded ? (
+                    <div className="space-y-1">
+                      {[...Array(5)].map((_, i) => (
+                        <div key={i} className="flex items-center gap-3 rounded-lg px-2 py-2.5">
+                          <div className="h-10 w-10 shrink-0 animate-pulse rounded-[8px] bg-wechat-bubble dark:bg-white/5" />
+                          <div className="flex-1 space-y-1.5">
+                            <div className="h-3.5 w-1/3 animate-pulse rounded bg-wechat-bubble dark:bg-white/5" />
+                            <div className="h-2.5 w-1/2 animate-pulse rounded bg-wechat-bubble dark:bg-white/5" />
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                    后台管理
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      friendsAnim.handleClose();
-                      handleLogout();
-                    }}
-                    className="flex w-full items-center gap-3 rounded-lg px-2 py-2.5 text-sm text-red-500 transition-colors hover:bg-red-50 dark:hover:bg-red-500/10"
-                  >
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] bg-red-50 dark:bg-red-500/10">
-                      <LogOut className="h-4 w-4" />
+                  ) : friendLinks.length === 0 ? (
+                    <div className="py-8 text-center text-sm text-wechat-time">暂无友情链接</div>
+                  ) : (
+                    <ul>
+                      {friendLinks.map((link) => (
+                        <li key={link.id}>
+                          <a
+                            href={link.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-3 rounded-lg px-2 py-2.5 transition-colors hover:bg-wechat-hover"
+                          >
+                            <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-[8px] bg-wechat-bubble">
+                              {resolveFriendAvatar(link, 80) ? (
+                                <LazyImage
+                                  src={resolveFriendAvatar(link, 80)}
+                                  alt={link.name}
+                                  className="h-full w-full object-cover"
+                                />
+                              ) : (
+                                <div className="flex h-full w-full items-center justify-center">
+                                  <BookUser className="h-4 w-4 text-wechat-time" />
+                                </div>
+                              )}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-[14px] font-medium text-wechat-nickname">
+                                {link.name}
+                              </p>
+                              {link.desc && (
+                                <p className="truncate text-xs text-wechat-time">{link.desc}</p>
+                              )}
+                            </div>
+                            <ExternalLink className="h-4 w-4 shrink-0 text-wechat-time" />
+                          </a>
+                        </li>
+                      ))}
+                      {friendsLoadingMore &&
+                        [...Array(3)].map((_, i) => (
+                          <li key={`fsk-${i}`} className="flex items-center gap-3 rounded-lg px-2 py-2.5">
+                            <div className="h-10 w-10 shrink-0 animate-pulse rounded-[8px] bg-wechat-bubble dark:bg-white/5" />
+                            <div className="flex-1 space-y-1.5">
+                              <div className="h-3.5 w-1/3 animate-pulse rounded bg-wechat-bubble dark:bg-white/5" />
+                              <div className="h-2.5 w-1/2 animate-pulse rounded bg-wechat-bubble dark:bg-white/5" />
+                            </div>
+                          </li>
+                        ))}
+                    </ul>
+                  )}
+                  <div ref={friendsSentinelRef} className="h-1" />
+
+                  {/* 后台管理 + 退出登录（仅登录时显示，移动端从顶栏三点菜单迁移至此） */}
+                  {loggedIn && (
+                    <div className="mt-1 border-t border-wechat-border pt-1 dark:border-white/10 lg:hidden">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          friendsAnim.handleClose();
+                          window.open("/admin", "_blank", "noopener,noreferrer");
+                        }}
+                        className="flex w-full items-center gap-3 rounded-lg px-2 py-2.5 text-sm text-wechat-text transition-colors hover:bg-wechat-hover dark:hover:bg-white/10"
+                      >
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] bg-wechat-bubble dark:bg-white/5">
+                          <LayoutDashboard className="h-4 w-4 text-wechat-time" />
+                        </div>
+                        后台管理
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          friendsAnim.handleClose();
+                          handleLogout();
+                        }}
+                        className="flex w-full items-center gap-3 rounded-lg px-2 py-2.5 text-sm text-red-500 transition-colors hover:bg-red-50 dark:hover:bg-red-500/10"
+                      >
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] bg-red-50 dark:bg-red-500/10">
+                          <LogOut className="h-4 w-4" />
+                        </div>
+                        退出登录
+                      </button>
                     </div>
-                    退出登录
-                  </button>
-                </div>
+                  )}
+                </>
+              ) : (
+                <DoubanSidebar embedded />
               )}
             </div>
           </div>

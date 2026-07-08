@@ -310,6 +310,36 @@ body::-webkit-scrollbar {
   will-change: transform;
 }
 
+/* Sheet that slides down from top (mobile friends/douban) */
+@keyframes sheet-from-top {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.animate-sheet-from-top {
+  animation: sheet-from-top 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform;
+}
+
+/* Sheet exit: slide up to top */
+@keyframes sheet-to-top {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-100%);
+  }
+}
+
+.animate-sheet-to-top {
+  animation: sheet-to-top 0.22s cubic-bezier(0.4, 0, 1, 1) forwards;
+  will-change: transform;
+}
+
 @utility divide-hairline {
   & > :not([hidden]) ~ :not([hidden]) {
     border-top-width: 0.5px;
