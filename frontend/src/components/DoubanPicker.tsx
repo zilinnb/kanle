@@ -94,6 +94,8 @@ export default function DoubanPicker({ open, onClose, onSelect }: DoubanPickerPr
     handleClose();
   };
 
+  if (!open && !closing) return null;
+
   return (
     <div
       className={`fixed inset-0 z-[200] flex items-center justify-center bg-black/50 ${closing ? "animate-overlay-out" : "animate-overlay-in"}`}

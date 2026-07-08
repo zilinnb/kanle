@@ -18,7 +18,7 @@ services:
 
   backend:
     # 镜像标签：latest（稳定版）| dev（开发版）
-    image: zilinnb/kanle-next-backend:latest
+    image: zilinnb/kanle-backend:latest
     # 如需从源码构建：注释掉 image，取消下面 build 的注释
     # build: ./backend
     environment:
@@ -48,7 +48,7 @@ services:
 
   frontend:
     # 镜像标签：latest（稳定版）| dev（开发版）
-    image: zilinnb/kanle-next-frontend:latest
+    image: zilinnb/kanle-frontend:latest
     # 如需自定义域名（NEXT_PUBLIC_API_URL）：注释掉 image，取消下面 build 的注释
     # build:
     #   context: ./frontend
