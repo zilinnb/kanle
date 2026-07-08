@@ -154,23 +154,98 @@ router.get("/proxy", async (req: Request, res: Response) => {
   }
 });
 
+type CollectionType = "movie" | "book" | "music";
+const VALID_TYPES: CollectionType[] = ["movie", "book", "music"];
+const VALID_STATUSES = ["all", "collect", "do", "wish"];
+
 // GET /api/douban — 获取豆瓣数据（公开接口，有缓存）
 // 所有图片 URL 包装为代理 URL 以绕过防盗链
-router.get("/", async (_req: Request, res: Response) => {
+//
+// 不带查询参数：返回全量数据 { movies, books, music, syncedAt, doubanId }（DoubanPicker 等需要搜索的场景）
+// 带 ?type= 时：返回分页结构，供侧边栏无限滚动使用：
+//   { data, pagination, typeCounts, statusCounts, syncedAt, doubanId }
+router.get("/", async (req: Request, res: Response) => {
   try {
     const doubanId = await getDoubanId();
     if (!doubanId) {
-      res.json({
-        movies: [],
-        books: [],
-        music: [],
-        syncedAt: "",
-        doubanId: "",
-      });
+      // 无豆瓣 ID：两种形态都返回空
+      if (req.query.type) {
+        res.json({
+          data: [],
+          pagination: { page: 1, limit: 10, total: 0, hasMore: false },
+          typeCounts: { movie: 0, book: 0, music: 0 },
+          statusCounts: { all: 0, collect: 0, do: 0, wish: 0 },
+          syncedAt: "",
+          doubanId: "",
+        });
+      } else {
+        res.json({
+          movies: [],
+          books: [],
+          music: [],
+          syncedAt: "",
+          doubanId: "",
+        });
+      }
       return;
     }
+
     const data = await getDoubanData(doubanId);
-    res.json(wrapCollectionCovers(data));
+    const wrapped = wrapCollectionCovers(data);
+
+    // 无 type 参数 → 返回全量（向后兼容）
+    if (!req.query.type) {
+      res.json(wrapped);
+      return;
+    }
+
+    // 分页模式
+    const type = (req.query.type as string) as CollectionType;
+    if (!VALID_TYPES.includes(type)) {
+      res.status(400).json({ message: "无效的 type 参数" });
+      return;
+    }
+    const status = (req.query.status as string) || "all";
+    if (!VALID_STATUSES.includes(status)) {
+      res.status(400).json({ message: "无效的 status 参数" });
+      return;
+    }
+
+    const page = Math.max(1, parseInt(req.query.page as string, 10) || 1);
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit as string, 10) || 10));
+
+    const typeKey = type === "movie" ? "movies" : type === "book" ? "books" : "music";
+    const allOfType: DoubanItem[] = wrapped[typeKey];
+
+    // 各类型总数（用于 Tab 显示/默认选中）
+    const typeCounts = {
+      movie: wrapped.movies.length,
+      book: wrapped.books.length,
+      music: wrapped.music.length,
+    };
+
+    // 当前类型各状态计数（用于状态筛选按钮显示）
+    const statusCounts = { all: allOfType.length, collect: 0, do: 0, wish: 0 };
+    for (const item of allOfType) {
+      statusCounts[item.status] = (statusCounts[item.status] || 0) + 1;
+    }
+
+    // 按状态筛选
+    const filtered =
+      status === "all" ? allOfType : allOfType.filter((item) => item.status === status);
+
+    const total = filtered.length;
+    const start = (page - 1) * limit;
+    const pageItems = filtered.slice(start, start + limit);
+
+    res.json({
+      data: pageItems,
+      pagination: { page, limit, total, hasMore: start + limit < total },
+      typeCounts,
+      statusCounts,
+      syncedAt: wrapped.syncedAt,
+      doubanId: wrapped.doubanId,
+    });
   } catch (err: any) {
     res.status(500).json({ message: err.message || "获取豆瓣数据失败" });
   }

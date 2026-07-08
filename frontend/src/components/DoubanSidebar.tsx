@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { Film, Book, Music, Star, ExternalLink } from "lucide-react";
 import { getApiUrl } from "@/lib/api-fetch";
 import { toAbsoluteUrl } from "@/lib/upload";
@@ -19,10 +19,11 @@ interface DoubanItem {
   statusLabel: string;
 }
 
-interface DoubanData {
-  movies: DoubanItem[];
-  books: DoubanItem[];
-  music: DoubanItem[];
+interface PaginatedDouban {
+  data: DoubanItem[];
+  pagination: { page: number; limit: number; total: number; hasMore: boolean };
+  typeCounts: { movie: number; book: number; music: number };
+  statusCounts: { all: number; collect: number; do: number; wish: number };
   syncedAt: string;
   doubanId: string;
 }
@@ -36,7 +37,6 @@ const TABS: { key: Tab; label: string; icon: typeof Film }[] = [
   { key: "music", label: "音乐", icon: Music },
 ];
 
-// 各 Tab 下各状态对应的中文标签
 const STATUS_FILTERS: Record<Tab, { key: DoubanStatus; label: string }[]> = {
   movie: [
     { key: "collect", label: "看过" },
@@ -55,12 +55,13 @@ const STATUS_FILTERS: Record<Tab, { key: DoubanStatus; label: string }[]> = {
   ],
 };
 
-// 状态徽章颜色
 const STATUS_STYLES: Record<DoubanStatus, string> = {
   collect: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400",
   do: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400",
   wish: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400",
 };
+
+const PAGE_LIMIT = 10;
 
 function formatDate(dateStr: string): string {
   if (!dateStr) return "";
@@ -83,57 +84,136 @@ function RatingStars({ rating }: { rating: number }) {
   );
 }
 
+/** 骨架屏项：对齐真实豆瓣条目布局（封面 h-12 w-9 + 标题 + 元信息） */
+function DoubanSkeleton({ count = 3 }: { count?: number }) {
+  return (
+    <>
+      {[...Array(count)].map((_, i) => (
+        <div key={i} className="flex items-start gap-2.5 rounded-lg px-2 py-1.5">
+          <div className="h-12 w-9 shrink-0 animate-pulse rounded-md bg-wechat-bubble dark:bg-white/5" />
+          <div className="flex-1 space-y-1.5 pt-0.5">
+            <div className="h-3 w-3/4 animate-pulse rounded bg-wechat-bubble dark:bg-white/5" />
+            <div className="h-2.5 w-1/2 animate-pulse rounded bg-wechat-bubble dark:bg-white/5" />
+          </div>
+        </div>
+      ))}
+    </>
+  );
+}
+
 export default function DoubanSidebar({ embedded = false }: { embedded?: boolean } = {}) {
-  const [data, setData] = useState<DoubanData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const API_URL = getApiUrl();
+
+  const [items, setItems] = useState<DoubanItem[]>([]);
+  const [typeCounts, setTypeCounts] = useState<{ movie: number; book: number; music: number } | null>(null);
+  const [statusCounts, setStatusCounts] = useState<{ all: number; collect: number; do: number; wish: number } | null>(null);
+  const [syncedAt, setSyncedAt] = useState("");
   const [activeTab, setActiveTab] = useState<Tab>("movie");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
 
-  const API_URL = getApiUrl();
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [loading, setLoading] = useState(true); // 首屏/切换加载
+  const [loadingMore, setLoadingMore] = useState(false); // 加载更多
 
-  useEffect(() => {
-    fetch(`${API_URL}/douban`)
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const loadingMoreRef = useRef(false);
+  // 记录当前 tab+status，用于 append 请求的竞态守卫
+  const reqKeyRef = useRef<string>("");
+
+  // 加载更多（append）：由 IntersectionObserver 触发，用 reqKey 守卫竞态
+  const loadMore = useCallback(() => {
+    if (loadingMoreRef.current || !hasMore || loading) return;
+    const tab = activeTab;
+    const status = statusFilter;
+    const reqKey = `${tab}:${status}`;
+    loadingMoreRef.current = true;
+    setLoadingMore(true);
+    fetch(`${API_URL}/douban?type=${tab}&status=${status}&page=${page + 1}&limit=${PAGE_LIMIT}`)
       .then((res) => (res.ok ? res.json() : null))
-      .then((d: DoubanData | null) => {
-        setData(d);
-        if (d) {
-          if (d.movies.length > 0) setActiveTab("movie");
-          else if (d.books.length > 0) setActiveTab("book");
-          else if (d.music.length > 0) setActiveTab("music");
-        }
+      .then((d: PaginatedDouban | null) => {
+        if (!d) return;
+        // tab/status 已变 → 丢弃
+        if (reqKeyRef.current !== reqKey) return;
+        setTypeCounts(d.typeCounts);
+        setStatusCounts(d.statusCounts);
+        setSyncedAt(d.syncedAt);
+        setHasMore(d.pagination.hasMore);
+        setPage(d.pagination.page);
+        setItems((prev) => [...prev, ...d.data]);
       })
       .catch(() => {})
-      .finally(() => setLoading(false));
-  }, [API_URL]);
+      .finally(() => {
+        setLoadingMore(false);
+        loadingMoreRef.current = false;
+      });
+  }, [activeTab, statusFilter, page, hasMore, loading, API_URL]);
 
-  // 切换 Tab 时重置状态筛选
+  // 首屏 / 切换 tab / 切换 status：重置并请求第 1 页
+  // 用 AbortController 取消上一个未完成的请求，避免旧响应覆盖新状态
+  useEffect(() => {
+    const controller = new AbortController();
+    const reqKey = `${activeTab}:${statusFilter}`;
+    reqKeyRef.current = reqKey;
+    setLoading(true);
+    setItems([]);
+    setHasMore(false);
+    setPage(1);
+    fetch(`${API_URL}/douban?type=${activeTab}&status=${statusFilter}&page=1&limit=${PAGE_LIMIT}`, {
+      signal: controller.signal,
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((d: PaginatedDouban | null) => {
+        if (!d || controller.signal.aborted) return;
+        setTypeCounts(d.typeCounts);
+        setStatusCounts(d.statusCounts);
+        setSyncedAt(d.syncedAt);
+        setHasMore(d.pagination.hasMore);
+        setPage(d.pagination.page);
+        setItems(d.data);
+        // 首屏请求后：若当前 tab 无数据但其他 tab 有，自动切到第一个有数据的 tab
+        if (d.typeCounts[activeTab] === 0) {
+          const fallback = (["movie", "book", "music"] as Tab[]).find(
+            (t) => d.typeCounts[t] > 0
+          );
+          if (fallback && fallback !== activeTab) {
+            setActiveTab(fallback);
+            setStatusFilter("all");
+            return;
+          }
+        }
+      })
+      .catch((err) => {
+        if (err?.name === "AbortError") return;
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+    return () => controller.abort();
+  }, [activeTab, statusFilter, API_URL]);
+
+  // IntersectionObserver：滚动到底部自动加载
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) loadMore();
+      },
+      { rootMargin: "50px" }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [loadMore]);
+
   const switchTab = (tab: Tab) => {
+    if (tab === activeTab) return;
     setActiveTab(tab);
     setStatusFilter("all");
   };
 
-  const allItems = useMemo(() => {
-    if (!data) return [];
-    return activeTab === "movie" ? data.movies : activeTab === "book" ? data.books : data.music;
-  }, [data, activeTab]);
-
-  // 按状态筛选
-  const filteredItems = useMemo(() => {
-    if (statusFilter === "all") return allItems;
-    return allItems.filter((item) => item.status === statusFilter);
-  }, [allItems, statusFilter]);
-
-  // 各状态的计数
-  const statusCounts = useMemo(() => {
-    const counts: Record<string, number> = { all: allItems.length };
-    for (const item of allItems) {
-      counts[item.status] = (counts[item.status] || 0) + 1;
-    }
-    return counts;
-  }, [allItems]);
-
-  const isEmpty =
-    !loading && (!data || (!data.movies.length && !data.books.length && !data.music.length));
+  const totalCount = typeCounts ? typeCounts.movie + typeCounts.book + typeCounts.music : 0;
+  const isEmpty = !loading && totalCount === 0;
 
   const innerContent = isEmpty ? (
     <div className="flex flex-col items-center py-4 text-wechat-time">
@@ -146,13 +226,8 @@ export default function DoubanSidebar({ embedded = false }: { embedded?: boolean
       <div className={`mb-2 flex gap-1 ${embedded ? "" : "rounded-lg bg-wechat-bubble p-1 dark:bg-white/5"}`}>
         {TABS.map((tab) => {
           const Icon = tab.icon;
-          const count =
-            tab.key === "movie"
-              ? data?.movies.length
-              : tab.key === "book"
-              ? data?.books.length
-              : data?.music.length;
-          if (!count) return null;
+          const count = typeCounts ? typeCounts[tab.key] : 0;
+          if (count === 0 && !loading) return null;
           return (
             <button
               key={tab.key}
@@ -175,7 +250,7 @@ export default function DoubanSidebar({ embedded = false }: { embedded?: boolean
       </div>
 
       {/* 状态筛选 */}
-      {!loading && allItems.length > 0 && (
+      {statusCounts && statusCounts.all > 0 && (
         <div className="mb-3 flex gap-1">
           <button
             onClick={() => setStatusFilter("all")}
@@ -209,23 +284,15 @@ export default function DoubanSidebar({ embedded = false }: { embedded?: boolean
 
       {/* 列表 */}
       {loading ? (
-        <div className="space-y-2">
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="flex items-center gap-2.5 px-2 py-1.5">
-              <div className="h-10 w-8 shrink-0 animate-pulse rounded bg-wechat-bubble dark:bg-white/5" />
-              <div className="flex-1 space-y-1.5">
-                <div className="h-3 w-3/4 animate-pulse rounded bg-wechat-bubble dark:bg-white/5" />
-                <div className="h-2.5 w-1/2 animate-pulse rounded bg-wechat-bubble dark:bg-white/5" />
-              </div>
-            </div>
-          ))}
+        <div className="space-y-0.5">
+          <DoubanSkeleton count={5} />
         </div>
-      ) : filteredItems.length === 0 ? (
+      ) : items.length === 0 ? (
         <div className="py-4 text-center text-xs text-wechat-time">暂无数据</div>
       ) : (
         <ul className="space-y-0.5">
-          {filteredItems.map((item, i) => (
-            <li key={i}>
+          {items.map((item, i) => (
+            <li key={`${item.link}-${i}`}>
               <a
                 href={item.link}
                 target="_blank"
@@ -261,8 +328,10 @@ export default function DoubanSidebar({ embedded = false }: { embedded?: boolean
               </a>
             </li>
           ))}
+          {loadingMore && <DoubanSkeleton count={3} />}
         </ul>
       )}
+      <div ref={sentinelRef} className="h-1" />
     </>
   );
 
@@ -275,9 +344,9 @@ export default function DoubanSidebar({ embedded = false }: { embedded?: boolean
       <div className="mb-3 flex items-center gap-1.5">
         <Film className="h-4 w-4 text-wechat-nickname" />
         <h3 className="text-sm font-semibold text-wechat-text">影单</h3>
-        {data?.syncedAt && (
+        {syncedAt && (
           <span className="ml-auto text-[10px] text-wechat-time/60">
-            {new Date(data.syncedAt).toLocaleDateString("zh-CN", {
+            {new Date(syncedAt).toLocaleDateString("zh-CN", {
               month: "numeric",
               day: "numeric",
             })}
