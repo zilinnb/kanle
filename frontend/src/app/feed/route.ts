@@ -14,7 +14,7 @@ function escapeXml(str: string): string {
 
 function stripHtml(html: string): string {
   return html
-    .replace(/<div\s+data-embed="[^"]*"[^>]*>[\s\S]*?<\/div>/gi, "")
+    .replace(/<div\s+[^>]*data-embed="[^"]*"[^>]*>[\s\S]*?<\/div>/gi, "")
     .replace(/<a\s+[^>]*class="[^"]*link-card[^"]*"[^>]*>[\s\S]*?<\/a>/gi, "")
     .replace(/<[^>]*>/g, "")
     .replace(/&nbsp;/g, " ")

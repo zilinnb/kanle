@@ -46,7 +46,7 @@ interface PostCardProps {
 
 function stripRichEmbeds(html: string): string {
   return html
-    .replace(/<div\s+data-embed="[^"]*"[^>]*>[\s\S]*?<\/div>/gi, "")
+    .replace(/<div\s+[^>]*data-embed="[^"]*"[^>]*>[\s\S]*?<\/div>/gi, "")
     .replace(/<a\s+[^>]*class="[^"]*link-card[^"]*"[^>]*>[\s\S]*?<\/a>/gi, "");
 }
 
