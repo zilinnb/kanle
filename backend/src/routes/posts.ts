@@ -137,6 +137,10 @@ function formatPost(
   if (typeof video === "string") {
     try { video = JSON.parse(video); } catch { video = null; }
   }
+  let douban = post.douban;
+  if (typeof douban === "string") {
+    try { douban = JSON.parse(douban); } catch { douban = null; }
+  }
   // 服务端标记作者评论：用 email 比对，前端只读 isAuthor 布尔值
   const authorEmail = post.author?.email ? String(post.author.email).toLowerCase() : "";
   return {
@@ -153,6 +157,7 @@ function formatPost(
       music,
       linkCard: linkCard || null,
       video: video || null,
+      douban: douban || null,
       pinned: post.pinned || false,
       isAd: post.isAd || false,
       adAvatar: post.adAvatar || "",
@@ -376,6 +381,7 @@ router.post(
     body("music").optional().isObject(),
     body("linkCard").optional({ nullable: true }).isObject(),
     body("video").optional({ nullable: true }).isObject(),
+    body("douban").optional({ nullable: true }).isObject(),
     body("isAd").optional().isBoolean(),
     body("likesDisabled").optional().isBoolean(),
     body("commentsDisabled").optional().isBoolean(),
@@ -403,6 +409,7 @@ router.post(
       music = null,
       linkCard = null,
       video = null,
+      douban = null,
       isAd = false,
       likesDisabled = false,
       commentsDisabled = false,
@@ -435,6 +442,7 @@ router.post(
           music,
           linkCard,
           video,
+          douban,
           isAd,
           likesDisabled,
           commentsDisabled,
@@ -485,6 +493,7 @@ router.put(
     body("music").optional({ nullable: true }).isObject(),
     body("linkCard").optional({ nullable: true }).isObject(),
     body("video").optional({ nullable: true }).isObject(),
+    body("douban").optional({ nullable: true }).isObject(),
     body("isAd").optional().isBoolean(),
     body("likesDisabled").optional().isBoolean(),
     body("commentsDisabled").optional().isBoolean(),
@@ -525,6 +534,7 @@ router.put(
       music: req.body.music !== undefined ? req.body.music : post.music,
       linkCard: req.body.linkCard !== undefined ? req.body.linkCard : post.linkCard,
       video: req.body.video !== undefined ? req.body.video : post.video,
+      douban: req.body.douban !== undefined ? req.body.douban : post.douban,
       isAd: req.body.isAd !== undefined ? req.body.isAd : post.isAd,
       likesDisabled: req.body.likesDisabled !== undefined ? req.body.likesDisabled : post.likesDisabled,
       commentsDisabled: req.body.commentsDisabled !== undefined ? req.body.commentsDisabled : post.commentsDisabled,

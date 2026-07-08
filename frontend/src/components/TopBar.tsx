@@ -39,7 +39,7 @@ import {
 import { cravatarUrl } from "@/lib/avatar";
 import { getGlobalAudio } from "@/lib/global-audio";
 import { useMusicPlayer } from "@/lib/music-player-store";
-import { Post, MUSIC_PLUGIN_LABELS, type PostLocation, type PostImage, type PostVideo } from "@/lib/mock-data";
+import { Post, MUSIC_PLUGIN_LABELS, type PostLocation, type PostImage, type PostVideo, type PostDouban } from "@/lib/mock-data";
 import { isLivePhoto, getImageSrc } from "@/lib/post-image";
 import { uploadImage, toAbsoluteUrl, toHttps } from "@/lib/upload";
 import { useExitAnimation } from "@/lib/use-exit-animation";
@@ -49,6 +49,8 @@ import LocationPicker from "./LocationPicker";
 import LyricEditor from "./LyricEditor";
 import LyricPanel from "./LyricPanel";
 import MediaPicker, { type PickerMediaItem } from "./MediaPicker";
+import DoubanPicker from "./DoubanPicker";
+import DoubanEmbedCard from "./article/DoubanEmbedCard";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
 const AUDIO_BASE = API_URL.replace("/api", "");
@@ -838,6 +840,8 @@ export function PublishModal({
   } | null>(editPost?.linkCard ?? null);
   const [linkCardLoading, setLinkCardLoading] = useState(false);
   const [showMusicPanel, setShowMusicPanel] = useState(false);
+  const [douban, setDouban] = useState<PostDouban | null>(editPost?.douban ?? null);
+  const [showDoubanPicker, setShowDoubanPicker] = useState(false);
   // 媒体库选择器：控制从媒体库导入图片/视频/音频/封面
   const [mediaPickerMode, setMediaPickerMode] = useState<"image" | "video" | "audio" | "cover" | null>(null);
   // 媒体库小胶囊：内联三排横向滚动选择图片（分页加载 + 延迟渲染，避免手机卡顿）
@@ -1317,7 +1321,7 @@ export function PublishModal({
   };
 
   const handleSubmit = async () => {
-    if (isContentEmpty(content) && images.length === 0 && !music && !linkCard && !video) return;
+    if (isContentEmpty(content) && images.length === 0 && !music && !linkCard && !video && !douban) return;
     setSubmitting(true);
     setError("");
     try {
@@ -1334,6 +1338,7 @@ export function PublishModal({
             music: music || null,
             linkCard: linkCard || null,
             video: video || null,
+            douban: douban || null,
             isAd,
             likesDisabled,
             commentsDisabled,
@@ -1345,6 +1350,7 @@ export function PublishModal({
             music: music || undefined,
             linkCard: linkCard || undefined,
             video: video || undefined,
+            douban: douban || undefined,
             isAd,
             likesDisabled,
             commentsDisabled,
@@ -1396,7 +1402,7 @@ export function PublishModal({
         </button>
         <button
           onClick={handleSubmit}
-          disabled={submitting || (isContentEmpty(content) && images.length === 0 && !music && !linkCard && !video)}
+          disabled={submitting || (isContentEmpty(content) && images.length === 0 && !music && !linkCard && !video && !douban)}
           className="rounded-md px-4 py-1.5 text-sm font-medium transition-colors disabled:bg-wechat-bubble disabled:text-wechat-time enabled:bg-green-500 enabled:text-white enabled:hover:bg-green-600 dark:disabled:bg-white/5 dark:disabled:text-gray-500"
         >
           {submitting ? (isEdit ? "保存中" : "发表中") : isEdit ? "保存" : "发表"}
@@ -1978,6 +1984,32 @@ export function PublishModal({
             )}
           </div>
 
+          {/* 豆瓣卡片 */}
+          <div className="flex items-center gap-3 border-t border-black/5 py-3 dark:border-white/5">
+            <Film className="h-5 w-5 shrink-0 text-wechat-time" />
+            {douban ? (
+              <div className="flex min-w-0 flex-1 items-center gap-2">
+                <div className="min-w-0 flex-1">
+                  <DoubanEmbedCard item={douban} className="mt-0 max-w-none" />
+                </div>
+                <button
+                  onClick={() => setDouban(null)}
+                  className="shrink-0 text-wechat-time hover:text-wechat-text"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowDoubanPicker(true)}
+                className="flex flex-1 items-center justify-between text-[15px] text-wechat-time hover:text-wechat-text"
+              >
+                <span>添加豆瓣卡片</span>
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+
           {/* 作为广告发布 — 勾选后该动态以广告形式展示在信息流广告位 */}
           <div className="flex items-center gap-3 border-t border-black/5 py-3 dark:border-white/5">
             <Megaphone className="h-5 w-5 shrink-0 text-wechat-time" />
@@ -2445,6 +2477,15 @@ export function PublishModal({
             setShowLocationPanel(false);
           }}
           onClose={() => setShowLocationPanel(false)}
+        />
+      )}
+
+      {/* ===== Douban Picker (豆瓣影单选择器) ===== */}
+      {showDoubanPicker && (
+        <DoubanPicker
+          open={showDoubanPicker}
+          onClose={() => setShowDoubanPicker(false)}
+          onSelect={(item) => setDouban(item)}
         />
       )}
 

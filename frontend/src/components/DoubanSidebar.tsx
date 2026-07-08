@@ -139,7 +139,7 @@ export default function DoubanSidebar() {
     <div className="rounded-2xl bg-wechat-white p-4 shadow-[0_8px_40px_-12px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.4)]">
       <div className="mb-3 flex items-center gap-1.5">
         <Film className="h-4 w-4 text-wechat-nickname" />
-        <h3 className="text-sm font-semibold text-wechat-text">豆瓣</h3>
+        <h3 className="text-sm font-semibold text-wechat-text">影单</h3>
         {data?.syncedAt && (
           <span className="ml-auto text-[10px] text-wechat-time/60">
             {new Date(data.syncedAt).toLocaleDateString("zh-CN", {

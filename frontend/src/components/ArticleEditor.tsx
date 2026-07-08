@@ -28,6 +28,7 @@ import {
   Video,
   LayoutTemplate,
   Smile,
+  Film,
 } from "lucide-react";
 import { sanitizeHtml } from "@/lib/sanitize";
 import { markdownToHtml } from "@/lib/markdown";
@@ -37,7 +38,8 @@ import EmojiPicker from "./EmojiPicker";
 import LinkCardPanel from "./admin/LinkCardPanel";
 import MusicPanel from "./admin/MusicPanel";
 import VideoPanel from "./admin/VideoPanel";
-import type { LinkCard, PostMusic, PostVideo } from "@/lib/mock-data";
+import DoubanPicker from "./DoubanPicker";
+import type { LinkCard, PostMusic, PostVideo, PostDouban } from "@/lib/mock-data";
 import { useExitAnimation } from "@/lib/use-exit-animation";
 
 interface ArticleEditorProps {
@@ -76,6 +78,7 @@ export default function ArticleEditor({
   const [showLinkCardPanel, setShowLinkCardPanel] = useState(false);
   const [showMusicPanel, setShowMusicPanel] = useState(false);
   const [showVideoPanel, setShowVideoPanel] = useState(false);
+  const [showDoubanPicker, setShowDoubanPicker] = useState(false);
   const [editingMusic, setEditingMusic] = useState<PostMusic | null>(null);
   const editingEmbedRef = useRef<HTMLElement | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -600,10 +603,11 @@ export default function ArticleEditor({
 
         <Divider />
 
-        {/* 音乐 / 视频（一组：媒体） */}
+        {/* 音乐 / 视频 / 豆瓣（一组：媒体） */}
         <div className="flex items-center gap-0.5">
           {renderBtn({ key: "music", title: "添加音乐", icon: <Music className="h-4 w-4" />, onClick: () => { saveSelection(); setShowMusicPanel(true); setShowLink(false); setShowEmoji(false); }, disabled: sourceMode })}
           {renderBtn({ key: "video", title: "插入视频", icon: <Video className="h-4 w-4" />, onClick: () => { saveSelection(); setShowVideoPanel(true); setShowLink(false); setShowEmoji(false); }, disabled: sourceMode })}
+          {renderBtn({ key: "douban", title: "插入豆瓣卡片", icon: <Film className="h-4 w-4" />, onClick: () => { saveSelection(); setShowDoubanPicker(true); setShowLink(false); setShowEmoji(false); }, disabled: sourceMode })}
         </div>
 
         <Divider />
@@ -750,6 +754,15 @@ export default function ArticleEditor({
         }}
         token={token}
       />
+
+      <DoubanPicker
+        open={showDoubanPicker}
+        onClose={() => setShowDoubanPicker(false)}
+        onSelect={(item) => {
+          insertHtml(buildDoubanEmbedHtml(item));
+          setShowDoubanPicker(false);
+        }}
+      />
     </div>
   );
 }
@@ -811,6 +824,18 @@ export function buildVideoEmbedHtml(video: PostVideo): string {
     `<span class="embed-cover">${cover ? `<img src="${cover}" alt="" />` : ""}</span>` +
     `<span class="embed-info"><span class="embed-title">${title}</span></span>` +
     `</div>`;
+}
+
+export function buildDoubanEmbedHtml(item: PostDouban): string {
+  const payload = encodePayload(item);
+  const cover = item.cover ? escapeHtml(toAbsoluteUrl(item.cover)) : "";
+  const title = escapeHtml(item.title || "豆瓣条目");
+  const statusLabel = item.statusLabel ? escapeHtml(item.statusLabel) : "";
+  return `<div data-embed="douban" data-payload="${payload}" contenteditable="false" class="embed-block embed-douban">` +
+    `<span class="embed-cover">${cover ? `<img src="${cover}" alt="" />` : ""}</span>` +
+    `<span class="embed-info"><span class="embed-title">${title}</span>` +
+    (statusLabel ? `<span class="embed-subtitle">${statusLabel}</span>` : "") +
+    `</span></div>`;
 }
 
 /**

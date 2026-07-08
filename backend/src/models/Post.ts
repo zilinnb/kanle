@@ -52,6 +52,16 @@ interface PostLocation {
   lat?: number;
 }
 
+interface PostDouban {
+  title: string;
+  cover: string;
+  link: string;
+  rating: number;
+  intro: string;
+  status: string;
+  statusLabel: string;
+}
+
 interface PostAttributes {
   id: string;
   shortId: string;
@@ -68,6 +78,7 @@ interface PostAttributes {
   music: PostMusic | null;
   linkCard: LinkCard | null;
   video: PostVideo | null;
+  douban: PostDouban | null;
   pinned: boolean;
   isAd: boolean;
   adAvatar: string;
@@ -106,6 +117,7 @@ class Post
   declare music: PostMusic | null;
   declare linkCard: LinkCard | null;
   declare video: PostVideo | null;
+  declare douban: PostDouban | null;
   declare pinned: boolean;
   declare isAd: boolean;
   declare adAvatar: string;
@@ -195,6 +207,11 @@ Post.init(
       defaultValue: null,
     },
     video: {
+      type: DataTypes.JSON,
+      allowNull: true,
+      defaultValue: null,
+    },
+    douban: {
       type: DataTypes.JSON,
       allowNull: true,
       defaultValue: null,

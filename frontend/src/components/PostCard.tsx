@@ -21,6 +21,7 @@ import InteractionBubble from "./InteractionBubble";
 import ActionMenu from "./ActionMenu";
 import CommentSection from "./CommentSection";
 import LazyImage from "./LazyImage";
+import DoubanEmbedCard from "./article/DoubanEmbedCard";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
 
@@ -516,6 +517,11 @@ export default function PostCard({ post, index, onDelete }: PostCardProps) {
               )}
             </div>
           </div>
+        )}
+
+        {/* Douban card — 豆瓣影单卡片，与链接卡片/音乐卡片同层级 */}
+        {!isArticle && post.douban && (
+          <DoubanEmbedCard item={post.douban} />
         )}
 
         {/* Location — 显示在时间上方，格式：城市 · 地点名 */}

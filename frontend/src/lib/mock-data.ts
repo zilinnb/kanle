@@ -69,6 +69,16 @@ export interface PostVideo {
   source: "parse" | "upload" | "url" | "embed";
 }
 
+export interface PostDouban {
+  title: string;
+  cover: string;
+  link: string;
+  rating: number;
+  intro: string;
+  status: string;
+  statusLabel: string;
+}
+
 export interface PostLocation {
   name: string;
   city: string;
@@ -106,6 +116,7 @@ export interface Post {
   music?: PostMusic | null;
   linkCard?: LinkCard | null;
   video?: PostVideo | null;
+  douban?: PostDouban | null;
   pinned?: boolean;
   isAd?: boolean;
   adAvatar?: string;
