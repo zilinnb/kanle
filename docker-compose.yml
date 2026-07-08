@@ -31,7 +31,7 @@ services:
       DB_NAME: ${DB_NAME:-moment_blog}
       JWT_SECRET: ${JWT_SECRET:-please-change-me}
       JWT_EXPIRES_IN: 7d
-      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@example.com}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@kanle.net}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-123456}
       ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
       CLIENT_URL: ${CLIENT_URL:-http://localhost:3000}

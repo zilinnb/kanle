@@ -67,7 +67,35 @@
 
 ## 快速部署
 
-### 方式一：Docker Compose（推荐）
+### 方式一：Docker CLI 一键脚本（推荐）
+
+下载部署脚本，修改顶部配置（端口、密码等），运行即可。无需 docker-compose.yml：
+
+```bash
+# 1. 下载脚本
+curl -sL https://raw.githubusercontent.com/zilinnb/kanle/main/deploy/docker-cli.sh -o docker-cli.sh
+
+# 2. 修改配置（端口、数据库密码、管理员密码等）
+vi docker-cli.sh
+
+# 3. 运行
+bash docker-cli.sh
+```
+
+脚本顶部可配置项：
+
+```bash
+DB_PASSWORD="change-me-to-strong"     # MySQL 密码（务必修改）
+JWT_SECRET="change-me-to-random-32+"  # JWT 密钥（务必改为随机长字符串）
+ADMIN_PASSWORD="123456"               # 管理员密码
+FRONTEND_PORT=3000                    # 前端访问端口
+BACKEND_PORT=4000                     # 后端 API 端口
+MYSQL_PORT=3306                       # MySQL 端口
+```
+
+> 脚本支持重复运行：已存在的容器会跳过，删除后重建只需 `docker rm -f kanle-frontend kanle-backend kanle-mysql` 再运行。
+
+### 方式二：Docker Compose
 
 ```bash
 # 1. 下载配置文件
@@ -84,9 +112,9 @@ docker compose up -d
 docker compose logs -f
 ```
 
-### 方式二：Docker CLI（自定义配置）
+### 方式三：Docker CLI 手动命令
 
-不想用 yml 文件？用 `docker run` 命令逐个启动，完全自定义端口和数据库配置：
+不想用脚本或 yml？用 `docker run` 命令逐个启动，完全自定义：
 
 ```bash
 # 1. 创建网络
@@ -96,7 +124,7 @@ docker network create kanle-net
 docker run -d \
   --name kanle-mysql \
   --network kanle-net \
-  -e MYSQL_ROOT_PASSWORD=your_root_password \
+  -e MYSQL_ROOT_PASSWORD=your_db_password \
   -e MYSQL_DATABASE=moment_blog \
   -e MYSQL_USER=kanle \
   -e MYSQL_PASSWORD=your_db_password \
@@ -113,16 +141,18 @@ docker run -d \
   -e DB_PASSWORD=your_db_password \
   -e DB_NAME=moment_blog \
   -e JWT_SECRET=your_jwt_secret \
-  -e ADMIN_EMAIL=admin@example.com \
+  -e ADMIN_EMAIL=admin@kanle.net \
   -e ADMIN_PASSWORD=123456 \
+  -e ADMIN_USERNAME=admin \
   -e CLIENT_URL=http://localhost:3000 \
+  -e REVALIDATE_SECRET=kanle-revalidate \
   -p 4000:4000 \
   -v kanle-uploads:/app/backend/public/uploads \
   -v kanle-plugins:/app/backend/plugins \
   --restart unless-stopped \
   zilinnb/kanle-backend:latest
 
-# 4. 启动前端（自定义端口：-p 8080:3000 把前端映射到 8080）
+# 4. 启动前端（自定义端口示例：-p 8080:3000 把前端映射到 8080）
 docker run -d \
   --name kanle-frontend \
   --network kanle-net \
@@ -147,9 +177,6 @@ docker start kanle-mysql kanle-backend kanle-frontend
 
 # 删除容器（数据保留在 volume 中）
 docker rm -f kanle-frontend kanle-backend kanle-mysql
-
-# 自定义端口：前端映射到 8080
-docker run -d ... -p 8080:3000 ... zilinnb/kanle-frontend:latest
 ```
 
 镜像标签可选：
@@ -174,7 +201,7 @@ cp .env.example .env
 docker compose up -d --build
 ```
 
-### 方式四：手动部署（PM2 + Nginx）
+### 方式五：手动部署（PM2 + Nginx）
 
 前置要求：Node.js 22 LTS、MySQL 8.0、PM2、Nginx
 
@@ -206,7 +233,7 @@ sudo certbot --nginx -d yourdomain.com   # SSL 证书
 启动完成后：
 - 前端：http://localhost:3000
 - 后台：http://localhost:3000/admin/login
-- 默认账号：`admin@example.com`
+- 默认账号：`admin`（用户名登录，也支持邮箱 `admin@kanle.net`）
 - 默认密码：`123456`
 
 > 生产环境务必修改 `ADMIN_PASSWORD`、`JWT_SECRET`、`DB_PASSWORD`。
@@ -224,7 +251,7 @@ sudo certbot --nginx -d yourdomain.com   # SSL 证书
 | `DB_NAME` | 否 | `moment_blog` | 数据库名 |
 | `JWT_SECRET` | 是 | - | JWT 密钥（生产务必改为随机长字符串）|
 | `JWT_EXPIRES_IN` | 否 | `7d` | Token 过期时间 |
-| `ADMIN_EMAIL` | 是 | `admin@example.com` | 初始管理员邮箱（仅首次创建生效）|
+| `ADMIN_EMAIL` | 是 | `admin@kanle.net` | 初始管理员邮箱（仅首次创建生效）|
 | `ADMIN_PASSWORD` | 是 | `123456` | 初始管理员密码（仅首次创建生效）|
 | `ADMIN_USERNAME` | 否 | `admin` | 管理员用户名 |
 | `CLIENT_URL` | 否 | `http://localhost:3000` | 前端地址（CORS + revalidate）|
