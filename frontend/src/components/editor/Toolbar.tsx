@@ -138,7 +138,7 @@ export default function Toolbar({
 
   if (!editor) {
     return (
-      <div className="sticky top-0 z-10 flex h-12 items-center border-b border-gray-200 bg-gray-50/95 px-2 backdrop-blur dark:border-white/10 dark:bg-[#26262b]/95">
+      <div className="sticky top-14 z-10 flex h-12 items-center border-b border-gray-200 bg-gray-50/95 px-2 backdrop-blur dark:border-white/10 dark:bg-[#26262b]/95">
         <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
       </div>
     );
@@ -189,7 +189,7 @@ export default function Toolbar({
   };
 
   return (
-    <div className="sticky top-0 z-10 flex flex-wrap items-center gap-0.5 border-b border-gray-200 bg-gray-50/95 px-2 py-1.5 backdrop-blur dark:border-white/10 dark:bg-[#26262b]/95">
+    <div className="sticky top-14 z-10 flex flex-wrap items-center gap-0.5 border-b border-gray-200 bg-gray-50/95 px-2 py-1.5 backdrop-blur dark:border-white/10 dark:bg-[#26262b]/95">
       {/* 段落样式下拉 */}
       <div className="relative">
         <button
