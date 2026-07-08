@@ -933,7 +933,8 @@ export function PublishModal({
         const result = await uploadMotionPhoto(fileArr[0]);
         if (result) {
           if (result.isLivePhoto && result.video) {
-            setImages((prev) => [...prev, { src: result.image, video: result.video }].slice(0, 9));
+            const videoUrl: string = result.video;
+            setImages((prev) => [...prev, { src: result.image, video: videoUrl }].slice(0, 9));
           } else {
             // 无嵌入视频，降级为普通图片
             setImages((prev) => [...prev, result.image].slice(0, 9));
