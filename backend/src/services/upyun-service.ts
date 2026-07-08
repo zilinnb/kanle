@@ -89,6 +89,8 @@ export async function uploadToUpyun(
       },
       timeout: 180000,
       maxRedirects: 5,
+      maxBodyLength: Infinity,
+      maxContentLength: Infinity,
       validateStatus: () => true,
     });
 

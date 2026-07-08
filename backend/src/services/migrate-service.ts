@@ -158,11 +158,27 @@ export async function migrateLocalToUpyun(): Promise<MigrationResult> {
   }
 
   // 4. 上传每个文件到又拍云，构建 URL 映射
-  // replacements: [搜索串, 替换串] 列表
+  // 跳过已迁移到又拍云的文件（根据 media 表判断）
   const replacements: Array<[string, string]> = [];
+  const allMedia = await Media.findAll();
+  const upyunUrlsByFilename = new Set<string>();
+  for (const m of allMedia) {
+    if (m.storageType === "upyun" && m.url) {
+      const parts = m.url.split("/");
+      upyunUrlsByFilename.add(parts[parts.length - 1]);
+    }
+  }
 
   for (const file of files) {
     const { relPath, fullPath } = file;
+    const filename = path.basename(relPath);
+
+    // 如果该文件已在又拍云（media 表中有同名的 upyun 记录），跳过上传
+    if (upyunUrlsByFilename.has(filename)) {
+      result.skipped++;
+      continue;
+    }
+
     try {
       const buffer = fs.readFileSync(fullPath);
       const mimeType = guessMimeType(fullPath);
@@ -373,6 +389,5 @@ export async function migrateLocalToUpyun(): Promise<MigrationResult> {
     }
   }
 
-  result.skipped = result.totalFiles - result.uploaded - result.failed;
   return result;
 }
