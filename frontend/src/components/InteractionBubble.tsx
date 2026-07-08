@@ -170,7 +170,7 @@ export default function InteractionBubble({
           </div>
         ) : (
           <div className="flex items-start gap-1.5 text-[14px] font-normal leading-[22px] text-wechat-nickname md:text-[15px]">
-            <Heart className="mt-[5px] h-3.5 w-3.5 shrink-0 text-wechat-nickname md:h-4 md:w-4" />
+            <Heart className="mt-[2px] h-4 w-4 shrink-0 text-wechat-nickname md:mt-[1px] md:h-[18px] md:w-[18px]" />
             <span className="break-all">{likesText}</span>
           </div>
         )
