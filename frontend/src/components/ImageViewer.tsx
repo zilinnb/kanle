@@ -443,7 +443,11 @@ export default function ImageViewer({
             justDoubleTappedRef.current = true;
             const lastTouch = e.changedTouches[0];
             if (lastTouch) {
-              toggleZoomAtPoint(lastTouch.clientX, lastTouch.clientY);
+              const tx = lastTouch.clientX;
+              const ty = lastTouch.clientY;
+              requestAnimationFrame(() => {
+                toggleZoomAtPoint(tx, ty);
+              });
             }
           } else {
             lastTapTimeRef.current = now;
@@ -633,7 +637,11 @@ export default function ImageViewer({
           pendingCloseRef.current = null;
         }
         justDoubleTappedRef.current = true;
-        toggleZoomAtPoint(e.clientX, e.clientY);
+        const cx = e.clientX;
+        const cy = e.clientY;
+        requestAnimationFrame(() => {
+          toggleZoomAtPoint(cx, cy);
+        });
       }}
       onTouchStart={onTouchStart}
       onMouseDown={onMouseDown}
