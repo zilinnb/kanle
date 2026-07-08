@@ -143,7 +143,7 @@ export default function DoubanSidebar({ embedded = false }: { embedded?: boolean
   ) : (
     <>
       {/* 主分类 Tab */}
-      <div className="mb-2 flex gap-1 rounded-lg bg-wechat-bubble p-1 dark:bg-white/5">
+      <div className={`mb-2 flex gap-1 ${embedded ? "" : "rounded-lg bg-wechat-bubble p-1 dark:bg-white/5"}`}>
         {TABS.map((tab) => {
           const Icon = tab.icon;
           const count =
@@ -157,9 +157,13 @@ export default function DoubanSidebar({ embedded = false }: { embedded?: boolean
             <button
               key={tab.key}
               onClick={() => switchTab(tab.key)}
-              className={`flex flex-1 items-center justify-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors ${
+              className={`flex items-center gap-1 text-xs font-medium transition-colors ${
+                embedded ? "rounded-md px-2.5 py-1" : "flex-1 justify-center rounded-md px-2 py-1.5"
+              } ${
                 activeTab === tab.key
-                  ? "bg-wechat-white text-wechat-text shadow-sm dark:bg-white/10 dark:text-white"
+                  ? embedded
+                    ? "bg-wechat-bubble text-wechat-text dark:bg-white/10"
+                    : "bg-wechat-white text-wechat-text shadow-sm dark:bg-white/10 dark:text-white"
                   : "text-wechat-time hover:text-wechat-text"
               }`}
             >

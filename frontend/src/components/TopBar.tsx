@@ -35,6 +35,7 @@ import {
   Megaphone,
   Library,
   Check,
+  MoreVertical,
 } from "lucide-react";
 import { cravatarUrl } from "@/lib/avatar";
 import { getGlobalAudio } from "@/lib/global-audio";
@@ -108,6 +109,8 @@ export default function TopBar({ coverHeight = 300 }: TopBarProps) {
   const [showFriends, setShowFriends] = useState(false);
   const [friendsTab, setFriendsTab] = useState<"friends" | "douban">("friends");
   const friendsAnim = useExitAnimation(() => setShowFriends(false), 250);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement | null>(null);
   const coverHeightRef = useRef(coverHeight);
   useEffect(() => {
     const measure = () => {
@@ -200,6 +203,18 @@ export default function TopBar({ coverHeight = 300 }: TopBarProps) {
     observer.observe(sentinel);
     return () => observer.disconnect();
   }, [loadMoreFriends, showFriends, friendsTab]);
+
+  // 点击菜单外部关闭三点菜单
+  useEffect(() => {
+    if (!showUserMenu) return;
+    const onClickAway = (e: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setShowUserMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", onClickAway);
+    return () => document.removeEventListener("mousedown", onClickAway);
+  }, [showUserMenu]);
 
   // audio 事件绑定、歌词 fetch、onEnded 切歌逻辑由 GlobalMusicManager 全局管理
 
@@ -450,7 +465,7 @@ export default function TopBar({ coverHeight = 300 }: TopBarProps) {
           <div className="flex shrink-0 items-center gap-1.5">
             <button
               type="button"
-              onClick={() => { setFriendsTab("friends"); setShowFriends(true); }}
+              onClick={() => { setFriendsTab("friends"); setShowUserMenu(false); setShowFriends(true); }}
               className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors md:hidden ${iconClass}`}
               aria-label="友链"
             >
@@ -526,7 +541,7 @@ export default function TopBar({ coverHeight = 300 }: TopBarProps) {
             className={`w-full max-w-[520px] rounded-b-2xl bg-wechat-white pt-[env(safe-area-inset-top)] md:rounded-2xl md:pt-0 md:shadow-xl dark:bg-[#232328] ${friendsAnim.closing ? "animate-sheet-to-top md:animate-modal-out" : "animate-sheet-from-top md:animate-modal-in"}`}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Tab 切换：友链 / 豆瓣 */}
+            {/* Tab 切换：友链 / 豆瓣 + 三点菜单 */}
             <div className="flex items-center border-b border-wechat-border px-2 dark:border-white/10">
               <button
                 onClick={() => setFriendsTab("friends")}
@@ -550,12 +565,54 @@ export default function TopBar({ coverHeight = 300 }: TopBarProps) {
                 <Film className="h-4 w-4" />
                 豆瓣
               </button>
-              <button
-                onClick={friendsAnim.handleClose}
-                className="ml-auto mr-2 text-wechat-time transition-colors hover:text-wechat-text"
-              >
-                <X className="h-5 w-5" />
-              </button>
+              <div className="ml-auto flex items-center gap-0.5">
+                {loggedIn && (
+                  <div ref={userMenuRef} className="relative">
+                    <button
+                      onClick={() => setShowUserMenu((v) => !v)}
+                      className="flex h-8 w-8 items-center justify-center rounded-full text-wechat-time transition-colors hover:bg-wechat-hover hover:text-wechat-text"
+                      aria-label="更多"
+                    >
+                      <MoreVertical className="h-4 w-4" />
+                    </button>
+                    {showUserMenu && (
+                      <div className="animate-dropdown-in absolute right-0 top-full z-50 mt-1 w-36 overflow-hidden rounded-xl border border-wechat-border bg-wechat-white shadow-xl dark:border-white/10 dark:bg-[#2c2c30]">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowUserMenu(false);
+                            friendsAnim.handleClose();
+                            window.open("/admin", "_blank", "noopener,noreferrer");
+                          }}
+                          className="flex w-full items-center gap-2 px-3.5 py-2.5 text-xs text-wechat-text transition-colors hover:bg-wechat-hover dark:hover:bg-white/10"
+                        >
+                          <LayoutDashboard className="h-3.5 w-3.5 text-wechat-time" />
+                          后台管理
+                        </button>
+                        <div className="h-px bg-wechat-border dark:bg-white/10" />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowUserMenu(false);
+                            friendsAnim.handleClose();
+                            handleLogout();
+                          }}
+                          className="flex w-full items-center gap-2 px-3.5 py-2.5 text-xs text-red-500 transition-colors hover:bg-red-50 dark:hover:bg-red-500/10"
+                        >
+                          <LogOut className="h-3.5 w-3.5" />
+                          退出登录
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+                <button
+                  onClick={friendsAnim.handleClose}
+                  className="flex h-8 w-8 items-center justify-center rounded-full text-wechat-time transition-colors hover:bg-wechat-hover hover:text-wechat-text"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
             </div>
 
             {/* Content */}
@@ -624,38 +681,6 @@ export default function TopBar({ coverHeight = 300 }: TopBarProps) {
                     </ul>
                   )}
                   <div ref={friendsSentinelRef} className="h-1" />
-
-                  {/* 后台管理 + 退出登录（仅登录时显示，移动端从顶栏三点菜单迁移至此） */}
-                  {loggedIn && (
-                    <div className="mt-1 border-t border-wechat-border pt-1 dark:border-white/10 lg:hidden">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          friendsAnim.handleClose();
-                          window.open("/admin", "_blank", "noopener,noreferrer");
-                        }}
-                        className="flex w-full items-center gap-3 rounded-lg px-2 py-2.5 text-sm text-wechat-text transition-colors hover:bg-wechat-hover dark:hover:bg-white/10"
-                      >
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] bg-wechat-bubble dark:bg-white/5">
-                          <LayoutDashboard className="h-4 w-4 text-wechat-time" />
-                        </div>
-                        后台管理
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          friendsAnim.handleClose();
-                          handleLogout();
-                        }}
-                        className="flex w-full items-center gap-3 rounded-lg px-2 py-2.5 text-sm text-red-500 transition-colors hover:bg-red-50 dark:hover:bg-red-500/10"
-                      >
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] bg-red-50 dark:bg-red-500/10">
-                          <LogOut className="h-4 w-4" />
-                        </div>
-                        退出登录
-                      </button>
-                    </div>
-                  )}
                 </>
               ) : (
                 <DoubanSidebar embedded />
