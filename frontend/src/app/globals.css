@@ -1288,6 +1288,9 @@ img.inline-emoji.emoji-error {
   pointer-events: none;
   height: 0;
 }
+.ProseMirror p.is-empty {
+  min-height: 1.6em;
+}
 
 /* Tiptap NodeView 容器 */
 .embed-node-wrapper {

@@ -16,6 +16,8 @@ import { DoubanEmbed } from "./editor/nodes/douban-embed";
 import { ArticleEmbed } from "./editor/nodes/article-embed";
 import { LinkCardNode } from "./editor/nodes/link-card";
 import { SlashCommand } from "./editor/slash-command/slash-command";
+import { TrailingParagraph } from "./editor/extensions/trailing-paragraph";
+import { CodeBlockExit } from "./editor/extensions/code-block-exit";
 import Toolbar from "./editor/Toolbar";
 import { EditorContext } from "./editor/editor-context";
 import ArticlePicker from "./editor/ArticlePicker";
@@ -93,13 +95,20 @@ export default function ArticleEditor({
       }),
       CustomImage,
       TextAlign.configure({ types: ["heading", "paragraph"] }),
-      Placeholder.configure({ placeholder }),
+      Placeholder.configure({
+        placeholder: ({ node }) => {
+          if (node.type.name === "codeBlock") return "输入代码... 按 Ctrl+Enter 退出";
+          return placeholder;
+        },
+      }),
       MusicEmbed,
       VideoEmbed,
       DoubanEmbed,
       ArticleEmbed,
       LinkCardNode,
       SlashCommand,
+      TrailingParagraph,
+      CodeBlockExit,
     ],
     content: value || "",
     immediatelyRender: false,
