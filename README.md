@@ -62,7 +62,7 @@
 |---|---|
 | 前端 | Next.js 16 · React 19 · Tailwind CSS v4 · Zustand |
 | 后端 | Express 5 · Sequelize 6 · TypeScript 6 |
-| 数据库 | MySQL 8 |
+| 数据库 | MySQL 5.7 / 8.0 |
 | 部署 | Docker Compose / Docker CLI / PM2 + Nginx |
 
 ## 快速部署
@@ -91,6 +91,7 @@ ADMIN_PASSWORD="123456"               # 管理员密码
 FRONTEND_PORT=3000                    # 前端访问端口
 BACKEND_PORT=4000                     # 后端 API 端口
 MYSQL_PORT=3306                       # MySQL 端口
+MYSQL_VERSION="8.0"                   # MySQL 版本：5.7 或 8.0 均可
 ```
 
 > 脚本支持重复运行：已存在的容器会跳过，删除后重建只需 `docker rm -f kanle-frontend kanle-backend kanle-mysql` 再运行。
@@ -133,6 +134,7 @@ docker run -d \
   mysql:8.0
 
 # 3. 启动后端（替换 your_db_password、your_jwt_secret）
+# 也可用 mysql:5.7 替代上面步骤 2 中的 mysql:8.0
 docker run -d \
   --name kanle-backend \
   --network kanle-net \
@@ -203,7 +205,7 @@ docker compose up -d --build
 
 ### 方式五：手动部署（PM2 + Nginx）
 
-前置要求：Node.js 22 LTS、MySQL 8.0、PM2、Nginx
+前置要求：Node.js 22 LTS、MySQL 5.7+、PM2、Nginx
 
 ```bash
 # ===== 后端 =====
@@ -256,6 +258,9 @@ sudo certbot --nginx -d yourdomain.com   # SSL 证书
 | `ADMIN_USERNAME` | 否 | `admin` | 管理员用户名 |
 | `CLIENT_URL` | 否 | `http://localhost:3000` | 前端地址（CORS + revalidate）|
 | `REVALIDATE_SECRET` | 否 | `kanle-revalidate` | 按需重验证密钥（须与前端一致）|
+
+> **Docker 专属变量**（仅在 `.env` / `docker-compose.yml` 中使用）：
+> `MYSQL_VERSION`（默认 `8.0`，可选 `5.7`）、`MYSQL_ROOT_PASSWORD`（默认 `rootpass`）
 
 ### 前端
 

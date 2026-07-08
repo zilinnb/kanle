@@ -55,7 +55,7 @@ else
     -p "${MYSQL_PORT}:3306" \
     -v kanle-mysql-data:/var/lib/mysql \
     --restart unless-stopped \
-    mysql:8.0
+    mysql:"$MYSQL_VERSION"
   echo "[2/4] MySQL 已启动"
 fi
 

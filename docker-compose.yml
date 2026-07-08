@@ -1,6 +1,7 @@
 services:
   mysql:
-    image: mysql:8.0
+    # 支持 5.7 或 8.0，通过 .env 中 MYSQL_VERSION 切换
+    image: mysql:${MYSQL_VERSION:-8.0}
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpass}
