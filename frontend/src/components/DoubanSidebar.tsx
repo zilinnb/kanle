@@ -156,7 +156,6 @@ export default function DoubanSidebar({ embedded = false }: { embedded?: boolean
     const reqKey = `${activeTab}:${statusFilter}`;
     reqKeyRef.current = reqKey;
     setLoading(true);
-    setItems([]);
     setHasMore(false);
     setPage(1);
     fetch(`${API_URL}/douban?type=${activeTab}&status=${statusFilter}&page=1&limit=${PAGE_LIMIT}`, {
@@ -229,7 +228,7 @@ export default function DoubanSidebar({ embedded = false }: { embedded?: boolean
           {TABS.map((tab) => {
             const Icon = tab.icon;
             const count = typeCounts ? typeCounts[tab.key] : 0;
-            if (count === 0 && !loading) return null;
+            if (typeCounts && count === 0) return null;
             return (
               <button
                 key={tab.key}
@@ -286,14 +285,14 @@ export default function DoubanSidebar({ embedded = false }: { embedded?: boolean
       </div>
 
       {/* 列表 */}
-      {loading ? (
+      {loading && items.length === 0 ? (
         <div className="space-y-0.5">
           <DoubanSkeleton count={5} />
         </div>
       ) : items.length === 0 ? (
         <div className="py-4 text-center text-xs text-wechat-time">暂无数据</div>
       ) : (
-        <ul className="space-y-0.5">
+        <ul className={`space-y-0.5 transition-opacity duration-200 ${loading ? "opacity-40" : "opacity-100"}`}>
           {items.map((item, i) => (
             <li key={`${item.link}-${i}`}>
               <a
