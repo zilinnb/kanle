@@ -29,7 +29,6 @@ import { SOCIAL_PLATFORMS, SocialIcon } from "@/components/SocialIcons";
 import MediaPicker from "@/components/MediaPicker";
 import EmailConfigSection from "./EmailConfigSection";
 import AmapConfigSection from "./AmapConfigSection";
-import DoubanConfigSection from "./DoubanConfigSection";
 
 interface SiteSettings {
   siteName: string;
@@ -762,9 +761,6 @@ export default function AdminSettings() {
         <EmailConfigSection />
         <AmapConfigSection />
       </div>
-
-      {/* Douban config — full width */}
-      <DoubanConfigSection />
     </div>
   );
 }

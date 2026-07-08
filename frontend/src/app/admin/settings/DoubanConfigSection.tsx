@@ -66,7 +66,7 @@ export default function DoubanConfigSection() {
   };
 
   return (
-    <div className="mt-6 rounded-xl border border-adm-border bg-adm-card p-5">
+    <div>
       <div className="mb-4 flex items-center gap-2">
         <Film className="h-5 w-5 text-adm-text-secondary" />
         <h3 className="text-base font-semibold text-adm-text">豆瓣集成</h3>

@@ -31,6 +31,13 @@ const TABS: { key: Tab; label: string; icon: typeof Film }[] = [
   { key: "music", label: "音乐", icon: Music },
 ];
 
+function formatDate(dateStr: string): string {
+  if (!dateStr) return "";
+  const m = dateStr.match(/(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (m) return `${parseInt(m[2])}月${parseInt(m[3])}日`;
+  return dateStr;
+}
+
 function RatingStars({ rating }: { rating: number }) {
   if (rating <= 0) return null;
   return (
@@ -164,8 +171,8 @@ export default function DoubanSidebar() {
                         </div>
                       )}
                       {item.date && (
-                        <p className="mt-0.5 text-[11px] text-wechat-time/70">
-                          {item.date}
+                        <p className="mt-0.5 whitespace-nowrap text-[11px] text-wechat-time/70">
+                          {formatDate(item.date)}
                         </p>
                       )}
                     </div>
