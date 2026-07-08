@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Cloud, Save, Check, Eye, EyeOff, ExternalLink, Zap, AlertTriangle } from "lucide-react";
+import { Cloud, Save, Check, Eye, EyeOff, ExternalLink, Zap, AlertTriangle, FolderUp } from "lucide-react";
 import { apiFetch } from "@/lib/api-fetch";
 
 export default function UpyunConfigSection() {
@@ -17,6 +17,18 @@ export default function UpyunConfigSection() {
   const [saved, setSaved] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string; https?: boolean } | null>(null);
+  const [migrating, setMigrating] = useState(false);
+  const [migrateResult, setMigrateResult] = useState<{
+    success: boolean;
+    message: string;
+    detail?: {
+      totalFiles: number;
+      uploaded: number;
+      failed: number;
+      recordsUpdated: { media: number; posts: number; comments: number; friendLinks: number; users: number; settings: number };
+      errors: string[];
+    };
+  } | null>(null);
 
   useEffect(() => {
     apiFetch("/settings/upyun-config")
@@ -78,6 +90,31 @@ export default function UpyunConfigSection() {
       setTestResult({ success: false, message: "请求失败，请检查网络" });
     } finally {
       setTesting(false);
+    }
+  };
+
+  const handleMigrate = async () => {
+    if (!confirm("确认将本地所有上传文件迁移到又拍云？迁移后数据库中的文件 URL 将更新为又拍云 CDN 地址，本地文件不会被删除。")) return;
+    setMigrating(true);
+    setMigrateResult(null);
+    try {
+      const res = await apiFetch("/upload/migrate-to-upyun", { method: "POST" });
+      const data = await res.json();
+      if (data.success) {
+        const r = data.result;
+        const totalUpdated = r.recordsUpdated.media + r.recordsUpdated.posts + r.recordsUpdated.comments + r.recordsUpdated.friendLinks + r.recordsUpdated.users + r.recordsUpdated.settings;
+        setMigrateResult({
+          success: true,
+          message: `迁移完成：上传 ${r.uploaded}/${r.totalFiles} 个文件，更新 ${totalUpdated} 条记录`,
+          detail: r,
+        });
+      } else {
+        setMigrateResult({ success: false, message: data.message || "迁移失败" });
+      }
+    } catch {
+      setMigrateResult({ success: false, message: "请求失败，请检查网络" });
+    } finally {
+      setMigrating(false);
     }
   };
 
@@ -307,6 +344,92 @@ export default function UpyunConfigSection() {
                     注意：CDN 域名使用 HTTP，在 HTTPS 网站上图片会被浏览器拦截。请绑定 HTTPS 域名。
                   </p>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* 本地文件迁移 */}
+          {enabled && (
+            <div className="mt-6 rounded-lg border border-adm-border bg-adm-input/50 p-4">
+              <div className="flex items-start gap-2">
+                <FolderUp className="mt-0.5 h-5 w-5 shrink-0 text-adm-text-secondary" />
+                <div className="flex-1">
+                  <div className="text-sm font-medium text-adm-text">本地文件迁移</div>
+                  <div className="mt-0.5 text-xs text-adm-text-tertiary">
+                    将服务器本地上传目录中的所有文件上传到又拍云，并自动更新文章、动态、评论、用户头像等所有引用了本地 URL 的记录。本地文件不会被删除。
+                  </div>
+                  <button
+                    onClick={handleMigrate}
+                    disabled={migrating}
+                    className="mt-3 flex items-center gap-1.5 rounded-lg bg-adm-primary px-4 py-2 text-sm font-medium text-adm-primary-text transition-colors hover:opacity-90 disabled:opacity-50"
+                  >
+                    {migrating ? (
+                      <>
+                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                        迁移中...
+                      </>
+                    ) : (
+                      <>
+                        <FolderUp className="h-4 w-4" />
+                        开始迁移
+                      </>
+                    )}
+                  </button>
+                  {migrateResult && (
+                    <div
+                      className={`mt-3 rounded-lg p-3 text-sm ${
+                        migrateResult.success
+                          ? "border border-green-200 bg-green-50 text-green-700 dark:border-green-900 dark:bg-green-950/50 dark:text-green-400"
+                          : "border border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950/50 dark:text-red-400"
+                      }`}
+                    >
+                      <div className="flex items-start gap-2">
+                        {migrateResult.success ? (
+                          <Check className="mt-0.5 h-4 w-4 shrink-0" />
+                        ) : (
+                          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                        )}
+                        <div className="flex-1">
+                          <p>{migrateResult.message}</p>
+                          {migrateResult.detail && migrateResult.success && (
+                            <div className="mt-2 space-y-0.5 text-xs opacity-80">
+                              {migrateResult.detail.recordsUpdated.media > 0 && (
+                                <p>媒体库记录：{migrateResult.detail.recordsUpdated.media} 条</p>
+                              )}
+                              {migrateResult.detail.recordsUpdated.posts > 0 && (
+                                <p>文章/动态：{migrateResult.detail.recordsUpdated.posts} 条</p>
+                              )}
+                              {migrateResult.detail.recordsUpdated.comments > 0 && (
+                                <p>评论：{migrateResult.detail.recordsUpdated.comments} 条</p>
+                              )}
+                              {migrateResult.detail.recordsUpdated.users > 0 && (
+                                <p>用户资料：{migrateResult.detail.recordsUpdated.users} 条</p>
+                              )}
+                              {migrateResult.detail.recordsUpdated.settings > 0 && (
+                                <p>网站设置：{migrateResult.detail.recordsUpdated.settings} 条</p>
+                              )}
+                              {migrateResult.detail.failed > 0 && (
+                                <p className="text-red-600 dark:text-red-400">
+                                  失败文件：{migrateResult.detail.failed} 个
+                                </p>
+                              )}
+                            </div>
+                          )}
+                          {migrateResult.detail && migrateResult.detail.errors.length > 0 && (
+                            <details className="mt-2">
+                              <summary className="cursor-pointer text-xs opacity-70">查看错误详情</summary>
+                              <ul className="mt-1 space-y-0.5 text-xs opacity-60">
+                                {migrateResult.detail.errors.map((e, i) => (
+                                  <li key={i}>{e}</li>
+                                ))}
+                              </ul>
+                            </details>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}

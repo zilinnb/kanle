@@ -16,6 +16,7 @@ import {
   uploadToUpyun,
   getUpyunConfig,
 } from "../services/upyun-service";
+import { migrateLocalToUpyun } from "../services/migrate-service";
 
 const router = Router();
 
@@ -254,6 +255,24 @@ router.post(
       res.status(400).json({
         success: false,
         message: err.message || "又拍云连接失败",
+      });
+    }
+  }
+);
+
+// POST /api/upload/migrate-to-upyun - 迁移本地文件到又拍云（管理员）
+router.post(
+  "/migrate-to-upyun",
+  authenticate,
+  requireAdmin,
+  async (_req: AuthRequest, res) => {
+    try {
+      const result = await migrateLocalToUpyun();
+      res.json({ success: true, result });
+    } catch (err: any) {
+      res.status(500).json({
+        success: false,
+        message: err.message || "迁移失败",
       });
     }
   }
