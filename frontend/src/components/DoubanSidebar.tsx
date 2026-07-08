@@ -222,65 +222,68 @@ export default function DoubanSidebar({ embedded = false }: { embedded?: boolean
     </div>
   ) : (
     <>
-      {/* 主分类 Tab */}
-      <div className={`mb-2 flex gap-1 ${embedded ? "" : "rounded-lg bg-wechat-bubble p-1 dark:bg-white/5"}`}>
-        {TABS.map((tab) => {
-          const Icon = tab.icon;
-          const count = typeCounts ? typeCounts[tab.key] : 0;
-          if (count === 0 && !loading) return null;
-          return (
-            <button
-              key={tab.key}
-              onClick={() => switchTab(tab.key)}
-              className={`flex items-center gap-1 text-xs font-medium transition-colors ${
-                embedded ? "rounded-md px-2.5 py-1" : "flex-1 justify-center rounded-md px-2 py-1.5"
-              } ${
-                activeTab === tab.key
-                  ? embedded
-                    ? "bg-wechat-bubble text-wechat-text dark:bg-white/10"
-                    : "bg-wechat-white text-wechat-text shadow-sm dark:bg-white/10 dark:text-white"
-                  : "text-wechat-time hover:text-wechat-text"
-              }`}
-            >
-              <Icon className="h-3 w-3" />
-              {tab.label}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* 状态筛选 */}
-      {statusCounts && statusCounts.all > 0 && (
-        <div className="mb-3 flex gap-1">
-          <button
-            onClick={() => setStatusFilter("all")}
-            className={`flex-1 rounded-md px-1 py-1 text-[10px] font-medium transition-colors ${
-              statusFilter === "all"
-                ? "bg-wechat-text text-wechat-white dark:bg-white dark:text-black"
-                : "bg-wechat-bubble text-wechat-time hover:text-wechat-text dark:bg-white/5"
-            }`}
-          >
-            全部 {statusCounts.all}
-          </button>
-          {STATUS_FILTERS[activeTab].map((sf) => {
-            const count = statusCounts[sf.key] || 0;
-            if (count === 0) return null;
+      {/* 主分类 Tab + 状态筛选 — embedded 模式下 sticky 固定在弹窗滚动区顶部 */}
+      <div className={embedded ? "sticky top-0 z-10 bg-wechat-white pb-1 dark:bg-[#232328]" : ""}>
+        {/* 主分类 Tab */}
+        <div className={`mb-2 flex gap-1 ${embedded ? "" : "rounded-lg bg-wechat-bubble p-1 dark:bg-white/5"}`}>
+          {TABS.map((tab) => {
+            const Icon = tab.icon;
+            const count = typeCounts ? typeCounts[tab.key] : 0;
+            if (count === 0 && !loading) return null;
             return (
               <button
-                key={sf.key}
-                onClick={() => setStatusFilter(sf.key)}
-                className={`flex-1 rounded-md px-1 py-1 text-[10px] font-medium transition-colors ${
-                  statusFilter === sf.key
-                    ? "bg-wechat-text text-wechat-white dark:bg-white dark:text-black"
-                    : "bg-wechat-bubble text-wechat-time hover:text-wechat-text dark:bg-white/5"
+                key={tab.key}
+                onClick={() => switchTab(tab.key)}
+                className={`flex items-center gap-1 text-xs font-medium transition-colors ${
+                  embedded ? "rounded-md px-2.5 py-1" : "flex-1 justify-center rounded-md px-2 py-1.5"
+                } ${
+                  activeTab === tab.key
+                    ? embedded
+                      ? "bg-wechat-bubble text-wechat-text dark:bg-white/10"
+                      : "bg-wechat-white text-wechat-text shadow-sm dark:bg-white/10 dark:text-white"
+                    : "text-wechat-time hover:text-wechat-text"
                 }`}
               >
-                {sf.label} {count}
+                <Icon className="h-3 w-3" />
+                {tab.label}
               </button>
             );
           })}
         </div>
-      )}
+
+        {/* 状态筛选 */}
+        {statusCounts && statusCounts.all > 0 && (
+          <div className="mb-3 flex gap-1">
+            <button
+              onClick={() => setStatusFilter("all")}
+              className={`flex-1 rounded-md px-1 py-1 text-[10px] font-medium transition-colors ${
+                statusFilter === "all"
+                  ? "bg-wechat-text text-wechat-white dark:bg-white dark:text-black"
+                  : "bg-wechat-bubble text-wechat-time hover:text-wechat-text dark:bg-white/5"
+              }`}
+            >
+              全部 {statusCounts.all}
+            </button>
+            {STATUS_FILTERS[activeTab].map((sf) => {
+              const count = statusCounts[sf.key] || 0;
+              if (count === 0) return null;
+              return (
+                <button
+                  key={sf.key}
+                  onClick={() => setStatusFilter(sf.key)}
+                  className={`flex-1 rounded-md px-1 py-1 text-[10px] font-medium transition-colors ${
+                    statusFilter === sf.key
+                      ? "bg-wechat-text text-wechat-white dark:bg-white dark:text-black"
+                      : "bg-wechat-bubble text-wechat-time hover:text-wechat-text dark:bg-white/5"
+                  }`}
+                >
+                  {sf.label} {count}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       {/* 列表 */}
       {loading ? (

@@ -5,6 +5,7 @@ import { Film, Book, Music, Search, Star, X } from "lucide-react";
 import type { PostDouban } from "@/lib/mock-data";
 import { getApiUrl } from "@/lib/api-fetch";
 import { toAbsoluteUrl } from "@/lib/upload";
+import { useExitAnimation } from "@/lib/use-exit-animation";
 
 interface DoubanPickerProps {
   open: boolean;
@@ -48,6 +49,7 @@ export default function DoubanPicker({ open, onClose, onSelect }: DoubanPickerPr
   const [activeTab, setActiveTab] = useState<Tab>("movie");
   const [search, setSearch] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { closing, handleClose } = useExitAnimation(onClose, 200);
 
   const API_URL = getApiUrl();
 
@@ -79,8 +81,6 @@ export default function DoubanPicker({ open, onClose, onSelect }: DoubanPickerPr
     return allItems.filter((item) => item.title.toLowerCase().includes(q));
   }, [allItems, search]);
 
-  if (!open) return null;
-
   const handleSelect = (item: DoubanItem) => {
     onSelect({
       title: item.title.split("\n")[0].split("/")[0].trim(),
@@ -91,23 +91,23 @@ export default function DoubanPicker({ open, onClose, onSelect }: DoubanPickerPr
       status: item.status,
       statusLabel: item.statusLabel,
     });
-    onClose();
+    handleClose();
   };
 
   return (
     <div
-      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50"
-      onClick={onClose}
+      className={`fixed inset-0 z-[200] flex items-center justify-center bg-black/50 ${closing ? "animate-overlay-out" : "animate-overlay-in"}`}
+      onClick={handleClose}
     >
       <div
-        className="flex max-h-[80vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white dark:bg-[#1a1a1f]"
+        className={`flex max-h-[80vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white dark:bg-[#1a1a1f] ${closing ? "animate-modal-out" : "animate-modal-in"}`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-black/5 px-5 py-4 dark:border-white/5">
           <h3 className="text-base font-semibold text-black dark:text-white">选择豆瓣条目</h3>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="rounded-full p-1 text-black/40 hover:bg-black/5 hover:text-black/60 dark:text-white/40 dark:hover:bg-white/5 dark:hover:text-white/60"
           >
             <X className="h-5 w-5" />

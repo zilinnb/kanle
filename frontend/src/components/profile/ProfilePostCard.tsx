@@ -4,7 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Play, Pause, Music2, Link as LinkIcon, FileText } from "lucide-react";
-import type { Post, PostMusic } from "@/lib/mock-data";
+import type { Post, PostMusic, PostImage } from "@/lib/mock-data";
 import { getImageSrc } from "@/lib/post-image";
 import { toAbsoluteUrl, toHttps } from "@/lib/upload";
 import { renderContent } from "@/lib/sanitize";
@@ -92,6 +92,55 @@ function FadeThumb({ src, alt }: { src: string; alt: string }) {
   );
 }
 
+/**
+ * 归档页图片缩略图 — 微信式正方形拼图 mosaic
+ * 1=满，2=2列，3=3列，4=2x2，5=3x2(1空)，6=英雄布局(大2x2+5小)，7/8=3x3(留空)，9=3x3满
+ */
+function ArchiveImageMosaic({ images }: { images: PostImage[] }) {
+  const count = Math.min(images.length, 9);
+  const visible = images.slice(0, 9);
+
+  let gridClass: string;
+  let hero = false;
+  if (count === 1) gridClass = "grid-cols-1 grid-rows-1";
+  else if (count === 2) gridClass = "grid-cols-2 grid-rows-1";
+  else if (count === 3) gridClass = "grid-cols-3 grid-rows-1";
+  else if (count === 4) gridClass = "grid-cols-2 grid-rows-2";
+  else if (count === 5) gridClass = "grid-cols-3 grid-rows-2";
+  else if (count === 6) { gridClass = "grid-cols-3 grid-rows-3"; hero = true; }
+  else gridClass = "grid-cols-3 grid-rows-3";
+
+  const heroPositions = [
+    { gridColumn: "1 / 3", gridRow: "1 / 3" },
+    { gridColumn: "3", gridRow: "1" },
+    { gridColumn: "3", gridRow: "2" },
+    { gridColumn: "1", gridRow: "3" },
+    { gridColumn: "2", gridRow: "3" },
+    { gridColumn: "3", gridRow: "3" },
+  ];
+
+  return (
+    <div className={`grid ${gridClass} h-full w-full gap-[1px]`}>
+      {visible.map((img, i) => (
+        <div
+          key={i}
+          className="relative overflow-hidden bg-black/5 dark:bg-white/5"
+          style={hero ? heroPositions[i] : undefined}
+        >
+          <Image
+            src={resolveCover(getImageSrc(img))}
+            alt=""
+            fill
+            sizes="64px"
+            className="object-cover"
+            unoptimized
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function DefaultCover({ kind }: { kind: Exclude<TileKind, "image" | "video" | "text"> }) {
   const configs = {
     music: {
@@ -169,7 +218,9 @@ export default function ProfilePostCard({ post }: ProfilePostCardProps) {
     >
       {/* Left: thumbnail */}
       <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded bg-black/5 dark:bg-white/5">
-        {cover ? (
+        {kind === "image" && post.images && post.images.length > 0 ? (
+          <ArchiveImageMosaic images={post.images} />
+        ) : cover ? (
           <FadeThumb src={cover} alt="" />
         ) : kind === "video" ? (
           <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-gray-700 to-gray-900">

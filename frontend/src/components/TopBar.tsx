@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   User,
   UserRound,
+  Users,
   Play,
   Pause,
   SkipBack,
@@ -469,7 +470,7 @@ export default function TopBar({ coverHeight = 300 }: TopBarProps) {
               className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors md:hidden ${iconClass}`}
               aria-label="友链"
             >
-              <BookUser className="h-[18px] w-[18px]" />
+              <Users className="h-[18px] w-[18px]" />
             </button>
 
             {/* Camera (发布动态) / UserRound (登录) — 移动端最右侧 */}
@@ -551,7 +552,7 @@ export default function TopBar({ coverHeight = 300 }: TopBarProps) {
                     : "text-wechat-time hover:text-wechat-text"
                 }`}
               >
-                <BookUser className="h-4 w-4" />
+                <Users className="h-4 w-4" />
                 友链
               </button>
               <button
@@ -563,7 +564,7 @@ export default function TopBar({ coverHeight = 300 }: TopBarProps) {
                 }`}
               >
                 <Film className="h-4 w-4" />
-                豆瓣
+                影单
               </button>
               <div className="ml-auto flex items-center gap-0.5">
                 {loggedIn && (
@@ -616,7 +617,7 @@ export default function TopBar({ coverHeight = 300 }: TopBarProps) {
             </div>
 
             {/* Content */}
-            <div className="max-h-[60vh] overflow-y-auto p-2">
+            <div className="max-h-[80vh] overflow-y-auto p-2">
               {friendsTab === "friends" ? (
                 <>
                   {!friendsLoaded ? (
