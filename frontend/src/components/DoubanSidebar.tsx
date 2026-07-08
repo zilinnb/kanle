@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Film, Book, Music, Star, ExternalLink } from "lucide-react";
 import { getApiUrl } from "@/lib/api-fetch";
+import { toAbsoluteUrl } from "@/lib/upload";
 
 interface DoubanItem {
   title: string;
@@ -148,9 +149,8 @@ export default function DoubanSidebar() {
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={item.cover}
+                      src={toAbsoluteUrl(item.cover)}
                       alt={item.title}
-                      referrerPolicy="no-referrer"
                       loading="lazy"
                       className="h-12 w-9 shrink-0 rounded-md object-cover bg-wechat-bubble dark:bg-white/5"
                     />

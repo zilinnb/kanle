@@ -4,9 +4,8 @@ const BASE_URL = API_URL.replace(/\/api$/, "");
 export function toAbsoluteUrl(url: string) {
   if (!url || typeof url !== "string") return "";
   if (url.startsWith("http")) return url;
-  // Uploaded images are served by the backend; other relative paths (e.g. /avatar-owner.svg)
-  // are resolved against the frontend.
-  if (url.startsWith("/uploads/")) return `${BASE_URL}${url}`;
+  // Uploaded images and API routes are served by the backend
+  if (url.startsWith("/uploads/") || url.startsWith("/api/")) return `${BASE_URL}${url}`;
   return url;
 }
 
