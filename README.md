@@ -2,21 +2,59 @@
 
 一个像微信朋友圈一样的个人博客系统。发动态、写文章、评论点赞、音乐播放、邮件通知，所有功能开箱即用。
 
-## 特性
+## 功能特性
 
-- **朋友圈式动态** — 发图片、视频、音乐、链接卡片，支持 Live Photo 实况图
-- **文章系统** — 富文本编辑器，目录、封面、归档，归档页微信式图片拼图
-- **评论互动** — 微信公众号式评论楼层，回复折叠，表情包，点赞
-- **豆瓣影单** — 同步豆瓣电影/图书/音乐，分页加载 + 骨架屏，侧栏展示
-- **音乐播放器** — 基于 MusicFree 插件，支持酷狗/QQ/网易云/酷我等音源，浮窗拖拽
-- **视频播放** — 弹窗播放器，支持 B 站等外链视频，全屏/进度条
-- **邮件通知** — 微信聊天式邮件模板，评论/回复即时通知
-- **又拍云存储** — 一键切换本地/CDN 存储
-- **高德地图定位** — 发动态时附带地理位置
-- **RSS 订阅** — 自动生成 RSS Feed
+### 朋友圈动态
+- 发图文动态，支持单图/多图（最多 9 图，微信式拼图）
+- 发视频动态，弹窗播放器（支持 B 站等外链，全屏/进度条）
+- 发 Live Photo 实况图，长按播放视频，默认有声
+- 发音乐动态，浮窗播放器可拖拽
+- 发链接卡片，自动抓取标题/描述/封面
+- 发豆瓣影单卡片，电影/图书/音乐
+- 地理位置定位（高德地图）
+- 滑动切换图片，双击放大，捏合缩放
+
+### 文章系统
+- 富文本编辑器（标题/列表/代码/引用/图片）
+- 文章目录、封面、标签
+- 归档页时间线，微信式正方形图片拼图
+
+### 豆瓣影单
+- 同步豆瓣电影/图书/音乐
+- 分页加载 + 骨架屏
+- 侧栏展示，支持全部/看过/在看/想看筛选
+
+### 评论互动
+- 微信公众号式评论楼层
+- 回复折叠，表情包，点赞
+- 评论邮件通知（微信聊天式模板）
+- 已登录用户免填信息
+
+### 音乐播放器
+- 基于 MusicFree 插件
+- 支持酷狗/QQ/网易云/酷我/咪咕等音源
+- 浮窗卡片可拖拽，歌词面板
+- 播放列表，切歌，静音
+
+### 后台管理
+- 仪表盘：数据统计概览
+- 动态管理：发布/编辑/删除
+- 评论管理：审核/回复/删除
+- 媒体管理：图片/视频库
+- 友链管理：增删改查，随机排序
+- 影单管理：豆瓣同步
+- 音乐管理：插件/播放列表
+- 广告管理：侧栏广告位
+- 黑名单：IP 防刷
+- 站点设置：SMTP/又拍云/高德地图/豆瓣/RSS
+- 夜间模式适配，移动端侧滑栏
+
+### 其他特性
 - **夜间模式** — 手动切换，记忆偏好，全组件适配
-- **响应式设计** — 完美适配桌面和移动端，移动端后台侧滑栏
-- **后台管理** — 动态/评论/媒体/友链/影单/音乐/插件/广告/黑名单/站点设置
+- **响应式设计** — 桌面/移动端完美适配
+- **又拍云存储** — 一键切换本地/CDN
+- **RSS 订阅** — 自动生成 Feed
+- **SEO 优化** — SSR + OG 标签
 
 ## 技术栈
 
@@ -27,35 +65,36 @@
 | 数据库 | MySQL 8 |
 | 部署 | Docker Compose（推荐）/ PM2 + Nginx |
 
-## 快速开始
+## 快速部署
 
-### Docker Compose 一键部署（推荐）
+### 方式一：Docker Compose（推荐，5 分钟搞定）
 
 ```bash
 # 1. 下载配置文件
 curl -sL https://raw.githubusercontent.com/zilinnb/kanle/main/docker-compose.yml -o docker-compose.yml
 curl -sL https://raw.githubusercontent.com/zilinnb/kanle/main/.env.example -o .env
 
-# 2. 修改 .env，至少修改 DB_PASSWORD、JWT_SECRET、ADMIN_PASSWORD
+# 2. 修改 .env（至少修改 DB_PASSWORD、JWT_SECRET）
 vi .env
 
-# 3. 启动（自动拉取镜像）
+# 3. 一键启动
 docker compose up -d
 
-# 4. 访问
-# 前端: http://localhost:3000
-# 后台: http://localhost:3000/admin/login
+# 4. 查看日志
+docker compose logs -f
 ```
 
-默认管理员账号：
-- 邮箱：`admin@example.com`（在 `.env` 中修改 `ADMIN_EMAIL`）
-- 密码：`change-me`（在 `.env` 中修改 `ADMIN_PASSWORD`）
+启动完成后：
+- 前端：http://localhost:3000
+- 后台：http://localhost:3000/admin/login
+- 默认账号：`admin@example.com`
+- 默认密码：`123456`
 
 镜像标签可选：
 - `latest`：稳定版
 - `dev`：开发版，功能前沿但相对不稳定
 
-### 从源码构建（自定义域名时使用）
+### 方式二：从源码构建（自定义域名时使用）
 
 预构建镜像中 `NEXT_PUBLIC_API_URL=http://localhost:4000/api`，适合本地体验。生产环境使用域名时需从源码构建：
 
@@ -73,43 +112,31 @@ cp .env.example .env
 docker compose up -d --build
 ```
 
-## 手动部署（PM2 + Nginx）
+### 方式三：手动部署（PM2 + Nginx）
 
-### 前置要求
-
-- Node.js 22 LTS
-- MySQL 8.0
-- PM2（`npm install -g pm2`）
-
-### 后端
+前置要求：Node.js 22 LTS、MySQL 8.0、PM2、Nginx
 
 ```bash
+# ===== 后端 =====
 cd backend
 npm ci
-cp .env.example .env  # 编辑 .env
+cp .env.example .env          # 编辑 .env，填写数据库等信息
 npm run build
-npm run db:seed       # 初始化数据库 + 创建管理员
+npm run db:seed               # 初始化数据库 + 创建管理员
 pm2 start ecosystem.config.js
-```
 
-### 前端
-
-```bash
+# ===== 前端 =====
 cd frontend
 npm ci
-cp .env.example .env.local  # 编辑 .env.local
+cp .env.example .env.local    # 编辑 .env.local，填写 NEXT_PUBLIC_API_URL
 npm run build
 pm2 start ecosystem.config.js
-```
 
-### Nginx
-
-参考 [deploy/nginx.conf](deploy/nginx.conf)，将 `/api/` 和 `/uploads/` 代理到后端（4000），其余代理到前端（3000）。
-
-```bash
+# ===== Nginx =====
+# 参考 deploy/nginx.conf，/api/ 和 /uploads/ 代理到 4000，其余代理到 3000
 sudo cp deploy/nginx.conf /etc/nginx/conf.d/kanle.conf
 sudo nginx -t && sudo nginx -s reload
-sudo certbot --nginx -d yourdomain.com  # SSL
+sudo certbot --nginx -d yourdomain.com   # SSL 证书
 ```
 
 ## 环境变量
@@ -123,11 +150,12 @@ sudo certbot --nginx -d yourdomain.com  # SSL
 | `DB_USER` | 是 | - | MySQL 用户名 |
 | `DB_PASSWORD` | 是 | - | MySQL 密码 |
 | `DB_NAME` | 否 | `moment_blog` | 数据库名 |
-| `JWT_SECRET` | 是 | - | JWT 密钥（生产务必修改）|
+| `JWT_SECRET` | 是 | - | JWT 密钥（生产务必改为随机长字符串）|
 | `JWT_EXPIRES_IN` | 否 | `7d` | Token 过期时间 |
-| `ADMIN_EMAIL` | 是 | - | 初始管理员邮箱（仅首次创建生效）|
-| `ADMIN_PASSWORD` | 是 | - | 初始管理员密码（仅首次创建生效）|
-| `CLIENT_URL` | 否 | `http://localhost:3000` | 前端地址 |
+| `ADMIN_EMAIL` | 是 | `admin@example.com` | 初始管理员邮箱（仅首次创建生效）|
+| `ADMIN_PASSWORD` | 是 | `123456` | 初始管理员密码（仅首次创建生效）|
+| `ADMIN_USERNAME` | 否 | `admin` | 管理员用户名 |
+| `CLIENT_URL` | 否 | `http://localhost:3000` | 前端地址（CORS + revalidate）|
 | `REVALIDATE_SECRET` | 否 | `kanle-revalidate` | 按需重验证密钥（须与前端一致）|
 
 ### 前端
@@ -138,15 +166,15 @@ sudo certbot --nginx -d yourdomain.com  # SSL
 | `NEXT_PUBLIC_TWIKOO_ENV_ID` | 构建时 | 否 | Twikoo 评论系统环境 ID |
 | `REVALIDATE_SECRET` | 运行时 | 否 | 须与后端一致 |
 
-> **构建时变量**：`NEXT_PUBLIC_*` 在 `next build` 时内联到产物中，运行时修改无效。换域名后必须重新构建前端。
+> **重要**：`NEXT_PUBLIC_*` 变量在 `next build` 时内联到产物中，运行时修改无效。换域名后必须重新构建前端。
 
 ## 后台配置
 
-以下功能登录后台管理面板（`/admin`）后设置：
+登录后台管理面板（`/admin`）后设置以下功能：
 
 | 功能 | 位置 | 说明 |
 |---|---|---|
-| SMTP 邮件 | 站点设置 → 邮件配置 | SMTP 服务器、端口、发件箱、测试发送 |
+| SMTP 邮件 | 站点设置 → 邮件配置 | SMTP 服务器、端口、发件箱、可发送测试邮件 |
 | 又拍云存储 | 站点设置 → 又拍云配置 | 服务名、操作员、CDN 域名，一键切换本地/CDN |
 | 高德地图 | 站点设置 → 高德地图配置 | JS API Key + Web 服务 Key，[高德开放平台](https://lbs.amap.com/)申请 |
 | 音乐插件 | 音乐管理 → 插件管理 | 上传 `.js` 插件或填写订阅 URL，支持酷狗/QQ/网易云/酷我 |
@@ -161,7 +189,7 @@ sudo certbot --nginx -d yourdomain.com  # SSL
 `NEXT_PUBLIC_*` 变量在构建时内联，运行时修改无效。需要重新构建前端：
 
 ```bash
-docker compose up -d --build frontend  # Docker
+docker compose up -d --build frontend           # Docker
 cd frontend && npm run build && pm2 restart kanle-frontend  # 手动
 ```
 </details>
@@ -169,14 +197,14 @@ cd frontend && npm run build && pm2 restart kanle-frontend  # 手动
 <details>
 <summary>发动态后刷新页面没看到更新？</summary>
 
-检查三端 `REVALIDATE_SECRET` 是否一致：后端 `.env`、前端运行时、前端构建时的 `NEXT_PUBLIC_REVALIDATE_SECRET`。
+检查三端 `REVALIDATE_SECRET` 是否一致：后端 `.env`、前端运行时、前端构建时的 `NEXT_PUBLIC_REVALIDATE_SECRET`。三者必须相同。
 </details>
 
 <details>
 <summary>忘记管理员密码？</summary>
 
 ```bash
-# 后端目录下执行
+# 后端目录下执行，密码会重置为 .env 中的 ADMIN_PASSWORD
 node dist/scripts/reset-password.js
 ```
 </details>
@@ -186,6 +214,14 @@ node dist/scripts/reset-password.js
 
 - Docker Compose：`DB_HOST` 应为 `mysql`（service 名）
 - 手动部署：`DB_HOST` 应为 `127.0.0.1`
+- 确认 MySQL 已启动且用户有权限
+</details>
+
+<details>
+<summary>上传的图片显示不出来？</summary>
+
+1. 检查 Nginx 是否将 `/uploads/` 代理到后端
+2. 如果使用 CDN 域名，需在 `frontend/next.config.ts` 的 `images.remotePatterns` 中添加域名
 </details>
 
 ## 开发
