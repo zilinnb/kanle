@@ -48,7 +48,7 @@ export const LinkCardNode = Node.create({
         node.attrs.description,
       ]);
     }
-    inner.push(["span", { class: "link-card-body" }, bodyChildren]);
+    inner.push(["span", { class: "link-card-body" }, ...bodyChildren]);
 
     return [
       "a",
@@ -59,7 +59,7 @@ export const LinkCardNode = Node.create({
         class: "link-card",
         contenteditable: "false",
       }),
-      inner,
+      ...inner,
     ];
   },
 
