@@ -223,7 +223,7 @@ export default function DoubanSidebar({ embedded = false }: { embedded?: boolean
   ) : (
     <>
       {/* 主分类 Tab + 状态筛选 — embedded 模式下 sticky 固定在弹窗滚动区顶部 */}
-      <div className={embedded ? "sticky top-0 z-10 bg-wechat-white pb-1 dark:bg-[#232328]" : ""}>
+      <div className={embedded ? "sticky top-0 z-10 -mx-2 bg-wechat-white px-2 pt-1 pb-1 dark:bg-[#232328]" : ""}>
         {/* 主分类 Tab */}
         <div className={`mb-2 flex gap-1 ${embedded ? "" : "rounded-lg bg-wechat-bubble p-1 dark:bg-white/5"}`}>
           {TABS.map((tab) => {

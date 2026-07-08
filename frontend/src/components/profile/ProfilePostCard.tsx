@@ -127,14 +127,7 @@ function ArchiveImageMosaic({ images }: { images: PostImage[] }) {
           className="relative overflow-hidden bg-black/5 dark:bg-white/5"
           style={hero ? heroPositions[i] : undefined}
         >
-          <Image
-            src={resolveCover(getImageSrc(img))}
-            alt=""
-            fill
-            sizes="64px"
-            className="object-cover"
-            unoptimized
-          />
+          <FadeThumb src={resolveCover(getImageSrc(img))} alt="" />
         </div>
       ))}
     </div>

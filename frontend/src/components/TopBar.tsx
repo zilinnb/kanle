@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   User,
   UserRound,
-  Users,
+  Contact,
   Play,
   Pause,
   SkipBack,
@@ -470,7 +470,7 @@ export default function TopBar({ coverHeight = 300 }: TopBarProps) {
               className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors md:hidden ${iconClass}`}
               aria-label="友链"
             >
-              <Users className="h-[18px] w-[18px]" />
+              <Contact className="h-[18px] w-[18px]" />
             </button>
 
             {/* Camera (发布动态) / UserRound (登录) — 移动端最右侧 */}
@@ -539,11 +539,11 @@ export default function TopBar({ coverHeight = 300 }: TopBarProps) {
           onClick={friendsAnim.handleClose}
         >
           <div
-            className={`w-full max-w-[520px] rounded-b-2xl bg-wechat-white pt-[env(safe-area-inset-top)] md:rounded-2xl md:pt-0 md:shadow-xl dark:bg-[#232328] ${friendsAnim.closing ? "animate-sheet-to-top md:animate-modal-out" : "animate-sheet-from-top md:animate-modal-in"}`}
+            className={`flex h-[100dvh] w-full max-w-[520px] flex-col bg-wechat-white pt-[env(safe-area-inset-top)] md:h-auto md:rounded-2xl md:pt-0 md:shadow-xl dark:bg-[#232328] ${friendsAnim.closing ? "animate-sheet-to-top md:animate-modal-out" : "animate-sheet-from-top md:animate-modal-in"}`}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Tab 切换：友链 / 豆瓣 + 三点菜单 */}
-            <div className="flex items-center border-b border-wechat-border px-2 dark:border-white/10">
+            <div className="flex shrink-0 items-center border-b border-wechat-border px-2 dark:border-white/10">
               <button
                 onClick={() => setFriendsTab("friends")}
                 className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium transition-colors ${
@@ -552,7 +552,7 @@ export default function TopBar({ coverHeight = 300 }: TopBarProps) {
                     : "text-wechat-time hover:text-wechat-text"
                 }`}
               >
-                <Users className="h-4 w-4" />
+                <Contact className="h-4 w-4" />
                 友链
               </button>
               <button
@@ -617,7 +617,7 @@ export default function TopBar({ coverHeight = 300 }: TopBarProps) {
             </div>
 
             {/* Content */}
-            <div className="max-h-[80vh] overflow-y-auto p-2">
+            <div key={friendsTab} className="animate-content-fade-in flex-1 overflow-y-auto px-2 pb-2 md:max-h-[80vh]">
               {friendsTab === "friends" ? (
                 <>
                   {!friendsLoaded ? (
