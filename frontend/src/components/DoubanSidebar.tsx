@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Film, Book, Music, Star, ExternalLink } from "lucide-react";
 import { getApiUrl } from "@/lib/api-fetch";
 import { toAbsoluteUrl } from "@/lib/upload";
+
+type DoubanStatus = "collect" | "do" | "wish";
 
 interface DoubanItem {
   title: string;
@@ -13,6 +15,8 @@ interface DoubanItem {
   date: string;
   intro: string;
   comment: string;
+  status: DoubanStatus;
+  statusLabel: string;
 }
 
 interface DoubanData {
@@ -24,12 +28,39 @@ interface DoubanData {
 }
 
 type Tab = "movie" | "book" | "music";
+type StatusFilter = "all" | DoubanStatus;
 
 const TABS: { key: Tab; label: string; icon: typeof Film }[] = [
   { key: "movie", label: "电影", icon: Film },
   { key: "book", label: "图书", icon: Book },
   { key: "music", label: "音乐", icon: Music },
 ];
+
+// 各 Tab 下各状态对应的中文标签
+const STATUS_FILTERS: Record<Tab, { key: DoubanStatus; label: string }[]> = {
+  movie: [
+    { key: "collect", label: "看过" },
+    { key: "do", label: "在看" },
+    { key: "wish", label: "想看" },
+  ],
+  book: [
+    { key: "collect", label: "读过" },
+    { key: "do", label: "在读" },
+    { key: "wish", label: "想读" },
+  ],
+  music: [
+    { key: "collect", label: "听过" },
+    { key: "do", label: "在听" },
+    { key: "wish", label: "想听" },
+  ],
+};
+
+// 状态徽章颜色
+const STATUS_STYLES: Record<DoubanStatus, string> = {
+  collect: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400",
+  do: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400",
+  wish: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400",
+};
 
 function formatDate(dateStr: string): string {
   if (!dateStr) return "";
@@ -56,6 +87,7 @@ export default function DoubanSidebar() {
   const [data, setData] = useState<DoubanData | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>("movie");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
 
   const API_URL = getApiUrl();
 
@@ -74,12 +106,34 @@ export default function DoubanSidebar() {
       .finally(() => setLoading(false));
   }, [API_URL]);
 
-  const items =
-    activeTab === "movie" ? data?.movies : activeTab === "book" ? data?.books : data?.music;
+  // 切换 Tab 时重置状态筛选
+  const switchTab = (tab: Tab) => {
+    setActiveTab(tab);
+    setStatusFilter("all");
+  };
+
+  const allItems = useMemo(() => {
+    if (!data) return [];
+    return activeTab === "movie" ? data.movies : activeTab === "book" ? data.books : data.music;
+  }, [data, activeTab]);
+
+  // 按状态筛选
+  const filteredItems = useMemo(() => {
+    if (statusFilter === "all") return allItems;
+    return allItems.filter((item) => item.status === statusFilter);
+  }, [allItems, statusFilter]);
+
+  // 各状态的计数
+  const statusCounts = useMemo(() => {
+    const counts: Record<string, number> = { all: allItems.length };
+    for (const item of allItems) {
+      counts[item.status] = (counts[item.status] || 0) + 1;
+    }
+    return counts;
+  }, [allItems]);
 
   const isEmpty =
-    !loading &&
-    (!data || (!data.movies.length && !data.books.length && !data.music.length));
+    !loading && (!data || (!data.movies.length && !data.books.length && !data.music.length));
 
   return (
     <div className="rounded-2xl bg-wechat-white p-4 shadow-[0_8px_40px_-12px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.4)]">
@@ -103,8 +157,8 @@ export default function DoubanSidebar() {
         </div>
       ) : (
         <>
-          {/* Tab switcher */}
-          <div className="mb-3 flex gap-1 rounded-lg bg-wechat-bubble p-1 dark:bg-white/5">
+          {/* 主分类 Tab */}
+          <div className="mb-2 flex gap-1 rounded-lg bg-wechat-bubble p-1 dark:bg-white/5">
             {TABS.map((tab) => {
               const Icon = tab.icon;
               const count =
@@ -117,7 +171,7 @@ export default function DoubanSidebar() {
               return (
                 <button
                   key={tab.key}
-                  onClick={() => setActiveTab(tab.key)}
+                  onClick={() => switchTab(tab.key)}
                   className={`flex flex-1 items-center justify-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors ${
                     activeTab === tab.key
                       ? "bg-wechat-white text-wechat-text shadow-sm dark:bg-white/10 dark:text-white"
@@ -131,7 +185,40 @@ export default function DoubanSidebar() {
             })}
           </div>
 
-          {/* Items list */}
+          {/* 状态筛选 */}
+          {!loading && allItems.length > 0 && (
+            <div className="mb-3 flex flex-wrap gap-1">
+              <button
+                onClick={() => setStatusFilter("all")}
+                className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium transition-colors ${
+                  statusFilter === "all"
+                    ? "bg-wechat-text text-wechat-white dark:bg-white dark:text-black"
+                    : "bg-wechat-bubble text-wechat-time hover:text-wechat-text dark:bg-white/5"
+                }`}
+              >
+                全部 {statusCounts.all}
+              </button>
+              {STATUS_FILTERS[activeTab].map((sf) => {
+                const count = statusCounts[sf.key] || 0;
+                if (count === 0) return null;
+                return (
+                  <button
+                    key={sf.key}
+                    onClick={() => setStatusFilter(sf.key)}
+                    className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium transition-colors ${
+                      statusFilter === sf.key
+                        ? "bg-wechat-text text-wechat-white dark:bg-white dark:text-black"
+                        : "bg-wechat-bubble text-wechat-time hover:text-wechat-text dark:bg-white/5"
+                    }`}
+                  >
+                    {sf.label} {count}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* 列表 */}
           {loading ? (
             <div className="space-y-2">
               {[...Array(3)].map((_, i) => (
@@ -144,9 +231,11 @@ export default function DoubanSidebar() {
                 </div>
               ))}
             </div>
+          ) : filteredItems.length === 0 ? (
+            <div className="py-4 text-center text-xs text-wechat-time">暂无数据</div>
           ) : (
-            <ul className="space-y-1">
-              {items?.slice(0, 8).map((item, i) => (
+            <ul className="space-y-0.5">
+              {filteredItems.map((item, i) => (
                 <li key={i}>
                   <a
                     href={item.link}
@@ -165,16 +254,19 @@ export default function DoubanSidebar() {
                       <p className="line-clamp-2 text-[13px] font-medium leading-snug text-wechat-nickname">
                         {item.title}
                       </p>
-                      {item.rating > 0 && (
-                        <div className="mt-0.5">
-                          <RatingStars rating={item.rating} />
-                        </div>
-                      )}
-                      {item.date && (
-                        <p className="mt-0.5 whitespace-nowrap text-[11px] text-wechat-time/70">
-                          {formatDate(item.date)}
-                        </p>
-                      )}
+                      <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
+                        {item.rating > 0 && <RatingStars rating={item.rating} />}
+                        <span
+                          className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${STATUS_STYLES[item.status]}`}
+                        >
+                          {item.statusLabel}
+                        </span>
+                        {item.date && (
+                          <span className="whitespace-nowrap text-[11px] text-wechat-time/70">
+                            {formatDate(item.date)}
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <ExternalLink className="mt-0.5 h-3 w-3 shrink-0 text-wechat-time transition-colors group-hover:text-wechat-text" />
                   </a>
