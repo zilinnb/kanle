@@ -50,7 +50,7 @@ interface SiteSettingAttributes {
   /** 豆瓣用户 ID，用于抓取电影/图书/音乐收藏 */
   doubanId: string;
   /** 评论违禁词列表，JSON 数组字符串 */
-  bannedWords: string;
+  bannedWords: string | null;
 }
 
 interface SiteSettingCreationAttributes extends Optional<
@@ -105,7 +105,7 @@ class SiteSetting
   declare rssEnabled: boolean;
   declare rssIncludeMoments: boolean;
   declare doubanId: string;
-  declare bannedWords: string;
+  declare bannedWords: string | null;
   declare readonly createdAt: Date;
   declare readonly updatedAt: Date;
 }
@@ -331,8 +331,8 @@ SiteSetting.init(
     },
     bannedWords: {
       type: DataTypes.TEXT,
-      allowNull: false,
-      defaultValue: "[]",
+      allowNull: true,
+      defaultValue: null,
     },
   },
   {
