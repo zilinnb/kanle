@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { BookUser, Camera, ExternalLink, Eye, EyeOff, LayoutDashboard, Link2, Lock, LogOut, MoreVertical, UserRound, User } from "lucide-react";
+import { BookUser, Camera, ExternalLink, Eye, EyeOff, LayoutDashboard, Link2, Lock, LogOut, MoreVertical, UserRound } from "lucide-react";
 import { User as UserType } from "@/lib/mock-data";
 import { cravatarUrl } from "@/lib/avatar";
 import { toAbsoluteUrl } from "@/lib/upload";
@@ -275,32 +275,6 @@ export default function Sidebar({ owner }: SidebarProps) {
       <div ref={sidebarScrollRef} className="no-scrollbar space-y-4 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto lg:overscroll-contain">
         {/* Owner info card */}
         <div className="rounded-2xl bg-wechat-white p-4 shadow-[0_8px_40px_-12px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.4)]">
-          {/* Owner profile entry */}
-          <Link
-            href="/archives"
-            className="group mb-3 flex items-center gap-3 rounded-xl p-2 transition-colors hover:bg-wechat-hover dark:hover:bg-white/5"
-          >
-            <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-[5px] bg-wechat-bubble">
-              {owner.avatar ? (
-                <Image
-                  src={toAbsoluteUrl(owner.avatar)}
-                  alt={owner.nickname}
-                  fill
-                  className="object-cover"
-                  sizes="44px"
-                  unoptimized
-                />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center">
-                  <User className="h-5 w-5 text-wechat-time" />
-                </div>
-              )}
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold text-wechat-text">{owner.nickname}</p>
-            </div>
-          </Link>
-
           {/* Social links */}
           {!settingsLoaded ? (
             <div className="flex flex-wrap justify-center gap-2.5">
