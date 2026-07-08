@@ -47,11 +47,13 @@ interface SiteSettingAttributes {
   rssEnabled: boolean;
   /** RSS 是否包含动态（moment），关闭后只订阅文章（article） */
   rssIncludeMoments: boolean;
+  /** 豆瓣用户 ID，用于抓取电影/图书/音乐收藏 */
+  doubanId: string;
 }
 
 interface SiteSettingCreationAttributes extends Optional<
   SiteSettingAttributes,
-  "id" | "siteName" | "description" | "keywords" | "domain" | "beian" | "faviconUrl" | "ogImage" | "musicUrl" | "musicId" | "musicSource" | "playlistId" | "backgroundImages" | "darkModeEnabled" | "darkModeStartTime" | "darkModeEndTime" | "emailNotifyEnabled" | "notifyEmail" | "smtpHost" | "smtpPort" | "smtpSecure" | "smtpUser" | "smtpPass" | "smtpFrom" | "emailTemplate" | "upyunEnabled" | "upyunBucket" | "upyunOperator" | "upyunPassword" | "upyunDomain" | "upyunPath" | "amapJsKey" | "amapSecurityJsCode" | "amapKey" | "beianUrl" | "socialLinks" | "postCollapseLength" | "fontUrl" | "adOnArchives" | "commentAntiSpamEnabled" | "rssEnabled" | "rssIncludeMoments"
+  "id" | "siteName" | "description" | "keywords" | "domain" | "beian" | "faviconUrl" | "ogImage" | "musicUrl" | "musicId" | "musicSource" | "playlistId" | "backgroundImages" | "darkModeEnabled" | "darkModeStartTime" | "darkModeEndTime" | "emailNotifyEnabled" | "notifyEmail" | "smtpHost" | "smtpPort" | "smtpSecure" | "smtpUser" | "smtpPass" | "smtpFrom" | "emailTemplate" | "upyunEnabled" | "upyunBucket" | "upyunOperator" | "upyunPassword" | "upyunDomain" | "upyunPath" | "amapJsKey" | "amapSecurityJsCode" | "amapKey" | "beianUrl" | "socialLinks" | "postCollapseLength" | "fontUrl" | "adOnArchives" | "commentAntiSpamEnabled" | "rssEnabled" | "rssIncludeMoments" | "doubanId"
 > {}
 
 class SiteSetting
@@ -100,6 +102,7 @@ class SiteSetting
   declare commentAntiSpamEnabled: boolean;
   declare rssEnabled: boolean;
   declare rssIncludeMoments: boolean;
+  declare doubanId: string;
   declare readonly createdAt: Date;
   declare readonly updatedAt: Date;
 }
@@ -317,6 +320,11 @@ SiteSetting.init(
       type: DataTypes.BOOLEAN,
       allowNull: false,
       defaultValue: true,
+    },
+    doubanId: {
+      type: DataTypes.STRING(100),
+      allowNull: false,
+      defaultValue: "",
     },
   },
   {

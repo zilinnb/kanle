@@ -6,6 +6,7 @@ import { BookText } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useSiteSettings } from "@/lib/site-settings-store";
 import { toAbsoluteUrl } from "@/lib/upload";
+import DoubanSidebar from "./DoubanSidebar";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
 
@@ -148,6 +149,8 @@ export default function ArticleListSidebar() {
             </ul>
           )}
         </div>
+
+        <DoubanSidebar />
       </div>
     </aside>
   );

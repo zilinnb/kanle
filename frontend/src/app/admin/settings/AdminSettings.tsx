@@ -29,6 +29,7 @@ import { SOCIAL_PLATFORMS, SocialIcon } from "@/components/SocialIcons";
 import MediaPicker from "@/components/MediaPicker";
 import EmailConfigSection from "./EmailConfigSection";
 import AmapConfigSection from "./AmapConfigSection";
+import DoubanConfigSection from "./DoubanConfigSection";
 
 interface SiteSettings {
   siteName: string;
@@ -52,6 +53,7 @@ interface SiteSettings {
   adOnArchives: boolean;
   rssEnabled: boolean;
   rssIncludeMoments: boolean;
+  doubanId: string;
 }
 
 const DEFAULTS: SiteSettings = {
@@ -76,6 +78,7 @@ const DEFAULTS: SiteSettings = {
   adOnArchives: false,
   rssEnabled: true,
   rssIncludeMoments: true,
+  doubanId: "",
 };
 
 interface SocialLink {
@@ -759,6 +762,9 @@ export default function AdminSettings() {
         <EmailConfigSection />
         <AmapConfigSection />
       </div>
+
+      {/* Douban config — full width */}
+      <DoubanConfigSection />
     </div>
   );
 }

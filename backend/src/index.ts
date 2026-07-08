@@ -19,6 +19,7 @@ import locationRoutes from "./routes/location";
 import urlPreviewRoutes from "./routes/url-preview";
 import videoParseRoutes from "./routes/video-parse";
 import pluginsRoutes from "./routes/plugins";
+import doubanRoutes from "./routes/douban";
 import { visitorCookieMiddleware } from "./middleware/visitor-cookie";
 import { loadAllPlugins, watchPluginsDir } from "./music-sources/mf-manager";
 
@@ -63,6 +64,7 @@ app.use("/api/location", locationRoutes);
 app.use("/api/url-preview", urlPreviewRoutes);
 app.use("/api/video", videoParseRoutes);
 app.use("/api/admin/plugins", pluginsRoutes);
+app.use("/api/douban", doubanRoutes);
 
 // Error handler
 app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

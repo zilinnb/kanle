@@ -42,6 +42,7 @@ router.get("/", async (_req: Request, res: Response) => {
     adOnArchives: setting.adOnArchives,
     rssEnabled: setting.rssEnabled,
     rssIncludeMoments: setting.rssIncludeMoments,
+    doubanId: setting.doubanId,
     defaultCover: admin?.cover || "",
   });
 });
@@ -74,6 +75,7 @@ router.put(
     body("adOnArchives").optional().isBoolean(),
     body("rssEnabled").optional().isBoolean(),
     body("rssIncludeMoments").optional().isBoolean(),
+    body("doubanId").optional().trim().isLength({ max: 100 }),
     // Email config
     body("emailNotifyEnabled").optional().isBoolean(),
     body("notifyEmail").optional().trim().isLength({ max: 255 }),
@@ -127,6 +129,7 @@ router.put(
       adOnArchives: req.body.adOnArchives ?? setting.adOnArchives,
       rssEnabled: req.body.rssEnabled ?? setting.rssEnabled,
       rssIncludeMoments: req.body.rssIncludeMoments ?? setting.rssIncludeMoments,
+      doubanId: req.body.doubanId ?? setting.doubanId,
       emailNotifyEnabled: req.body.emailNotifyEnabled ?? setting.emailNotifyEnabled,
       notifyEmail: req.body.notifyEmail ?? setting.notifyEmail,
       smtpHost: req.body.smtpHost ?? setting.smtpHost,
