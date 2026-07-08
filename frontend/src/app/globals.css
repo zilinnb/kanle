@@ -767,6 +767,37 @@ img.inline-emoji.emoji-error {
   font-size: 0.9em;
   line-height: 1.6;
 }
+
+/* 夜间模式：代码块强制深色背景，覆盖导入文章中的内联浅色样式 */
+.dark .article-content pre,
+.dark .article-editor-area pre,
+.dark .rich-content pre,
+.dark .rich-editor-area pre {
+  background: #1a1a20 !important;
+  color: #d4d4d4 !important;
+  border: 1px solid #2d2d34;
+}
+.dark .article-content pre code,
+.dark .article-editor-area pre code,
+.dark .rich-content pre code,
+.dark .rich-editor-area pre code {
+  background: transparent !important;
+  color: #d4d4d4 !important;
+}
+.dark .article-content code,
+.dark .article-editor-area code,
+.dark .rich-content code,
+.dark .rich-editor-area code {
+  background: #2d2d34 !important;
+  color: #d4d4d4 !important;
+}
+/* 语法高亮 span 在夜间模式提亮，避免深色文字在深色背景上不可见 */
+.dark .article-content pre code span[style*="color"],
+.dark .article-editor-area pre code span[style*="color"],
+.dark .rich-content pre code span[style*="color"],
+.dark .rich-editor-area pre code span[style*="color"] {
+  filter: brightness(1.5);
+}
 .article-editor-area img,
 .article-content img {
   max-width: 100%;
