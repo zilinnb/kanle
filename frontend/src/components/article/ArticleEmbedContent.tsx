@@ -11,6 +11,8 @@ import type { PostMusic, PostVideo, PostDouban } from "@/lib/mock-data";
 import MusicEmbedCard from "./MusicEmbedCard";
 import VideoPlayer from "@/components/VideoPlayer";
 import DoubanEmbedCard from "./DoubanEmbedCard";
+import ArticleEmbedCard from "./ArticleEmbedCard";
+import type { ArticleEmbedData } from "../editor/embed-utils";
 
 interface ArticleEmbedContentProps {
   content: string;
@@ -34,11 +36,15 @@ interface DoubanSegment {
   kind: "douban";
   payload: PostDouban;
 }
-type Segment = HtmlSegment | MusicSegment | VideoSegment | DoubanSegment;
+interface ArticleSegment {
+  kind: "article";
+  payload: ArticleEmbedData;
+}
+type Segment = HtmlSegment | MusicSegment | VideoSegment | DoubanSegment | ArticleSegment;
 
-function decodePayload(str: string): PostMusic | PostVideo | PostDouban | null {
+function decodePayload(str: string): PostMusic | PostVideo | PostDouban | ArticleEmbedData | null {
   try {
-    return JSON.parse(decodeURIComponent(atob(str))) as PostMusic | PostVideo | PostDouban;
+    return JSON.parse(decodeURIComponent(atob(str))) as PostMusic | PostVideo | PostDouban | ArticleEmbedData;
   } catch {
     return null;
   }
@@ -53,7 +59,7 @@ function renderHtmlSegment(html: string): string {
 // 编辑器生成的 embed div 内部使用 <span>（无嵌套 <div>），
 // 因此非贪婪匹配到第一个 </div> 即为该 embed div 的闭合标签。
 const EMBED_REGEX =
-  /<div\s+data-embed="(music|video|douban)"\s+data-payload="([^"]*)"[^>]*>[\s\S]*?<\/div>/gi;
+  /<div\s+data-embed="(music|video|douban|article)"\s+data-payload="([^"]*)"[^>]*>[\s\S]*?<\/div>/gi;
 
 function splitContent(content: string): Segment[] {
   if (!content) return [];
@@ -66,13 +72,15 @@ function splitContent(content: string): Segment[] {
     if (match.index > lastIndex) {
       segments.push({ kind: "html", html: content.slice(lastIndex, match.index) });
     }
-    const embedType = match[1] as "music" | "video" | "douban";
+    const embedType = match[1] as "music" | "video" | "douban" | "article";
     const payload = decodePayload(match[2]);
     if (payload) {
       if (embedType === "music") {
         segments.push({ kind: "music", payload: payload as PostMusic });
       } else if (embedType === "video") {
         segments.push({ kind: "video", payload: payload as PostVideo });
+      } else if (embedType === "article") {
+        segments.push({ kind: "article", payload: payload as ArticleEmbedData });
       } else {
         segments.push({ kind: "douban", payload: payload as PostDouban });
       }
@@ -121,6 +129,11 @@ export default function ArticleEmbedContent({
         if (seg.kind === "douban") {
           return (
             <DoubanEmbedCard key={i} item={seg.payload} className="my-3 max-w-none" />
+          );
+        }
+        if (seg.kind === "article") {
+          return (
+            <ArticleEmbedCard key={i} article={seg.payload} className="my-3 max-w-none" />
           );
         }
         return (

@@ -1272,3 +1272,121 @@ img.inline-emoji.emoji-error {
 .dark .article-content .embed-block.embed-music .embed-subtitle {
   color: rgba(255,255,255,0.5);
 }
+
+/* ===== Tiptap / ProseMirror 编辑器样式 ===== */
+.ProseMirror {
+  outline: none;
+  min-height: 300px;
+  padding: 16px 20px;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
+.ProseMirror .is-empty::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: var(--wechat-time);
+  pointer-events: none;
+  height: 0;
+}
+
+/* Tiptap NodeView 容器 */
+.embed-node-wrapper {
+  position: relative;
+  display: block;
+  margin: 0.8em 0;
+}
+.embed-node-wrapper.is-selected {
+  outline: 2px solid rgba(59, 130, 246, 0.5);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+.ProseMirror .embed-node-wrapper.ProseMirror-selectednode {
+  outline: 2px solid rgba(59, 130, 246, 0.5);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/* 嵌入块无封面时的占位图标 */
+.embed-block .embed-cover-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: var(--wechat-time);
+  background: var(--wechat-surface);
+}
+
+/* ===== 斜杠命令菜单（tippy.js 弹窗） ===== */
+.slash-command-list {
+  background: var(--wechat-surface, #fff);
+  border: 1px solid var(--wechat-border, #e5e5e5);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+  max-height: 280px;
+  overflow-y: auto;
+  min-width: 200px;
+  padding: 4px;
+}
+.dark .slash-command-list {
+  background: #2a2a30;
+  border-color: #3a3a42;
+}
+.slash-command-empty {
+  padding: 12px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--wechat-time, #999);
+}
+.slash-command-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--wechat-text, #1a1a1a);
+  transition: background 0.1s ease;
+  background: transparent;
+  border: none;
+  text-align: left;
+}
+.dark .slash-command-item {
+  color: rgba(255, 255, 255, 0.9);
+}
+.slash-command-item:hover,
+.slash-command-item.is-selected {
+  background: var(--wechat-hover, #f2f2f2);
+}
+.dark .slash-command-item:hover,
+.dark .slash-command-item.is-selected {
+  background: rgba(255, 255, 255, 0.08);
+}
+.slash-command-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  color: var(--wechat-time, #999);
+}
+.slash-command-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.slash-command-title {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.3;
+}
+.slash-command-desc {
+  font-size: 11px;
+  color: var(--wechat-time, #999);
+  line-height: 1.3;
+}
