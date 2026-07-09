@@ -67,75 +67,86 @@
 
 ## 快速部署
 
-### 方式一：Docker CLI 一键脚本（推荐）
+### 方式一：Docker CLI 交互式脚本（推荐）
 
-下载部署脚本，修改顶部配置（端口、密码等），运行即可。无需 docker-compose.yml：
+下载脚本运行，按提示交互输入配置即可，**全部参数都支持回车采用默认值**：
 
 ```bash
 # 1. 下载脚本
 curl -sL https://raw.githubusercontent.com/zilinnb/kanle/main/deploy/docker-cli.sh -o docker-cli.sh
 
-# 2. 修改配置（端口、数据库密码、管理员密码等）
-vi docker-cli.sh
-
-# 3. 运行
+# 2. 运行（按提示输入，回车 = 默认值）
 bash docker-cli.sh
 ```
 
-脚本顶部可配置项：
+交互流程示例：
 
-```bash
-USE_LOCAL_MYSQL=false                 # true=用宿主机 MySQL（宝塔自带），false=用 Docker MySQL 容器
-DB_HOST="host.docker.internal"        # 宿主机 MySQL 地址（仅 USE_LOCAL_MYSQL=true 时生效）
-DB_PORT=3306                          # MySQL 端口
-DB_PASSWORD="change-me-to-strong"     # MySQL 密码（务必修改）
-JWT_SECRET="change-me-to-random-32+"  # JWT 密钥（务必改为随机长字符串）
-ADMIN_PASSWORD="123456"               # 管理员密码
-FRONTEND_PORT=3000                    # 前端访问端口
-BACKEND_PORT=4000                     # 后端 API 端口
-MYSQL_PORT=3306                       # MySQL 容器映射端口（仅 USE_LOCAL_MYSQL=false 时生效）
-MYSQL_VERSION="8.0"                   # MySQL 版本：5.7 或 8.0 均可（仅 USE_LOCAL_MYSQL=false 时生效）
-DB_NAME=moment_blog                   # 数据库名
-DB_USER=kanle                         # 数据库用户名
 ```
+========================================
+  kanle · Docker 交互式部署
+========================================
+
+[1/5] MySQL 配置
+  是否使用宿主机已安装的 MySQL（如宝塔面板自带的）？[y/N]: y
+  数据库主机地址 [host.docker.internal]:         ← 回车用默认
+  数据库端口 [3306]:                              ← 回车用默认
+  数据库名 [moment_blog]: kanle                   ← 输入你的库名
+  数据库用户名 [kanle]:                           ← 回车用默认
+  数据库密码（必填，不回显）: ********             ← 输入密码
+
+[2/5] 端口配置
+  前端访问端口 [3000]:                            ← 回车用默认
+  后端 API 端口 [4000]:                           ← 回车用默认
+
+[3/5] 管理员配置
+  管理员用户名 [admin]:                           ← 回车用默认
+  管理员邮箱 [admin@kanle.net]:                   ← 回车用默认
+  管理员密码 [123456]:                            ← 回车用默认
+
+[4/5] JWT 密钥
+  JWT 密钥（回车自动生成）:                       ← 回车自动生成
+
+[5/5] 确认配置
+  ...（打印所有配置）
+  确认部署？[Y/n]:                                ← 回车确认
+```
+
+**两种 MySQL 模式**：
+- **Docker 容器模式**（默认，回车 N）：开箱即用，脚本自动拉起 MySQL 容器，数据库密码可回车自动生成
+- **宿主机 MySQL 模式**（输入 y）：适配宝塔面板等已装 MySQL 的场景，脚本跳过 MySQL 容器，backend 容器通过 `host.docker.internal` 连接宿主机
 
 > 脚本支持重复运行：已存在的容器会跳过，删除后重建只需 `docker rm -f kanle-frontend kanle-backend kanle-mysql` 再运行。
+> 自动化部署（CI/重复部署）可加 `--no-prompt` 参数跳过交互，全部采用默认值。
 
 <details>
-<summary>🖥️ 已用宝塔面板装了 MySQL？点这里切换为「使用宿主机 MySQL」模式</summary>
+<summary>🖥️ 选择「宿主机 MySQL」模式时，宝塔面板需要先做这些操作</summary>
 
-如果服务器已经装了宝塔面板并自带 MySQL，不想再在 Docker 里跑一个 MySQL，把脚本顶部的 `USE_LOCAL_MYSQL` 改为 `true`：
-
-```bash
-USE_LOCAL_MYSQL=true
-DB_HOST="host.docker.internal"   # 容器通过它访问宿主机，脚本会自动加 host-gateway
-DB_PORT=3306
-DB_NAME=moment_blog              # 必须和宝塔面板里创建的数据库名一致
-DB_USER=kanle                    # 必须和宝塔面板里创建的用户名一致
-DB_PASSWORD="你在宝塔里设置的密码"
-```
-
-**部署前必须在宝塔面板完成以下操作**（否则容器连不上数据库）：
+运行脚本前，在宝塔面板完成以下配置（否则容器连不上数据库）：
 
 1. **创建数据库**：宝塔 → 数据库 → 添加数据库
-   - 数据库名：`moment_blog`（与脚本 `DB_NAME` 一致）
-   - 用户名：`kanle`（与脚本 `DB_USER` 一致）
-   - 密码：自定义强密码（填入脚本 `DB_PASSWORD`）
+   - 数据库名：和脚本交互时输入的「数据库名」一致（如 `moment_blog`）
+   - 用户名：和脚本交互时输入的「数据库用户名」一致（如 `kanle`）
+   - 密码：自定义强密码（运行脚本时输入同样的密码）
    - 访问权限：**所有人**（必须！容器来源 IP 是 172.17.0.1，选「本地服务器」会被拒绝）
    - 字符集：`utf8mb4`
 
 2. **放行 3306 端口**：宝塔 → 安全 → 放行 3306
    - 安全起见可限制来源 IP 为 `172.17.0.0/16`（Docker 默认网段）
-   - 云服务器还需在云服务商控制台的安全组放行 3306（仅限同机部署时不需要）
 
-3. **如果之前跑过 Docker 模式**，会有旧的 `kanle-mysql` 容器占着 3306 端口，先删除它：
+3. **如果之前跑过 Docker 容器模式**，会有旧的 `kanle-mysql` 容器占着 3306 端口，先删除它：
    ```bash
    docker rm -f kanle-mysql
    ```
 
-4. 改完配置运行 `bash docker-cli.sh`，脚本会自动跳过 MySQL 容器，backend 容器通过 `host.docker.internal` 连接宿主机 MySQL。
+4. 运行 `bash docker-cli.sh`，第 1 步选 `y`，按提示输入宿主机 MySQL 信息即可。
 
-> `host.docker.internal` 在 Linux Docker 17.06+ 可用（需 `--add-host=host.docker.internal:host-gateway`，脚本已自动添加）。若你的 Docker 版本过旧不识别该参数，把 `DB_HOST` 改成 `172.17.0.1`（Docker 默认网桥的宿主机 IP）。
+**数据库主机地址怎么填？**
+
+| 场景 | 填什么 |
+|---|---|
+| 同机部署（推荐） | `host.docker.internal`（脚本自动加 host-gateway） |
+| host.docker.internal 不生效 | `172.17.0.1`（Docker 默认网桥的宿主机 IP） |
+| 跨机器部署 | 宿主机内网/公网 IP（如 `192.168.1.100`） |
 
 </details>
 
@@ -248,22 +259,26 @@ docker compose up -d --build
 
 ### 方式五：手动部署（PM2 + Nginx）
 
-前置要求：Node.js 22 LTS、MySQL 5.7+、PM2、Nginx
+前置要求：Node.js 22 LTS、MySQL 5.7+、PM2、Nginx、pnpm
 
 ```bash
+# 一次性安装 pnpm（Node 16+ 自带 corepack）
+corepack enable && corepack prepare pnpm@latest --activate
+# 或: npm install -g pnpm
+
 # ===== 后端 =====
 cd backend
-npm ci
+pnpm install                  # 比 npm ci 快很多，磁盘占用小
 cp .env.example .env          # 编辑 .env，填写数据库等信息
-npm run build
-npm run db:seed               # 初始化数据库 + 创建管理员
+pnpm build
+pnpm db:seed                  # 初始化数据库 + 创建管理员
 pm2 start ecosystem.config.js
 
 # ===== 前端 =====
 cd frontend
-npm ci
+pnpm install
 cp .env.example .env.local    # 编辑 .env.local，填写 NEXT_PUBLIC_API_URL
-npm run build
+pnpm build
 pm2 start ecosystem.config.js
 
 # ===== Nginx =====
@@ -292,13 +307,20 @@ curl -sSO https://download.bt.cn/install/install_panel.sh && bash install_panel.
 - **PHP**：不需要，本项目基于 Node.js，可跳过
 - 勾选「编译安装」，点击「一键安装」
 
-#### 第 2 步：安装 Node.js + PM2
+#### 第 2 步：安装 Node.js + PM2 + pnpm
 
 1. 宝塔左侧菜单 → **软件商店**
 2. 搜索 **PM2管理器**，点击安装
 3. 安装完成后，在 PM2 管理器中设置 Node.js 版本为 **22.x**
+4. 在宝塔**终端**中启用 pnpm（Node 16+ 自带 corepack，一次性操作）：
 
-> PM2 管理器自带 Node.js 和 PM2，无需手动安装。
+```bash
+corepack enable && corepack prepare pnpm@latest --activate
+# 验证
+pnpm -v
+```
+
+> PM2 管理器自带 Node.js 和 PM2，无需手动安装。pnpm 通过 corepack 启用，比 npm 快很多、报错更少。
 
 #### 第 3 步：创建数据库
 
@@ -331,7 +353,7 @@ git clone https://gitee.com/ziln_cn/kanle.git
 cd /www/wwwroot/kanle/backend
 
 # 安装依赖
-npm ci
+pnpm install
 
 # 配置环境变量
 cp .env.example .env
@@ -357,8 +379,8 @@ REVALIDATE_SECRET=kanle-revalidate
 继续构建和初始化：
 
 ```bash
-npm run build
-npm run db:seed    # 初始化数据库表 + 创建管理员账号
+pnpm build
+pnpm db:seed    # 初始化数据库表 + 创建管理员账号
 ```
 
 用 PM2 启动后端：
@@ -381,7 +403,7 @@ curl http://localhost:4000/api/health
 cd /www/wwwroot/kanle/frontend
 
 # 安装依赖
-npm ci
+pnpm install
 
 # 配置环境变量
 cp .env.example .env.local
@@ -399,7 +421,7 @@ REVALIDATE_SECRET=kanle-revalidate
 构建并启动：
 
 ```bash
-npm run build
+pnpm build
 pm2 start ecosystem.config.js --name kanle-frontend
 pm2 save
 ```
@@ -494,7 +516,7 @@ pm2 save
 
 #### 常见问题
 
-**Q: 宝塔终端中 npm/node 命令找不到？**
+**Q: 宝塔终端中 npm/node/pnpm 命令找不到？**
 
 宝塔的 PM2 管理器安装的 Node.js 可能不在默认 PATH 中。执行：
 
@@ -505,6 +527,9 @@ which node || find /www -name node -type f 2>/dev/null
 # 添加到 PATH（写入 ~/.bashrc）
 echo 'export PATH="/www/server/nodejs/v22/bin:$PATH"' >> ~/.bashrc
 source ~/.bashrc
+
+# 重新启用 pnpm
+corepack enable && corepack prepare pnpm@latest --activate
 ```
 
 **Q: 前端构建时内存不足？**
@@ -512,7 +537,7 @@ source ~/.bashrc
 ```bash
 # 增加 Node.js 内存限制
 export NODE_OPTIONS="--max-old-space-size=2048"
-npm run build
+pnpm build
 ```
 
 **Q: 改了域名后前端没生效？**
@@ -522,7 +547,7 @@ npm run build
 ```bash
 cd /www/wwwroot/kanle/frontend
 # 修改 .env.local 中的 NEXT_PUBLIC_API_URL
-npm run build
+pnpm build
 pm2 restart kanle-frontend
 ```
 
@@ -598,7 +623,7 @@ pm2 logs kanle-frontend     # 前端日志
 
 ```bash
 docker compose up -d --build frontend           # Docker Compose
-cd frontend && npm run build && pm2 restart kanle-frontend  # 手动
+cd frontend && pnpm build && pm2 restart kanle-frontend  # 手动
 ```
 </details>
 
@@ -647,10 +672,10 @@ docker exec kanle-backend node dist/scripts/reset-password.js
 
 ```bash
 # 后端（热重载）
-cd backend && npm run dev
+cd backend && pnpm dev
 
 # 前端（热重载）
-cd frontend && npm run dev
+cd frontend && pnpm dev
 ```
 
 项目使用 `sequelize.sync()` 自动创建表，无需手动迁移。
