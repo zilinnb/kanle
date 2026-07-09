@@ -11,24 +11,34 @@ ADMIN_PASSWORD="123456"               # 管理员密码
 FRONTEND_PORT=3000                    # 前端访问端口
 BACKEND_PORT=4000                     # 后端 API 端口
 MYSQL_PORT=3306                       # MySQL 端口（一般不用改）
+MYSQL_VERSION="8.0"                   # MySQL 版本：5.7 或 8.0 均可
 DB_NAME=moment_blog                   # 数据库名
 DB_USER=kanle                         # 数据库用户名
 # ======================================================
 
 set -e
 
+# 兼容 Windows CRLF 编辑（去除变量末尾的 \r）
+MYSQL_VERSION="${MYSQL_VERSION%$'\r'}"
+DB_PASSWORD="${DB_PASSWORD%$'\r'}"
+JWT_SECRET="${JWT_SECRET%$'\r'}"
+DB_NAME="${DB_NAME%$'\r'}"
+DB_USER="${DB_USER%$'\r'}"
+
 NETWORK="kanle-net"
 MYSQL_CONTAINER="kanle-mysql"
 BACKEND_CONTAINER="kanle-backend"
 FRONTEND_CONTAINER="kanle-frontend"
+MYSQL_IMAGE="mysql:${MYSQL_VERSION:-8.0}"
 
 echo "========================================"
 echo "  kanle Docker CLI 部署"
 echo "========================================"
-echo "  前端端口: $FRONTEND_PORT"
-echo "  后端端口: $BACKEND_PORT"
+echo "  前端端口:   $FRONTEND_PORT"
+echo "  后端端口:   $BACKEND_PORT"
 echo "  MySQL 端口: $MYSQL_PORT"
-echo "  数据库名: $DB_NAME"
+echo "  MySQL 版本: $MYSQL_VERSION"
+echo "  数据库名:   $DB_NAME"
 echo "  数据库用户: $DB_USER"
 echo "========================================"
 echo ""
@@ -55,8 +65,8 @@ else
     -p "${MYSQL_PORT}:3306" \
     -v kanle-mysql-data:/var/lib/mysql \
     --restart unless-stopped \
-    mysql:"$MYSQL_VERSION"
-  echo "[2/4] MySQL 已启动"
+    "$MYSQL_IMAGE"
+  echo "[2/4] MySQL 已启动 ($MYSQL_IMAGE)"
 fi
 
 # Backend
@@ -105,10 +115,10 @@ echo ""
 echo "========================================"
 echo "  部署完成!"
 echo "========================================"
-echo "  前端:      http://localhost:${FRONTEND_PORT}"
-echo "  后台:      http://localhost:${FRONTEND_PORT}/admin/login"
-echo "  管理员:    admin"
-echo "  密码:      $ADMIN_PASSWORD"
+echo "  前端:   http://localhost:${FRONTEND_PORT}"
+echo "  后台:   http://localhost:${FRONTEND_PORT}/admin/login"
+echo "  账号:   admin"
+echo "  密码:   $ADMIN_PASSWORD"
 echo "========================================"
 echo ""
 echo "常用命令:"
