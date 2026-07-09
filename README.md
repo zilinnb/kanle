@@ -85,16 +85,59 @@ bash docker-cli.sh
 脚本顶部可配置项：
 
 ```bash
+USE_LOCAL_MYSQL=false                 # true=用宿主机 MySQL（宝塔自带），false=用 Docker MySQL 容器
+DB_HOST="host.docker.internal"        # 宿主机 MySQL 地址（仅 USE_LOCAL_MYSQL=true 时生效）
+DB_PORT=3306                          # MySQL 端口
 DB_PASSWORD="change-me-to-strong"     # MySQL 密码（务必修改）
 JWT_SECRET="change-me-to-random-32+"  # JWT 密钥（务必改为随机长字符串）
 ADMIN_PASSWORD="123456"               # 管理员密码
 FRONTEND_PORT=3000                    # 前端访问端口
 BACKEND_PORT=4000                     # 后端 API 端口
-MYSQL_PORT=3306                       # MySQL 端口
-MYSQL_VERSION="8.0"                   # MySQL 版本：5.7 或 8.0 均可
+MYSQL_PORT=3306                       # MySQL 容器映射端口（仅 USE_LOCAL_MYSQL=false 时生效）
+MYSQL_VERSION="8.0"                   # MySQL 版本：5.7 或 8.0 均可（仅 USE_LOCAL_MYSQL=false 时生效）
+DB_NAME=moment_blog                   # 数据库名
+DB_USER=kanle                         # 数据库用户名
 ```
 
 > 脚本支持重复运行：已存在的容器会跳过，删除后重建只需 `docker rm -f kanle-frontend kanle-backend kanle-mysql` 再运行。
+
+<details>
+<summary>🖥️ 已用宝塔面板装了 MySQL？点这里切换为「使用宿主机 MySQL」模式</summary>
+
+如果服务器已经装了宝塔面板并自带 MySQL，不想再在 Docker 里跑一个 MySQL，把脚本顶部的 `USE_LOCAL_MYSQL` 改为 `true`：
+
+```bash
+USE_LOCAL_MYSQL=true
+DB_HOST="host.docker.internal"   # 容器通过它访问宿主机，脚本会自动加 host-gateway
+DB_PORT=3306
+DB_NAME=moment_blog              # 必须和宝塔面板里创建的数据库名一致
+DB_USER=kanle                    # 必须和宝塔面板里创建的用户名一致
+DB_PASSWORD="你在宝塔里设置的密码"
+```
+
+**部署前必须在宝塔面板完成以下操作**（否则容器连不上数据库）：
+
+1. **创建数据库**：宝塔 → 数据库 → 添加数据库
+   - 数据库名：`moment_blog`（与脚本 `DB_NAME` 一致）
+   - 用户名：`kanle`（与脚本 `DB_USER` 一致）
+   - 密码：自定义强密码（填入脚本 `DB_PASSWORD`）
+   - 访问权限：**所有人**（必须！容器来源 IP 是 172.17.0.1，选「本地服务器」会被拒绝）
+   - 字符集：`utf8mb4`
+
+2. **放行 3306 端口**：宝塔 → 安全 → 放行 3306
+   - 安全起见可限制来源 IP 为 `172.17.0.0/16`（Docker 默认网段）
+   - 云服务器还需在云服务商控制台的安全组放行 3306（仅限同机部署时不需要）
+
+3. **如果之前跑过 Docker 模式**，会有旧的 `kanle-mysql` 容器占着 3306 端口，先删除它：
+   ```bash
+   docker rm -f kanle-mysql
+   ```
+
+4. 改完配置运行 `bash docker-cli.sh`，脚本会自动跳过 MySQL 容器，backend 容器通过 `host.docker.internal` 连接宿主机 MySQL。
+
+> `host.docker.internal` 在 Linux Docker 17.06+ 可用（需 `--add-host=host.docker.internal:host-gateway`，脚本已自动添加）。若你的 Docker 版本过旧不识别该参数，把 `DB_HOST` 改成 `172.17.0.1`（Docker 默认网桥的宿主机 IP）。
+
+</details>
 
 ### 方式二：Docker Compose
 
