@@ -22,6 +22,7 @@ services:
     image: zilinnb/kanle-backend:latest
     # 如需从源码构建：注释掉 image，取消下面 build 的注释
     # build: ./backend
+    container_name: kanle-backend
     environment:
       NODE_ENV: production
       PORT: 4000
@@ -35,7 +36,8 @@ services:
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@kanle.net}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-123456}
       ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
-      CLIENT_URL: ${CLIENT_URL:-http://localhost:3000}
+      # revalidate 回调地址（Docker 内部，后端→前端）
+      CLIENT_URL: http://kanle-frontend:3000
       REVALIDATE_SECRET: ${REVALIDATE_SECRET:-kanle-revalidate}
     volumes:
       - backend-uploads:/app/backend/public/uploads
@@ -43,20 +45,20 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
-    ports:
-      - "4000:4000"
+    # 不暴露 4000 端口：通过前端 Next.js rewrites 代理 /api/ 和 /uploads/
     restart: unless-stopped
 
   frontend:
     # 镜像标签：latest（稳定版）| dev（开发版）
     image: zilinnb/kanle-frontend:latest
-    # 如需自定义域名（NEXT_PUBLIC_API_URL）：注释掉 image，取消下面 build 的注释
+    container_name: kanle-frontend
+    # 预构建镜像已内置 NEXT_PUBLIC_API_URL=/api + BACKEND_URL=http://kanle-backend:4000
+    # 任何 IP/域名都能用，无需从源码构建
+    # 如需自定义（如改后端容器名）：注释掉 image，取消下面 build 的注释
     # build:
     #   context: ./frontend
     #   args:
-    #     NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:4000/api}
-    #     NEXT_PUBLIC_TWIKOO_ENV_ID: ${NEXT_PUBLIC_TWIKOO_ENV_ID:-}
-    #     NEXT_PUBLIC_REVALIDATE_SECRET: ${REVALIDATE_SECRET:-kanle-revalidate}
+    #     BACKEND_URL: http://kanle-backend:4000
     environment:
       REVALIDATE_SECRET: ${REVALIDATE_SECRET:-kanle-revalidate}
       PORT: 3000

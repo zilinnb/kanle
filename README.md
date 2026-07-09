@@ -86,7 +86,7 @@ bash docker-cli.sh
   kanle · Docker 交互式部署
 ========================================
 
-[1/6] MySQL 配置
+[1/5] MySQL 配置
   是否使用宿主机已安装的 MySQL（如宝塔面板自带的）？[y/N]: y
   数据库主机地址 [host.docker.internal]:         ← 回车用默认
   数据库端口 [3306]:                              ← 回车用默认
@@ -94,25 +94,19 @@ bash docker-cli.sh
   数据库用户名 [kanle]:                           ← 回车用默认
   数据库密码（必填，不回显）: ********             ← 输入密码
 
-[2/6] 端口配置
+[2/5] 前端端口配置
   前端访问端口 [3000]:                            ← 回车用默认
-  后端 API 端口 [4000]:                           ← 回车用默认
+  → 后端不对外暴露端口（通过 rewrites 代理，只需放行 3000）
 
-[3/6] 访问地址配置（重要！决定前端如何调用后端 API）
-  前端访问地址 [http://localhost:3000]: http://45.192.100.137:3000
-  → 根据前端地址推导的后端 API 地址：http://45.192.100.137:4000/api
-  后端 API 地址 [http://45.192.100.137:4000/api]: ← 回车用推导值
-  → 非 localhost 访问，需要从源码构建前端镜像（约 3-5 分钟）
-
-[4/6] 管理员配置
+[3/5] 管理员配置
   管理员用户名 [admin]:                           ← 回车用默认
   管理员邮箱 [admin@kanle.net]:                   ← 回车用默认
   管理员密码 [123456]:                            ← 回车用默认
 
-[5/6] JWT 密钥
+[4/5] JWT 密钥
   JWT 密钥（回车自动生成）:                       ← 回车自动生成
 
-[6/6] 确认配置
+[5/5] 确认配置
   ...（打印所有配置）
   确认部署？[Y/n]:                                ← 回车确认
 ```
@@ -121,16 +115,10 @@ bash docker-cli.sh
 - **Docker 容器模式**（默认，回车 N）：开箱即用，脚本自动拉起 MySQL 容器，数据库密码可回车自动生成
 - **宿主机 MySQL 模式**（输入 y）：适配宝塔面板等已装 MySQL 的场景，脚本跳过 MySQL 容器，backend 容器通过 `host.docker.internal` 连接宿主机
 
-**访问地址的三种场景**（第 3 步）：
-
-| 场景 | 前端访问地址填什么 | 后端 API 地址 | 前端镜像 |
-|---|---|---|---|
-| 本地体验 | `http://localhost:3000` | `http://localhost:4000/api`（自动推导） | 预构建（秒起） |
-| 公网 IP 访问 | `http://45.192.100.137:3000` | `http://45.192.100.137:4000/api`（自动推导） | 从源码构建（需放行 4000 端口） |
-| 域名 + Nginx 反代 | `https://yourdomain.com` | `https://yourdomain.com/api`（同域，自动推导） | 从源码构建（只需放行 80/443） |
-
-> ⚠️ **公网/域名访问必须从源码构建前端**：`NEXT_PUBLIC_API_URL` 在 `next build` 时内联到产物中，预构建镜像里写死的是 `http://localhost:4000/api`，公网访问会报 CORS 错误。脚本检测到非 localhost 访问时会自动从源码构建（需要 `git clone` 代码或脚本在源码目录中运行）。
-
+> ✨ **前后端共用 3000 端口**：前端通过 Next.js rewrites 把 `/api/` 和 `/uploads/` 代理到后端容器（Docker 内部通信），后端不需要对外暴露端口。**只需放行前端端口（3000）**，无需放行 4000。
+>
+> ✨ **预构建镜像通用**：`NEXT_PUBLIC_API_URL=/api` 是相对路径，任何 IP/域名都能用，无需从源码构建。
+>
 > 脚本支持重复运行：已存在的容器会跳过，删除后重建只需 `docker rm -f kanle-frontend kanle-backend kanle-mysql` 再运行。
 > 自动化部署（CI/重复部署）可加 `--no-prompt` 参数跳过交互，全部采用默认值。
 
@@ -203,7 +191,7 @@ docker run -d \
   --restart unless-stopped \
   mysql:8.0
 
-# 3. 启动后端（替换 your_db_password、your_jwt_secret）
+# 3. 启动后端（不暴露端口，通过前端 rewrites 代理）
 # 也可用 mysql:5.7 替代上面步骤 2 中的 mysql:8.0
 docker run -d \
   --name kanle-backend \
@@ -216,15 +204,14 @@ docker run -d \
   -e ADMIN_EMAIL=admin@kanle.net \
   -e ADMIN_PASSWORD=123456 \
   -e ADMIN_USERNAME=admin \
-  -e CLIENT_URL=http://localhost:3000 \
+  -e CLIENT_URL=http://kanle-frontend:3000 \
   -e REVALIDATE_SECRET=kanle-revalidate \
-  -p 4000:4000 \
   -v kanle-uploads:/app/backend/public/uploads \
   -v kanle-plugins:/app/backend/plugins \
   --restart unless-stopped \
   zilinnb/kanle-backend:latest
 
-# 4. 启动前端（自定义端口示例：-p 8080:3000 把前端映射到 8080）
+# 4. 启动前端（唯一需要映射端口的容器）
 docker run -d \
   --name kanle-frontend \
   --network kanle-net \
@@ -233,6 +220,8 @@ docker run -d \
   --restart unless-stopped \
   zilinnb/kanle-frontend:latest
 ```
+
+> 后端不映射 4000 端口，通过前端 Next.js rewrites 代理 `/api/` 和 `/uploads/`。只需放行 3000。
 
 常用操作：
 
@@ -255,21 +244,18 @@ docker rm -f kanle-frontend kanle-backend kanle-mysql
 - `latest`：稳定版
 - `dev`：开发版，功能前沿但相对不稳定
 
-### 方式四：从源码构建（自定义域名时使用）
+### 方式四：从源码构建（自定义后端容器名时使用）
 
-预构建镜像中 `NEXT_PUBLIC_API_URL=http://localhost:4000/api`，适合本地体验。生产环境使用域名时需从源码构建：
+预构建镜像已内置 `NEXT_PUBLIC_API_URL=/api` + `BACKEND_URL=http://kanle-backend:4000`，任何域名/IP 都通用。仅当需要改后端容器名时才需从源码构建：
 
 ```bash
 # 1. 克隆项目
 git clone https://github.com/zilinnb/kanle.git
 cd kanle
 
-# 2. 复制并修改环境变量
-cp .env.example .env
-# 编辑 .env，修改 NEXT_PUBLIC_API_URL 为你的域名（如 https://yourdomain.com/api）
-
-# 3. 修改 docker-compose.yml：注释掉 frontend 的 image 行，取消 build 注释
-# 4. 构建并启动
+# 2. 修改 docker-compose.yml：注释掉 frontend 的 image 行，取消 build 注释
+#    在 build.args 中指定 BACKEND_URL（如 http://my-backend:4000）
+# 3. 构建并启动
 docker compose up -d --build
 ```
 
@@ -293,12 +279,12 @@ pm2 start ecosystem.config.js
 # ===== 前端 =====
 cd frontend
 pnpm install
-cp .env.example .env.local    # 编辑 .env.local，填写 NEXT_PUBLIC_API_URL
+cp .env.example .env.local    # 默认 NEXT_PUBLIC_API_URL=/api + BACKEND_URL=http://localhost:4000，无需修改
 pnpm build
 pm2 start ecosystem.config.js
 
 # ===== Nginx =====
-# 参考 deploy/nginx.conf，/api/ 和 /uploads/ 代理到 4000，其余代理到 3000
+# 只需反代 3000，/api/ 和 /uploads/ 由 Next.js rewrites 自动代理到后端
 sudo cp deploy/nginx.conf /etc/nginx/conf.d/kanle.conf
 sudo nginx -t && sudo nginx -s reload
 sudo certbot --nginx -d yourdomain.com   # SSL 证书
@@ -428,8 +414,10 @@ cp .env.example .env.local
 编辑 `.env.local`：
 
 ```ini
-# 本地部署用 localhost，有域名改成 https://你的域名/api
-NEXT_PUBLIC_API_URL=http://localhost:4000/api
+# /api 是相对路径，通过 Next.js rewrites 代理到后端，任何域名/IP 都通用
+NEXT_PUBLIC_API_URL=/api
+# 后端地址（rewrites 代理目标）
+BACKEND_URL=http://localhost:4000
 NEXT_PUBLIC_REVALIDATE_SECRET=kanle-revalidate
 REVALIDATE_SECRET=kanle-revalidate
 ```
@@ -468,7 +456,7 @@ server {
     listen 80;
     server_name 你的域名.com;
 
-    # 前端
+    # 只需反代 3000，/api/ 和 /uploads/ 由 Next.js rewrites 自动代理到后端
     location / {
         proxy_pass http://127.0.0.1:3000;
         proxy_http_version 1.1;
@@ -478,22 +466,6 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
-    }
-
-    # 后端 API
-    location /api/ {
-        proxy_pass http://127.0.0.1:4000;
-        proxy_http_version 1.1;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-
-    # 上传文件
-    location /uploads/ {
-        proxy_pass http://127.0.0.1:4000;
-        proxy_set_header Host $host;
     }
 
     # 上传文件大小限制
@@ -558,14 +530,7 @@ pnpm build
 
 **Q: 改了域名后前端没生效？**
 
-`NEXT_PUBLIC_API_URL` 是构建时内联的，换域名后需要重新构建：
-
-```bash
-cd /www/wwwroot/kanle/frontend
-# 修改 .env.local 中的 NEXT_PUBLIC_API_URL
-pnpm build
-pm2 restart kanle-frontend
-```
+`NEXT_PUBLIC_API_URL=/api` 是相对路径，换域名后**不需要重新构建**。只需修改 Nginx 配置中的 `server_name`，前端自动适配。
 
 **Q: 如何查看日志？**
 
@@ -577,14 +542,14 @@ pm2 logs kanle-frontend     # 前端日志
 
 ### 访问
 
-启动完成后，用你在脚本第 3 步填的「前端访问地址」打开：
-- 前端：你填的访问地址（如 `http://45.192.100.137:3000` 或 `https://yourdomain.com`）
+启动完成后，用 `http://你的服务器IP:3000` 打开：
+- 前端：`http://你的服务器IP:3000`（或你的域名）
 - 后台：访问地址 + `/admin/login`
 - 默认账号：`admin`（用户名登录，也支持邮箱 `admin@kanle.net`）
 - 默认密码：`123456`
 
 > 生产环境务必修改 `ADMIN_PASSWORD`、`JWT_SECRET`、`DB_PASSWORD`。
-> 公网 IP 访问时，需要在宝塔/云服务商安全组放行前端端口（3000）和后端端口（4000）。
+> 只需放行前端端口（3000），后端通过 rewrites 代理，无需放行 4000。
 
 ## 环境变量
 
@@ -612,11 +577,13 @@ pm2 logs kanle-frontend     # 前端日志
 
 | 变量 | 类型 | 必填 | 说明 |
 |---|---|---|---|
-| `NEXT_PUBLIC_API_URL` | 构建时 | 是 | 后端 API 地址，**必须以 `/api` 结尾** |
+| `NEXT_PUBLIC_API_URL` | 构建时 | 是 | 后端 API 地址，默认 `/api`（相对路径，通过 rewrites 代理，通用） |
+| `BACKEND_URL` | 构建时 | 是 | rewrites 代理目标（Docker: `http://kanle-backend:4000`，PM2: `http://localhost:4000`） |
+| `NEXT_PUBLIC_SITE_URL` | 构建时 | 否 | 站点 URL（用于 Cravatar 默认头像，不设则回退 wavatar） |
 | `NEXT_PUBLIC_TWIKOO_ENV_ID` | 构建时 | 否 | Twikoo 评论系统环境 ID |
 | `REVALIDATE_SECRET` | 运行时 | 否 | 须与后端一致 |
 
-> **重要**：`NEXT_PUBLIC_*` 变量在 `next build` 时内联到产物中，运行时修改无效。换域名后必须重新构建前端。
+> `NEXT_PUBLIC_API_URL=/api` 是相对路径，通过 Next.js rewrites 代理到后端，任何域名/IP 都通用，无需因换域名而重新构建。
 
 ## 后台配置
 
@@ -634,14 +601,11 @@ pm2 logs kanle-frontend     # 前端日志
 ## 常见问题
 
 <details>
-<summary>改了 NEXT_PUBLIC_API_URL 为什么没生效？</summary>
+<summary>换了域名需要重新构建前端吗？</summary>
 
-`NEXT_PUBLIC_*` 变量在构建时内联，运行时修改无效。需要重新构建前端：
+**不需要。** `NEXT_PUBLIC_API_URL=/api` 是相对路径，通过 Next.js rewrites 代理到后端，任何域名/IP 都通用。
 
-```bash
-docker compose up -d --build frontend           # Docker Compose
-cd frontend && pnpm build && pm2 restart kanle-frontend  # 手动
-```
+如果改了后端容器名（非 `kanle-backend`），则需要从源码构建前端，传入 `--build-arg BACKEND_URL=http://新容器名:4000`。
 </details>
 
 <details>
@@ -674,15 +638,17 @@ docker exec kanle-backend node dist/scripts/reset-password.js
 <details>
 <summary>上传的图片显示不出来？</summary>
 
-1. 检查 Nginx 是否将 `/uploads/` 代理到后端
-2. 如果使用 CDN 域名，需在 `frontend/next.config.ts` 的 `images.remotePatterns` 中添加域名
+- Docker 部署：`/uploads/` 由 Next.js rewrites 自动代理到后端，无需额外配置
+- PM2 + Nginx 部署：确认 Nginx 已将 `/` 反代到 3000（rewrites 会处理 `/uploads/`）
+- 如果使用 CDN 域名，需在 `frontend/next.config.ts` 的 `images.remotePatterns` 中添加域名
 </details>
 
 <details>
 <summary>如何自定义端口？</summary>
 
-- Docker Compose：修改 `docker-compose.yml` 中的 `ports: - "3000:3000"` 和 `ports: - "4000:4000"`
-- Docker CLI：`docker run -p 8080:3000`（前端映射到 8080）和 `-p 4001:4000`（后端映射到 4001）
+- Docker Compose：修改 `docker-compose.yml` 中 frontend 的 `ports: - "3000:3000"`
+- Docker CLI：`docker run -p 8080:3000`（前端映射到 8080）
+- 后端不需要映射端口（通过 rewrites 代理）
 </details>
 
 ## 开发

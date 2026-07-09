@@ -1,9 +1,13 @@
 import md5 from "blueimp-md5";
 import { toAbsoluteUrl } from "./upload";
 
-// 站点 URL（从 API URL 推导），用于构造默认头像的绝对 URL
-const SITE_URL = (process.env.NEXT_PUBLIC_API_URL || "").replace(/\/api$/, "");
-// Cravatar d 参数：生产环境用站点默认头像，开发环境回退到 wavatar
+// 站点 URL（用于构造默认头像的绝对 URL）
+// 优先用 NEXT_PUBLIC_SITE_URL；否则从 NEXT_PUBLIC_API_URL 推导（兼容旧配置）
+// 当 NEXT_PUBLIC_API_URL=/api（相对路径，rewrites 模式）时 SITE_URL 为空，回退到 wavatar
+const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_API_URL || "")
+  .replace(/\/api$/, "")
+  .replace(/\/$/, "");
+// Cravatar d 参数：有绝对站点 URL 时用站点默认头像，否则回退到 wavatar
 const DEFAULT_AVATAR_PARAM = SITE_URL.startsWith("http")
   ? encodeURIComponent(`${SITE_URL}/default-avatar.jpg`)
   : "wavatar";
