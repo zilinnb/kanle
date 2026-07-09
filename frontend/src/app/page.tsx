@@ -11,8 +11,9 @@ import AdminNotifications from "@/components/AdminNotifications";
 import EditPostModal from "@/components/EditPostModal";
 import ProfileScrollRestoration from "@/components/profile/ProfileScrollRestoration";
 import { owner as fallbackOwner, User } from "@/lib/mock-data";
+import { getApiUrl } from "@/lib/api-fetch";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
+const API_URL = getApiUrl();
 const PAGE_SIZE = 10;
 
 // ISR：10 秒重新验证（后端写操作后会触发按需重验证，10秒仅作安全网）

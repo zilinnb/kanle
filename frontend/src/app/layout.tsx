@@ -5,8 +5,9 @@ import GlobalMusicManager from "@/components/GlobalMusicManager";
 import MusicFloatingCard from "@/components/MusicFloatingCard";
 import LoadingBar from "@/components/LoadingBar";
 import EmojiFadeController from "@/components/EmojiFadeController";
+import { getApiUrl } from "@/lib/api-fetch";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
+const API_URL = getApiUrl();
 
 export const viewport: Viewport = {
   width: "device-width",

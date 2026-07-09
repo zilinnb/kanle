@@ -39,6 +39,10 @@ COPY --from=builder /app/frontend/.next/standalone ./
 COPY --from=builder /app/frontend/.next/static ./.next/static
 COPY --from=builder /app/frontend/public ./public
 
+# 运行时也需要 BACKEND_URL（SSR fetch 需要绝对 URL，rewrites 已在构建时内联）
+ARG BACKEND_URL=http://kanle-backend:4000
+ENV BACKEND_URL=$BACKEND_URL
+
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 

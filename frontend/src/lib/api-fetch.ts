@@ -1,7 +1,15 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
+const PUBLIC_API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
 
+/**
+ * 获取 API URL。
+ * - 客户端：返回 NEXT_PUBLIC_API_URL（/api 相对路径，通过 rewrites 代理）
+ * - SSR：如果 API_URL 是相对路径，用 BACKEND_URL 构造绝对 URL（Node.js fetch 需要绝对 URL）
+ */
 export function getApiUrl() {
-  return API_URL;
+  if (typeof window === "undefined" && PUBLIC_API_URL.startsWith("/")) {
+    return `${process.env.BACKEND_URL || "http://localhost:4000"}${PUBLIC_API_URL}`;
+  }
+  return PUBLIC_API_URL;
 }
 
 export function getToken(): string | null {
@@ -22,7 +30,7 @@ export function clearAuth() {
 
 export async function apiFetch(path: string, options?: RequestInit): Promise<Response> {
   const token = getToken();
-  const res = await fetch(`${API_URL}${path}`, {
+  const res = await fetch(`${getApiUrl()}${path}`, {
     ...options,
     headers: {
       ...(options?.headers || {}),

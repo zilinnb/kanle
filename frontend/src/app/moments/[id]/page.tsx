@@ -10,8 +10,9 @@ import EditPostModal from "@/components/EditPostModal";
 import PostDetail from "@/components/post-detail/PostDetail";
 import ProfileFadeIn from "@/components/profile/ProfileFadeIn";
 import { owner as fallbackOwner, User, Post } from "@/lib/mock-data";
+import { getApiUrl } from "@/lib/api-fetch";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
+const API_URL = getApiUrl();
 
 export const revalidate = 10;
 

@@ -11,8 +11,9 @@ import ProfileTimeline from "@/components/profile/ProfileTimeline";
 import ProfileFadeIn from "@/components/profile/ProfileFadeIn";
 import ProfileScrollRestoration from "@/components/profile/ProfileScrollRestoration";
 import { owner as fallbackOwner, User } from "@/lib/mock-data";
+import { getApiUrl } from "@/lib/api-fetch";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
+const API_URL = getApiUrl();
 const PAGE_SIZE = 10;
 
 export const revalidate = 10;

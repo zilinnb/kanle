@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
+import { getApiUrl } from "@/lib/api-fetch";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
+const API_URL = getApiUrl();
 
 function escapeXml(str: string): string {
   if (!str) return "";
