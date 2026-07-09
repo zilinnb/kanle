@@ -63,7 +63,7 @@ export function buildIdentity(
  * 线程化排序评论：顶级评论按 (点赞多 → 时间早) 排序，回复按时间正序紧跟其父评论。
  * 匹配父评论用 author + email 双键，避免同名歧义。孤儿回复（父评论不在列表中）排末尾。
  */
-function sortCommentsThreaded<T extends { replyTo?: string | null; replyToEmail?: string | null; author: string; email?: string | null; likeCount: number; createdAt: string }>(comments: T[]): T[] {
+function sortCommentsThreaded<T extends { id: string; replyTo?: string | null; replyToEmail?: string | null; replyToId?: string | null; author: string; email?: string | null; likeCount: number; createdAt: string }>(comments: T[]): T[] {
   const topLevel = comments.filter((c) => !c.replyTo);
   const replies = comments.filter((c) => c.replyTo);
 
@@ -73,15 +73,21 @@ function sortCommentsThreaded<T extends { replyTo?: string | null; replyToEmail?
     return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
   });
 
-  // 按父评论分组（author + email 双键）
-  const repliesByParent = new Map<string, T[]>();
+  // 按父评论 ID 分组（优先用 replyToId 精确匹配，旧数据 fallback 到 author + email 双键）
+  const repliesByParentId = new Map<string, T[]>();
+  const repliesByNameKey = new Map<string, T[]>();
   for (const r of replies) {
-    const key = `${r.replyTo}|${r.replyToEmail || ""}`;
-    if (!repliesByParent.has(key)) repliesByParent.set(key, []);
-    repliesByParent.get(key)!.push(r);
+    if (r.replyToId) {
+      if (!repliesByParentId.has(r.replyToId)) repliesByParentId.set(r.replyToId, []);
+      repliesByParentId.get(r.replyToId)!.push(r);
+    } else {
+      const key = `${r.replyTo}|${r.replyToEmail || ""}`;
+      if (!repliesByNameKey.has(key)) repliesByNameKey.set(key, []);
+      repliesByNameKey.get(key)!.push(r);
+    }
   }
   // 每组回复按时间正序（对话顺序）
-  for (const group of repliesByParent.values()) {
+  for (const group of [...repliesByParentId.values(), ...repliesByNameKey.values()]) {
     group.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
   }
 
@@ -89,15 +95,22 @@ function sortCommentsThreaded<T extends { replyTo?: string | null; replyToEmail?
   const result: T[] = [];
   for (const tc of topLevel) {
     result.push(tc);
-    const key = `${tc.author}|${tc.email || ""}`;
-    const tcReplies = repliesByParent.get(key);
-    if (tcReplies) {
-      result.push(...tcReplies);
-      repliesByParent.delete(key);
+    // 优先用 ID 匹配
+    const byId = repliesByParentId.get(tc.id);
+    if (byId) {
+      result.push(...byId);
+      repliesByParentId.delete(tc.id);
+    }
+    // 再用 name key 匹配旧数据
+    const nameKey = `${tc.author}|${tc.email || ""}`;
+    const byName = repliesByNameKey.get(nameKey);
+    if (byName) {
+      result.push(...byName);
+      repliesByNameKey.delete(nameKey);
     }
   }
   // 孤儿回复（父评论不在列表中）排末尾
-  for (const group of repliesByParent.values()) {
+  for (const group of [...repliesByParentId.values(), ...repliesByNameKey.values()]) {
     result.push(...group);
   }
   return result;
@@ -180,6 +193,7 @@ function formatPost(
           website: c.website,
           replyTo: c.replyTo,
           replyToEmail: c.replyToEmail,
+          replyToId: c.replyToId,
           content: c.content,
           createdAt: c.createdAt,
           likeCount: likeData?.likeCount ?? 0,
@@ -657,6 +671,7 @@ router.post(
     body("website").optional().trim().isLength({ max: 255 }),
     body("replyTo").optional().trim(),
     body("replyToEmail").optional().trim().isEmail().normalizeEmail(),
+    body("replyToId").optional({ checkFalsy: true }).isUUID(),
   ],
   async (req: Request, res: Response) => {
     const errors = validationResult(req);
@@ -750,6 +765,7 @@ router.post(
       website: req.body.website || null,
       replyTo: req.body.replyTo || null,
       replyToEmail: req.body.replyToEmail || null,
+      replyToId: req.body.replyToId || null,
       content: req.body.content,
       ip,
       region: commentRegion,
@@ -769,6 +785,7 @@ router.post(
       website: comment.website,
       replyTo: comment.replyTo,
       replyToEmail: comment.replyToEmail,
+      replyToId: comment.replyToId,
       content: comment.content,
       createdAt: comment.createdAt,
       // 新评论默认无点赞，作者标记服务端计算

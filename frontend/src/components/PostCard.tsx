@@ -566,8 +566,8 @@ export default function PostCard({ post, index, onDelete }: PostCardProps) {
           likes={likes}
           comments={comments}
           ownerEmail={post.author?.email}
-          onReply={(author) => {
-            setReplyTo(author);
+          onReply={(commentId) => {
+            setReplyTo(commentId);
             setShowComments(true);
           }}
         />

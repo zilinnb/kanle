@@ -118,41 +118,45 @@ export default function PostDetail({ post }: PostDetailProps) {
 
   // 从通知/邮件链接跳转：/moments/{id}#comment-{commentId}
   const urlNavRef = useRef(false);
+
+  // 无 hash 时重置滚动位置到顶部（避免 TopBar 遮挡）
   useEffect(() => {
-    if (urlNavRef.current) return;
-    urlNavRef.current = true;
-
     const hash = window.location.hash;
-    const commentId = hash.startsWith("#comment-") ? hash.substring(9) : null;
-
-    // 进入详情页时重置滚动位置到顶部，避免 TopBar 遮挡内容
-    if (!commentId) {
+    if (!hash.startsWith("#comment-")) {
       window.scrollTo(0, 0);
       const scrollRoot = document.getElementById("scroll-root");
       if (scrollRoot) scrollRoot.scrollTop = 0;
     }
+  }, [post.id]);
 
-    // 等待入场动画结束后再滚动
-    setTimeout(() => {
-      if (commentId) {
+  // 评论加载后滚动到 hash 指定的评论（监听 comments 变化，避免固定延迟不够的问题）
+  useEffect(() => {
+    if (urlNavRef.current) return;
+    if (comments.length === 0) return;
+    const hash = window.location.hash;
+    if (!hash.startsWith("#comment-")) return;
+    const commentId = hash.substring(9);
+    const target = comments.find((c) => c.id === commentId);
+    if (!target) return;
+
+    urlNavRef.current = true;
+    setShowComments(true);
+
+    // 等待 DOM 渲染后滚动（双 rAF 确保 React commit + paint 完成）
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
         const el = document.getElementById(`comment-${commentId}`);
         if (el) {
-          setShowComments(true);
           el.scrollIntoView({ behavior: "smooth", block: "center" });
           el.style.transition = "background-color 0.3s ease";
           el.style.backgroundColor = "rgba(128, 128, 128, 0.14)";
-          setTimeout(() => {
-            el.style.backgroundColor = "";
-          }, 2500);
+          setTimeout(() => { el.style.backgroundColor = ""; }, 2500);
         }
-      }
-    }, 800);
-
-    // 清除 URL hash，避免刷新重复触发
-    if (hash) {
-      window.history.replaceState({}, "", window.location.pathname);
-    }
-  }, [post.id]);
+        // 清除 hash 避免刷新重复触发
+        window.history.replaceState({}, "", window.location.pathname);
+      })
+    );
+  }, [comments]);
 
   const handleLike = async () => {
     if (liking) return;
@@ -426,8 +430,8 @@ export default function PostDetail({ post }: PostDetailProps) {
               comments={comments}
               ownerEmail={post.author?.email}
               showAvatars
-              onReply={(author) => {
-                setReplyTo(author);
+              onReply={(commentId) => {
+                setReplyTo(commentId);
                 setShowComments(true);
                 requestAnimationFrame(() => {
                   commentSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });

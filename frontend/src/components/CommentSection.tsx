@@ -46,6 +46,10 @@ export default function CommentSection({
   const [comments, setComments] = useState<Comment[]>(initialComments);
   const [content, setContent] = useState("");
   const [replyTo, setReplyTo] = useState<string | undefined>(initialReplyTo);
+  // replyTo 存储父评论 ID；显示用名字需用 ID 查找
+  const replyToName = replyTo
+    ? initialComments.find((c) => c.id === replyTo)?.author
+    : undefined;
   const [submitting, setSubmitting] = useState(false);
   const [showEmoji, setShowEmoji] = useState(false);
   const [emojiExpanded, setEmojiExpanded] = useState(false);
@@ -125,12 +129,14 @@ export default function CommentSection({
       authorWebsite = website;
     }
 
-    // 找到被回复评论的邮箱，用于精确通知被回复者
+    // replyTo 现在存储的是父评论 ID，用 ID 精确查找父评论（避免同名歧义）
     let replyToEmail = "";
+    let replyToAuthor = "";
     if (replyTo) {
-      const parent = initialComments.find((c) => c.author === replyTo || c.replyTo === replyTo);
+      const parent = initialComments.find((c) => c.id === replyTo);
       if (parent) {
         replyToEmail = parent.email || "";
+        replyToAuthor = parent.author;
       }
     }
 
@@ -145,8 +151,9 @@ export default function CommentSection({
           email: authorEmail,
           website: authorWebsite || undefined,
           content: text,
-          replyTo,
+          replyTo: replyToAuthor || undefined,
           replyToEmail: replyToEmail || undefined,
+          replyToId: replyTo || undefined,
         }),
       });
       if (!res.ok) {
@@ -330,10 +337,10 @@ export default function CommentSection({
             </>
           ) : null}
 
-          {replyTo && (
+          {replyToName && (
             <span className="ml-1 flex items-center gap-1 text-[13px] text-wechat-time">
               <span>回复</span>
-              <span className="text-wechat-nickname">{replyTo}</span>
+              <span className="text-wechat-nickname">{replyToName}</span>
             </span>
           )}
         </div>
@@ -435,7 +442,7 @@ export default function CommentSection({
             suppressContentEditableWarning
             autoFocus
             data-empty="true"
-            data-placeholder={replyTo ? `回复 ${replyTo}...` : "评论..."}
+            data-placeholder={replyToName ? `回复 ${replyToName}...` : "评论..."}
             onInput={syncContent}
             onKeyUp={saveSelection}
             onMouseUp={saveSelection}

@@ -13,6 +13,8 @@ export interface Comment {
   email?: string;
   website?: string;
   replyTo?: string;
+  /** 被回复评论的 ID（新数据有值，旧数据为空 — 需 fallback 到 replyTo author name 查找） */
+  replyToId?: string;
   content: string;
   createdAt: string;
   /** 该评论的点赞数（文章详情页用） */

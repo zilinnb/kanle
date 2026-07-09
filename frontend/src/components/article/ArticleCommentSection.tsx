@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState, useCallback, useMemo } fr
 import { flushSync } from "react-dom";
 import { Comment, Post, formatRelativeTime } from "@/lib/mock-data";
 import { cravatarUrl } from "@/lib/avatar";
+import { findParentComment, findRootCommentId } from "@/lib/comment-utils";
 import { getCurrentUser, CurrentUser } from "@/lib/auth";
 import { EMOJI_LIST, editableToShortcode, renderTextWithEmoji } from "@/lib/emoji";
 import { Smile, ThumbsUp, X, ChevronDown, ChevronUp } from "lucide-react";
@@ -43,6 +44,8 @@ export default function ArticleCommentSection({
 }: ArticleCommentSectionProps) {
   const [content, setContent] = useState("");
   const [replyTo, setReplyTo] = useState<string | undefined>(undefined);
+  // replyTo 存储父评论 ID；显示用名字需用 ID 查找
+  const replyToName = replyTo ? comments.find((c) => c.id === replyTo)?.author : undefined;
   const [submitting, setSubmitting] = useState(false);
   const [showEmoji, setShowEmoji] = useState(false);
   const [emojiExpanded, setEmojiExpanded] = useState(false);
@@ -82,6 +85,41 @@ export default function ArticleCommentSection({
   const expandedRef = useRef(false);
   useEffect(() => { expandedRef.current = expanded; }, [expanded]);
 
+  // 从邮件/通知链接跳转：/articles/{id}#comment-{commentId} → 展开线程并滚动到评论
+  const hashScrolledRef = useRef(false);
+  useEffect(() => {
+    if (hashScrolledRef.current) return;
+    if (comments.length === 0) return;
+    const hash = window.location.hash;
+    if (!hash.startsWith("#comment-")) return;
+    const commentId = hash.substring(9);
+    const target = comments.find((c) => c.id === commentId);
+    if (!target) return;
+
+    hashScrolledRef.current = true;
+
+    // 如果是子回复，展开所属线程
+    if (target.replyTo || target.replyToId) {
+      const rootId = findRootCommentId(target, comments);
+      if (rootId) {
+        setExpandedThreads((prev) => new Set(prev).add(rootId));
+      }
+    }
+
+    // 等线程展开后滚动（requestAnimationFrame 两帧确保 DOM 已更新）
+    const scrollToComment = () => {
+      const el = document.getElementById(`comment-${commentId}`);
+      if (!el) return;
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.style.transition = "background-color 0.3s ease";
+      el.style.backgroundColor = "rgba(128, 128, 128, 0.14)";
+      setTimeout(() => { el.style.backgroundColor = ""; }, 2500);
+      // 清除 hash 避免刷新重复触发
+      window.history.replaceState({}, "", window.location.pathname);
+    };
+    requestAnimationFrame(() => requestAnimationFrame(scrollToComment));
+  }, [comments]);
+
   useEffect(() => {
     const user = getCurrentUser();
     setCurrentUser(user);
@@ -92,24 +130,15 @@ export default function ArticleCommentSection({
     }
   }, []);
 
-  // 同步外部传入的回复目标（来自评论列表"回复"按钮）→ 展开内联回复
+  // 同步外部传入的回复目标（comment ID，来自评论列表"回复"按钮）→ 展开内联回复
   useLayoutEffect(() => {
     if (pendingReplyTo) {
-      const target = comments.find((c) => c.author === pendingReplyTo);
+      const target = comments.find((c) => c.id === pendingReplyTo);
       if (target) {
-        // 目标是子回复时，先找到根评论 id 用于展开线程
+        // 目标是子回复时，用 findRootCommentId 找根评论 id 用于展开线程
         let rootId: string | null = null;
-        if (target.replyTo) {
-          let current: Comment | undefined = target;
-          const visited = new Set<string>();
-          while (current && current.replyTo) {
-            if (visited.has(current.id)) break;
-            visited.add(current.id);
-            current = comments.find((c) => c.author === current!.replyTo);
-          }
-          if (current && !current.replyTo) {
-            rootId = current.id;
-          }
+        if (target.replyTo || target.replyToId) {
+          rootId = findRootCommentId(target, comments);
         }
         flushSync(() => {
           if (rootId) {
@@ -249,7 +278,8 @@ export default function ArticleCommentSection({
     text: string,
     replyToAuthor: string | undefined,
     replyToEmail: string,
-    errorSetter: (msg: string) => void
+    errorSetter: (msg: string) => void,
+    replyToId?: string
   ): Promise<boolean> => {
     const trimmedText = text.trim();
     if (!trimmedText) return false;
@@ -291,6 +321,7 @@ export default function ArticleCommentSection({
           content: trimmedText,
           replyTo: replyToAuthor,
           replyToEmail: replyToEmail || undefined,
+          replyToId: replyToId || undefined,
         }),
       });
       if (!res.ok) {
@@ -338,13 +369,17 @@ export default function ArticleCommentSection({
     if (!text.trim() || submitting) return;
 
     let replyToEmail = "";
+    let replyToAuthor = "";
     if (replyTo) {
-      const parent = comments.find((c) => c.author === replyTo || c.replyTo === replyTo);
-      if (parent) replyToEmail = parent.email || "";
+      const parent = comments.find((c) => c.id === replyTo);
+      if (parent) {
+        replyToEmail = parent.email || "";
+        replyToAuthor = parent.author;
+      }
     }
 
     setSubmitting(true);
-    const ok = await submitComment(text, replyTo, replyToEmail, setError);
+    const ok = await submitComment(text, replyToAuthor || undefined, replyToEmail, setError, replyTo);
     setSubmitting(false);
 
     if (ok) {
@@ -369,22 +404,17 @@ export default function ArticleCommentSection({
       text,
       targetComment.author,
       targetComment.email || "",
-      setInlineError
+      setInlineError,
+      targetComment.id
     );
     setInlineSubmitting(false);
     if (ok) {
       // 自动展开所属线程，让新回复可见
-      if (targetComment.replyTo) {
-        // 回复的是子回复：向上找根评论并展开
-        let current: Comment | undefined = targetComment;
-        const visited = new Set<string>();
-        while (current && current.replyTo) {
-          if (visited.has(current.id)) break;
-          visited.add(current.id);
-          current = comments.find((c) => c.author === current!.replyTo);
-        }
-        if (current && !current.replyTo) {
-          setExpandedThreads((prev) => new Set(prev).add(current!.id));
+      if (targetComment.replyTo || targetComment.replyToId) {
+        // 回复的是子回复：向上找根评论并展开（用 findParentComment 避免同名歧义）
+        const rootId = findRootCommentId(targetComment, comments);
+        if (rootId) {
+          setExpandedThreads((prev) => new Set(prev).add(rootId));
         }
       } else {
         // 回复的是顶级评论：直接展开
@@ -518,17 +548,10 @@ export default function ArticleCommentSection({
       setInlineError("");
       return;
     }
-    // 回复的是子回复时，展开其所属线程
-    if (comment.replyTo) {
-      let current: Comment | undefined = comment;
-      const visited = new Set<string>();
-      while (current && current.replyTo) {
-        if (visited.has(current.id)) break;
-        visited.add(current.id);
-        current = comments.find((c) => c.author === current!.replyTo);
-      }
-      if (current && !current.replyTo) {
-        const rootId = current.id;
+    // 回复的是子回复时，展开其所属线程（用 findRootCommentId 避免同名歧义）
+    if (comment.replyTo || comment.replyToId) {
+      const rootId = findRootCommentId(comment, comments);
+      if (rootId) {
         setExpandedThreads((prev) => new Set(prev).add(rootId));
       }
     }
@@ -547,27 +570,15 @@ export default function ArticleCommentSection({
   const commentCount = comments.length;
 
   // 按线程分组：顶级评论 + 其下所有回复（含跨级回复，如 C 回复 B 仍归入 A 的线程）
-  // 通过 replyTo 链向上查找根评论，确保整条对话归在一起
+  // 通过 replyToId / replyTo 链向上查找根评论，确保整条对话归在一起
   const threads = useMemo(() => {
-    const topLevel = comments.filter((c) => !c.replyTo);
-    const replies = comments.filter((c) => c.replyTo);
-
-    // 为每条回复查找根顶级评论 id
-    const findRootId = (reply: Comment): string | null => {
-      let current: Comment | undefined = reply;
-      const visited = new Set<string>();
-      while (current && current.replyTo) {
-        if (visited.has(current.id)) break;
-        visited.add(current.id);
-        current = comments.find((c) => c.author === current!.replyTo);
-      }
-      return current && !current.replyTo ? current.id : null;
-    };
+    const topLevel = comments.filter((c) => !c.replyTo && !c.replyToId);
+    const replies = comments.filter((c) => c.replyTo || c.replyToId);
 
     const repliesByRoot = new Map<string, Comment[]>();
     const orphans: Comment[] = [];
     for (const reply of replies) {
-      const rootId = findRootId(reply);
+      const rootId = findRootCommentId(reply, comments);
       if (rootId) {
         if (!repliesByRoot.has(rootId)) repliesByRoot.set(rootId, []);
         repliesByRoot.get(rootId)!.push(reply);
@@ -825,10 +836,10 @@ export default function ArticleCommentSection({
                       {currentUser.nickname}
                     </span>
                   ) : null}
-                  {replyTo && (
+                  {replyToName && (
                     <span className="ml-1 flex items-center gap-1 text-[13px] text-wechat-time">
                       <span>回复</span>
-                      <span className="text-wechat-nickname">{replyTo}</span>
+                      <span className="text-wechat-nickname">{replyToName}</span>
                     </span>
                   )}
                 </div>
@@ -863,7 +874,7 @@ export default function ArticleCommentSection({
                     contentEditable
                     suppressContentEditableWarning
                     data-empty="true"
-                    data-placeholder={replyTo ? `回复 ${replyTo}...` : "写留言"}
+                    data-placeholder={replyToName ? `回复 ${replyToName}...` : "写留言"}
                     onInput={syncContent}
                     onKeyUp={saveSelection}
                     onMouseUp={saveSelection}
@@ -967,7 +978,7 @@ export default function ArticleCommentSection({
             const isOrphan = !!parent.replyTo;
 
             return (
-              <div key={parent.id} className="flex gap-3">
+              <div key={parent.id} id={`comment-${parent.id}`} className="flex gap-3 scroll-mt-20">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={cravatarUrl(parent.email || parent.author, 80)}
@@ -1058,9 +1069,12 @@ export default function ArticleCommentSection({
                         {replies.map((reply) => {
                           const replyLikeData = commentLikes[reply.id] || { likeCount: reply.likeCount || 0, meLiked: !!reply.meLiked };
                           // 直接回复顶级评论的：不显示"回复 @X"；回复其他回复的：显示
-                          const showReplyTo = reply.replyTo !== parent.author;
+                          // 优先用 replyToId 精确比较，旧数据 fallback 到 author name 比较
+                          const showReplyTo = reply.replyToId
+                            ? reply.replyToId !== parent.id
+                            : reply.replyTo !== parent.author;
                           return (
-                            <div key={reply.id} className="flex gap-2">
+                            <div key={reply.id} id={`comment-${reply.id}`} className="flex gap-2 scroll-mt-20">
                               {/* eslint-disable-next-line @next/next/no-img-element */}
                               <img
                                 src={cravatarUrl(reply.email || reply.author, 80)}

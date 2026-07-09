@@ -40,6 +40,7 @@ function formatAd(post: any, meLiked = false) {
       website: c.website,
       replyTo: c.replyTo,
       replyToEmail: c.replyToEmail,
+      replyToId: c.replyToId,
       content: c.content,
       createdAt: c.createdAt,
     })) || [],

@@ -10,13 +10,14 @@ interface CommentAttributes {
   website?: string;
   replyTo?: string;
   replyToEmail?: string;
+  replyToId?: string;
   content: string;
   ip?: string;
   region?: string;
 }
 
 interface CommentCreationAttributes
-  extends Optional<CommentAttributes, "id" | "replyTo" | "replyToEmail" | "website" | "ip" | "region"> {}
+  extends Optional<CommentAttributes, "id" | "replyTo" | "replyToEmail" | "replyToId" | "website" | "ip" | "region"> {}
 
 class Comment
   extends Model<CommentAttributes, CommentCreationAttributes>
@@ -29,6 +30,7 @@ class Comment
   declare website?: string;
   declare replyTo?: string;
   declare replyToEmail?: string;
+  declare replyToId?: string;
   declare content: string;
   declare ip?: string;
   declare region?: string;
@@ -73,6 +75,10 @@ Comment.init(
     },
     replyToEmail: {
       type: DataTypes.STRING(255),
+      allowNull: true,
+    },
+    replyToId: {
+      type: DataTypes.UUID,
       allowNull: true,
     },
     content: {

@@ -274,6 +274,7 @@ router.get("/comments", authenticate, requireAdmin, async (_req: AuthRequest, re
       website: c.website,
       content: c.content,
       replyTo: c.replyTo,
+      replyToId: c.replyToId,
       region: c.region || "",
       createdAt: c.createdAt,
       post: c.post

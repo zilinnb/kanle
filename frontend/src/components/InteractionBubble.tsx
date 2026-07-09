@@ -9,7 +9,7 @@ type LikeInfo = { name: string; email?: string };
 interface InteractionBubbleProps {
   likes: LikeInfo[];
   comments: Comment[];
-  onReply?: (author: string) => void;
+  onReply?: (commentId: string) => void;
   /** 博主邮箱，用于识别博主评论并显示绿色点标识 */
   ownerEmail?: string;
   /** 详情页模式：隐藏点赞文字，只渲染评论列表 */
@@ -194,7 +194,7 @@ export default function InteractionBubble({
                   />
                   <div className="min-w-0 flex-1 flex items-start justify-between gap-2">
                     <div
-                      onClick={() => onReply?.(comment.author)}
+                      onClick={() => onReply?.(comment.id)}
                       className="min-w-0 flex-1 cursor-pointer text-left text-[15px] leading-[22px] transition-opacity hover:opacity-70"
                     >
                       {comment.website ? (
@@ -235,7 +235,7 @@ export default function InteractionBubble({
               return (
                 <li key={comment.id} id={`comment-${comment.id}`} className="break-all scroll-mt-20 rounded px-1 -mx-1">
                   <div
-                    onClick={() => onReply?.(comment.author)}
+                    onClick={() => onReply?.(comment.id)}
                     className="min-w-0 cursor-pointer text-left transition-colors hover:text-wechat-link"
                   >
                     {comment.website ? (
