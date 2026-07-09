@@ -39,10 +39,39 @@ export default function ArticleTOC() {
     return () => clearTimeout(timer);
   }, [extractHeadings]);
 
-  // TopBar 高度(~48px) + 视觉缓冲(~22px)
-  const SCROLL_OFFSET = 70;
+  // TopBar: top-6(24px) + h-12(48px) = 72px；scroll-root 从 top-6(24px) 开始
+  // 需要偏移 72-24=48px 才不被遮挡，再加 ~12px 视觉缓冲
+  const SCROLL_OFFSET = 84;
   // scroll spy 提前激活阈值：标题进入视口顶部此距离内时视为当前章节
   const SPY_THRESHOLD = 100;
+
+  /**
+   * 重新从 DOM 查找标题元素。
+   * ArticleEmbedContent 用 dangerouslySetInnerHTML 渲染正文，React 状态变化
+   * （点赞/评论/视图更新）可能导致 DOM 重建，存储的 element 引用失效。
+   * 此函数按 id → 文本内容+层级 的顺序回退查找。
+   */
+  const resolveHeadingElement = useCallback(
+    (heading: Heading): HTMLElement | null => {
+      // 1. 存储的引用仍有效
+      if (heading.element && heading.element.isConnected) {
+        return heading.element;
+      }
+      // 2. 按 id 查找
+      const byId = document.getElementById(heading.id);
+      if (byId) return byId;
+      // 3. 按 文本内容 + 层级 查找
+      const tag = heading.level === 2 ? "h2" : "h3";
+      const candidates = document.querySelectorAll(`.article-content ${tag}`);
+      for (const el of candidates) {
+        if (el.textContent?.trim() === heading.text) {
+          return el as HTMLElement;
+        }
+      }
+      return null;
+    },
+    []
+  );
 
   useEffect(() => {
     if (headings.length === 0) return;
@@ -54,9 +83,9 @@ export default function ArticleTOC() {
       const scrollRect = scrollRoot.getBoundingClientRect();
       let current = "";
       for (const h of headings) {
-        // 用 getBoundingClientRect 精确计算标题相对于滚动容器的位置
-        // 避免 offsetTop 受 offsetParent 链(main 有 position:relative)影响
-        const rect = h.element.getBoundingClientRect();
+        const el = resolveHeadingElement(h);
+        if (!el) continue;
+        const rect = el.getBoundingClientRect();
         const relativeTop = rect.top - scrollRect.top;
         if (relativeTop <= SPY_THRESHOLD) {
           current = h.id;
@@ -68,15 +97,18 @@ export default function ArticleTOC() {
     scrollRoot.addEventListener("scroll", onScroll, { passive: true });
     onScroll();
     return () => scrollRoot.removeEventListener("scroll", onScroll);
-  }, [headings]);
+  }, [headings, resolveHeadingElement]);
 
   const handleClick = (e: React.MouseEvent, heading: Heading) => {
     e.preventDefault();
     const scrollRoot = document.getElementById("scroll-root");
-    if (!scrollRoot || !heading.element) return;
-    // 用 getBoundingClientRect 精确计算，不受 offsetParent 链影响
+    if (!scrollRoot) return;
+
+    const targetEl = resolveHeadingElement(heading);
+    if (!targetEl) return;
+
     const scrollRect = scrollRoot.getBoundingClientRect();
-    const headingRect = heading.element.getBoundingClientRect();
+    const headingRect = targetEl.getBoundingClientRect();
     const top = scrollRoot.scrollTop + (headingRect.top - scrollRect.top) - SCROLL_OFFSET;
     scrollRoot.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
     setActiveId(heading.id);
