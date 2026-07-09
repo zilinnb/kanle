@@ -185,7 +185,7 @@ docker rm -f kanle-frontend kanle-backend kanle-mysql
 - `latest`：稳定版
 - `dev`：开发版，功能前沿但相对不稳定
 
-### 方式三：从源码构建（自定义域名时使用）
+### 方式四：从源码构建（自定义域名时使用）
 
 预构建镜像中 `NEXT_PUBLIC_API_URL=http://localhost:4000/api`，适合本地体验。生产环境使用域名时需从源码构建：
 
@@ -228,6 +228,267 @@ pm2 start ecosystem.config.js
 sudo cp deploy/nginx.conf /etc/nginx/conf.d/kanle.conf
 sudo nginx -t && sudo nginx -s reload
 sudo certbot --nginx -d yourdomain.com   # SSL 证书
+```
+
+### 方式六：宝塔面板部署
+
+适合使用宝塔面板（BT Panel）管理服务器的用户，全程图形化操作 + 少量终端命令。
+
+#### 第 1 步：安装宝塔面板
+
+如果服务器尚未安装宝塔面板：
+
+```bash
+# CentOS/Ubuntu/Debian 通用安装命令
+curl -sSO https://download.bt.cn/install/install_panel.sh && bash install_panel.sh
+```
+
+安装完成后，浏览器打开宝塔面板地址，登录后在弹出的「推荐安装套件」中选择 **LNMP（推荐）**：
+- **Nginx**：选 1.24 或以上
+- **MySQL**：选 5.7 或 8.0 均可
+- **PHP**：不需要，本项目基于 Node.js，可跳过
+- 勾选「编译安装」，点击「一键安装」
+
+#### 第 2 步：安装 Node.js + PM2
+
+1. 宝塔左侧菜单 → **软件商店**
+2. 搜索 **PM2管理器**，点击安装
+3. 安装完成后，在 PM2 管理器中设置 Node.js 版本为 **22.x**
+
+> PM2 管理器自带 Node.js 和 PM2，无需手动安装。
+
+#### 第 3 步：创建数据库
+
+1. 宝塔左侧菜单 → **数据库** → **添加数据库**
+2. 填写：
+   - 数据库名：`moment_blog`
+   - 用户名：`kanle`
+   - 密码：自定义一个强密码（记下来，后面要用）
+   - 访问权限：**本地服务器**
+   - 字符集：`utf8mb4`
+3. 点击**提交**
+
+#### 第 4 步：克隆代码
+
+宝塔左侧菜单 → **终端**，执行：
+
+```bash
+cd /www/wwwroot
+git clone https://gitee.com/ziln_cn/kanle.git
+# 如果用 GitHub: git clone https://github.com/zilinnb/kanle.git
+```
+
+> 也可通过宝塔**文件管理**上传代码压缩包再解压到 `/www/wwwroot/kanle`。
+
+#### 第 5 步：部署后端
+
+终端中执行：
+
+```bash
+cd /www/wwwroot/kanle/backend
+
+# 安装依赖
+npm ci
+
+# 配置环境变量
+cp .env.example .env
+```
+
+编辑 `.env` 文件（终端中 `vi .env` 或用宝塔文件管理器编辑）：
+
+```ini
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_USER=kanle
+DB_PASSWORD=你刚才设置的数据库密码
+DB_NAME=moment_blog
+JWT_SECRET=改成一串随机长字符串
+JWT_EXPIRES_IN=7d
+ADMIN_EMAIL=admin@kanle.net
+ADMIN_PASSWORD=123456
+ADMIN_USERNAME=admin
+CLIENT_URL=http://localhost:3000
+REVALIDATE_SECRET=kanle-revalidate
+```
+
+继续构建和初始化：
+
+```bash
+npm run build
+npm run db:seed    # 初始化数据库表 + 创建管理员账号
+```
+
+用 PM2 启动后端：
+
+```bash
+pm2 start ecosystem.config.js --name kanle-backend
+pm2 save
+```
+
+验证后端是否正常：
+
+```bash
+curl http://localhost:4000/api/health
+# 返回 JSON 即正常
+```
+
+#### 第 6 步：部署前端
+
+```bash
+cd /www/wwwroot/kanle/frontend
+
+# 安装依赖
+npm ci
+
+# 配置环境变量
+cp .env.example .env.local
+```
+
+编辑 `.env.local`：
+
+```ini
+# 本地部署用 localhost，有域名改成 https://你的域名/api
+NEXT_PUBLIC_API_URL=http://localhost:4000/api
+NEXT_PUBLIC_REVALIDATE_SECRET=kanle-revalidate
+REVALIDATE_SECRET=kanle-revalidate
+```
+
+构建并启动：
+
+```bash
+npm run build
+pm2 start ecosystem.config.js --name kanle-frontend
+pm2 save
+```
+
+验证前端：
+
+```bash
+curl http://localhost:3000
+# 返回 HTML 即正常
+```
+
+#### 第 7 步：配置网站（Nginx 反向代理）
+
+1. 宝塔左侧菜单 → **网站** → **添加站点**
+2. 填写：
+   - 域名：`你的域名.com`（没有域名可填服务器 IP）
+   - 根目录：`/www/wwwroot/kanle/frontend`（随便填，后面会改）
+   - PHP版本：**纯静态**
+   - 数据库：不创建
+3. 点击**提交**
+
+站点创建后，点击站点名 → **配置文件**，替换为以下内容：
+
+```nginx
+# /www/server/panel/vhost/nginx/你的域名.conf
+
+server {
+    listen 80;
+    server_name 你的域名.com;
+
+    # 前端
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+
+    # 后端 API
+    location /api/ {
+        proxy_pass http://127.0.0.1:4000;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # 上传文件
+    location /uploads/ {
+        proxy_pass http://127.0.0.1:4000;
+        proxy_set_header Host $host;
+    }
+
+    # 上传文件大小限制
+    client_max_body_size 50m;
+}
+```
+
+保存后，终端执行 `nginx -t && nginx -s reload` 重载 Nginx。
+
+> 如果用的是域名，宝塔会自动创建对应的 Nginx 配置文件，直接在站点设置里编辑即可。
+
+#### 第 8 步：配置 SSL 证书（可选，有域名时推荐）
+
+1. 宝塔 → **网站** → 点击站点名 → **SSL**
+2. 选择 **Let's Encrypt** → 勾选域名 → 点击**申请**
+3. 申请成功后，开启**强制 HTTPS**
+
+> 宝塔会自动续期 Let's Encrypt 证书。
+
+#### 第 9 步：设置防火墙
+
+1. 宝塔 → **安全** → 放行端口
+2. 确保放行：**80**（HTTP）、**443**（HTTPS）
+3. **不需要**放行 3000 和 4000（Nginx 反向代理，外部不直接访问）
+
+> 云服务器还需在云服务商控制台的安全组中放行 80 和 443。
+
+#### 第 10 步：设置 PM2 开机自启
+
+```bash
+pm2 startup
+pm2 save
+```
+
+宝塔 → **软件商店** → PM2 管理器 → 设置 → 勾选**开机自启**。
+
+#### 常见问题
+
+**Q: 宝塔终端中 npm/node 命令找不到？**
+
+宝塔的 PM2 管理器安装的 Node.js 可能不在默认 PATH 中。执行：
+
+```bash
+# 查找 node 路径
+which node || find /www -name node -type f 2>/dev/null
+
+# 添加到 PATH（写入 ~/.bashrc）
+echo 'export PATH="/www/server/nodejs/v22/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
+```
+
+**Q: 前端构建时内存不足？**
+
+```bash
+# 增加 Node.js 内存限制
+export NODE_OPTIONS="--max-old-space-size=2048"
+npm run build
+```
+
+**Q: 改了域名后前端没生效？**
+
+`NEXT_PUBLIC_API_URL` 是构建时内联的，换域名后需要重新构建：
+
+```bash
+cd /www/wwwroot/kanle/frontend
+# 修改 .env.local 中的 NEXT_PUBLIC_API_URL
+npm run build
+pm2 restart kanle-frontend
+```
+
+**Q: 如何查看日志？**
+
+```bash
+pm2 logs kanle-backend      # 后端日志
+pm2 logs kanle-frontend     # 前端日志
+# 或在宝塔 PM2 管理器中直接查看
 ```
 
 ### 访问
