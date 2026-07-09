@@ -54,11 +54,12 @@ services:
     container_name: kanle-frontend
     # 预构建镜像已内置 NEXT_PUBLIC_API_URL=/api + BACKEND_URL=http://kanle-backend:4000
     # 任何 IP/域名都能用，无需从源码构建
-    # 如需自定义（如改后端容器名）：注释掉 image，取消下面 build 的注释
+    # 如需自定义（如改后端容器名或设置站点 URL）：注释掉 image，取消下面 build 的注释
     # build:
     #   context: ./frontend
     #   args:
     #     BACKEND_URL: http://kanle-backend:4000
+    #     NEXT_PUBLIC_SITE_URL: https://yourdomain.com  # 可选，用于 Cravatar 默认头像
     environment:
       REVALIDATE_SECRET: ${REVALIDATE_SECRET:-kanle-revalidate}
       PORT: 3000
