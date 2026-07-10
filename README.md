@@ -289,6 +289,7 @@ bash pnpm-deploy.sh --update
 - **通用**：`/etc/nginx/conf.d/kanle.conf`
 
 > ✨ 使用 pnpm 安装依赖比 npm 快 3 倍，磁盘占用更小。
+> PM2 执行 `pnpm start` 管理进程，`pm2 logs kanle-frontend` 可查看日志。
 >
 > 更新代码只需 `bash pnpm-deploy.sh --update`，自动拉取代码 + 重新构建 + 重启 PM2。
 

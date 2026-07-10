@@ -7,7 +7,7 @@ WORKDIR /app/backend
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
 COPY package*.json ./
-RUN pnpm install --no-frozen-lockfile
+RUN pnpm i --no-frozen-lockfile
 
 COPY tsconfig.json ./
 COPY src ./src
@@ -21,7 +21,7 @@ WORKDIR /app/backend
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
 COPY package*.json ./
-RUN pnpm install --prod --no-frozen-lockfile && pnpm store prune
+RUN pnpm i --prod --no-frozen-lockfile && pnpm store prune
 
 COPY --from=builder /app/backend/dist ./dist
 COPY docker-entrypoint.sh ./

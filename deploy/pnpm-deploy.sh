@@ -8,8 +8,9 @@
 #    bash pnpm-deploy.sh --no-prompt  # 全部采用默认值（CI/重复部署）
 #
 #  ✨ 使用 pnpm 安装依赖，比 npm 快 3 倍，磁盘占用小
+#  ✨ PM2 执行 pnpm start，pm2 logs 可查看日志
 #  ✨ 自动检测宝塔面板 / 1Panel，生成对应 Nginx 配置
-#  ✨ 前后端共用 3000 端口，只需放行前端端口
+#  ✨ 前后端共用前端端口，只需放行一个端口
 # ============================================================
 
 # ====================== 默认值 ======================
@@ -134,12 +135,12 @@ if [ "$1" = "--update" ]; then
 
   echo -e "${CYAN}[2/4]${NC} 更新后端依赖 + 构建..."
   cd "$INSTALL_DIR/backend"
-  pnpm install
+  pnpm i
   pnpm build
 
   echo -e "${CYAN}[3/4]${NC} 更新前端依赖 + 构建..."
   cd "$INSTALL_DIR/frontend"
-  pnpm install
+  pnpm i
 
   echo -e "  ${YELLOW}停止前端进程（避免 .next/static 缺失导致崩溃）...${NC}"
   pm2 stop kanle-frontend 2>/dev/null
@@ -313,7 +314,7 @@ echo -e "  ${GREEN}代码已就绪${NC}"
 # [2] 后端依赖 + 配置 + 构建
 echo -e "${CYAN}[2/7]${NC} 后端: 安装依赖..."
 cd "$INSTALL_DIR/backend"
-pnpm install
+pnpm i
 
 echo -e "${CYAN}[3/7]${NC} 后端: 配置环境变量..."
 cat > "$INSTALL_DIR/backend/.env" << EOF
@@ -347,7 +348,7 @@ echo -e "  ${GREEN}后端已启动${NC}"
 # [3] 前端依赖 + 配置 + 构建
 echo -e "${CYAN}[6/7]${NC} 前端: 安装依赖 + 配置 + 构建..."
 cd "$INSTALL_DIR/frontend"
-pnpm install
+pnpm i
 
 cat > "$INSTALL_DIR/frontend/.env.local" << EOF
 NEXT_PUBLIC_API_URL=/api
@@ -438,11 +439,17 @@ echo -e "${BOLD}========================================${NC}"
 echo ""
 echo -e "${BOLD}常用命令:${NC}"
 echo "  查看状态:  pm2 status"
-echo "  前端日志:  pm2 logs kanle-frontend"
-echo "  后端日志:  pm2 logs kanle-backend"
+echo "  查看日志:  pm2 logs kanle-frontend    (或 pm2 logs kanle-backend)"
 echo "  停止:      pm2 stop kanle-frontend kanle-backend"
 echo "  启动:      pm2 start kanle-frontend kanle-backend"
+echo "  重启:      pm2 restart kanle-frontend kanle-backend"
 echo "  更新代码:  bash $(realpath "$0") --update"
+echo ""
+echo -e "${BOLD}手动操作（进入对应目录后）:${NC}"
+echo "  安装依赖:  pnpm i"
+echo "  构建:      pnpm build"
+echo "  启动:      pnpm start    (生产模式)"
+echo "  开发:      pnpm dev      (开发模式)"
 echo ""
 echo -e "${BOLD}PM2 开机自启:${NC}"
 echo "  pm2 startup && pm2 save"

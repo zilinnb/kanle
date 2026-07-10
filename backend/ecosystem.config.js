@@ -1,7 +1,8 @@
 module.exports = {
   apps: [{
     name: "kanle-backend",
-    script: "./dist/index.js",
+    script: "pnpm",
+    args: "start",
     cwd: "/www/wwwroot/kanle/backend",
     instances: 1,
     autorestart: true,

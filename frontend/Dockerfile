@@ -7,7 +7,7 @@ WORKDIR /app/frontend
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
 COPY package*.json ./
-RUN pnpm install --no-frozen-lockfile
+RUN pnpm i --no-frozen-lockfile
 
 # ===== Stage 2: Builder =====
 FROM node:22-alpine AS builder
