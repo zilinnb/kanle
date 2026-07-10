@@ -585,6 +585,52 @@ pm2 logs kanle-frontend     # 前端日志
 > 生产环境务必修改 `ADMIN_PASSWORD`、`JWT_SECRET`、`DB_PASSWORD`。
 > 只需放行前端端口（3000），后端通过 rewrites 代理，无需放行 4000。
 
+## 升级（保留数据）
+
+### Docker 升级（推荐）
+
+```bash
+# 下载升级脚本
+curl -sL https://raw.githubusercontent.com/zilinnb/kanle/main/deploy/docker-upgrade.sh -o docker-upgrade.sh
+
+# 交互式升级（自动备份 + 拉取新镜像 + 重建容器）
+bash docker-upgrade.sh
+
+# 跳过数据库备份
+bash docker-upgrade.sh --no-backup
+
+# 全自动升级（不确认）
+bash docker-upgrade.sh --auto
+```
+
+升级脚本流程：
+1. **检测现有容器** — 自动找到 kanle-frontend、kanle-backend、kanle-mysql
+2. **提取配置** — 从现有容器提取镜像、环境变量、端口、数据卷挂载
+3. **备份数据库** — 自动 `mysqldump` 到 `./backup/kanle-YYYYMMDD-HHMMSS.sql.gz`
+4. **拉取最新镜像** — `docker pull zilinnb/kanle-frontend:latest` + `zilinnb/kanle-backend:latest`
+5. **重建容器** — 停止旧容器 → 删除旧容器 → 用相同配置启动新容器
+6. **验证** — 检查容器状态，确认数据卷完好
+
+> ✅ **数据安全**：数据卷（`kanle-mysql-data`、`kanle-uploads`、`kanle-plugins`）不会被删除。升级只替换容器，不碰数据。
+>
+> 📁 **备份位置**：`./backup/` 目录，恢复命令：
+> ```bash
+> gunzip < backup/kanle-xxx.sql.gz | docker exec -i kanle-mysql mysql -u用户名 -p密码 数据库名
+> ```
+
+### Docker Compose 升级
+
+```bash
+docker compose pull
+docker compose up -d --force-recreate
+```
+
+### PM2 部署升级
+
+```bash
+bash deploy/pnpm-deploy.sh --update
+```
+
 ## 环境变量
 
 ### 后端
