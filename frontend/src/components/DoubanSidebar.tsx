@@ -319,7 +319,8 @@ export default function DoubanSidebar({
                   src={toAbsoluteUrl(item.cover)}
                   alt={item.title}
                   loading="lazy"
-                  className="h-12 w-9 shrink-0 rounded-md object-cover bg-wechat-bubble dark:bg-white/5"
+                  onLoad={(e) => { (e.currentTarget as HTMLImageElement).style.opacity = "1"; }}
+                  className="h-12 w-9 shrink-0 rounded-md object-cover bg-wechat-bubble opacity-0 transition-opacity duration-500 dark:bg-white/5"
                 />
                 <div className="min-w-0 flex-1">
                   <p className="line-clamp-2 text-[13px] font-medium leading-snug text-wechat-nickname">

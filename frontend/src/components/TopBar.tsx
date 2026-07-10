@@ -157,7 +157,11 @@ export default function TopBar({ coverHeight = 300 }: TopBarProps) {
   const friendsSentinelRef = useRef<HTMLDivElement>(null);
   const friendsLoadingRef = useRef(false);
 
-  // Fetch friend links（音乐数据由 GlobalMusicManager 全局管理）
+  // 豆瓣数据预检查：用于决定是否显示"影单"tab和友链按钮
+  const [hasDouban, setHasDouban] = useState(false);
+  const [doubanLoaded, setDoubanLoaded] = useState(false);
+
+  // Fetch friend links + douban existence check（音乐数据由 GlobalMusicManager 全局管理）
   useEffect(() => {
     fetch(`${API_URL}/friends`)
       .then((res) => (res.ok ? res.json() : { data: [], pagination: { hasMore: false } }))
@@ -167,6 +171,18 @@ export default function TopBar({ coverHeight = 300 }: TopBarProps) {
       })
       .catch(() => {})
       .finally(() => setFriendsLoaded(true));
+
+    // 轻量检查豆瓣是否有数据（只取 typeCounts，limit=1）
+    fetch(`${API_URL}/douban?type=movie&status=all&page=1&limit=1`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((d) => {
+        if (d?.typeCounts) {
+          const total = d.typeCounts.movie + d.typeCounts.book + d.typeCounts.music;
+          setHasDouban(total > 0);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setDoubanLoaded(true));
   }, []);
 
   // 友链分页：加载更多
@@ -204,6 +220,13 @@ export default function TopBar({ coverHeight = 300 }: TopBarProps) {
     observer.observe(sentinel);
     return () => observer.disconnect();
   }, [loadMoreFriends, showFriends, friendsTab]);
+
+  // 影单 tab 被隐藏时（豆瓣无数据），自动切回友链 tab
+  useEffect(() => {
+    if (friendsTab === "douban" && doubanLoaded && !hasDouban) {
+      setFriendsTab("friends");
+    }
+  }, [friendsTab, doubanLoaded, hasDouban]);
 
   // 点击菜单外部关闭三点菜单
   useEffect(() => {
@@ -368,6 +391,8 @@ export default function TopBar({ coverHeight = 300 }: TopBarProps) {
           } as React.CSSProperties}
         >
           {/* Left: music player + lyric (mobile: full width, desktop: same) */}
+          {/* 后端未配置歌单时隐藏整个音乐区域（activePostMusic 仍可接管播放） */}
+          {(!musicLoaded || musicUrl || playlist.length > 0 || activePostMusic) && (
           <div className="flex min-w-0 items-center gap-1.5">
             {/* Music player + lyric */}
             {!musicLoaded || switching ? (
@@ -461,17 +486,21 @@ export default function TopBar({ coverHeight = 300 }: TopBarProps) {
               </div>
             )}
           </div>
+          )}
 
           {/* Right: friends + publish/login (mobile only, desktop uses left side) */}
           <div className="flex shrink-0 items-center gap-1.5">
+            {/* 友链按钮：友链和豆瓣都为空时隐藏（加载中仍显示以避免闪烁） */}
+            {((!friendsLoaded || !doubanLoaded) || friendLinks.length > 0 || hasDouban) && (
             <button
               type="button"
-              onClick={() => { setFriendsTab("friends"); setShowUserMenu(false); setShowFriends(true); }}
+              onClick={() => { setFriendsTab(friendLinks.length === 0 && hasDouban ? "douban" : "friends"); setShowUserMenu(false); setShowFriends(true); }}
               className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors md:hidden ${iconClass}`}
               aria-label="友链"
             >
               <Contact className="h-[18px] w-[18px]" />
             </button>
+            )}
 
             {/* Camera (发布动态) / UserRound (登录) — 移动端最右侧 */}
             {loggedIn ? (
@@ -555,6 +584,8 @@ export default function TopBar({ coverHeight = 300 }: TopBarProps) {
                 <Contact className="h-4 w-4" />
                 友链
               </button>
+              {/* 影单 tab：没有豆瓣数据时隐藏（加载中仍显示以避免闪烁） */}
+              {(hasDouban || !doubanLoaded) && (
               <button
                 onClick={() => setFriendsTab("douban")}
                 className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium transition-colors ${
@@ -566,6 +597,7 @@ export default function TopBar({ coverHeight = 300 }: TopBarProps) {
                 <Film className="h-4 w-4" />
                 影单
               </button>
+              )}
               <div className="ml-auto flex items-center gap-0.5">
                 {loggedIn && (
                   <div ref={userMenuRef} className="relative">
