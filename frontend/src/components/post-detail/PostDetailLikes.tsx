@@ -15,7 +15,7 @@ export default function PostDetailLikes({ likes }: PostDetailLikesProps) {
 
   return (
     <div className="flex items-start gap-2 rounded-[4px] bg-wechat-bubble px-3 py-2">
-      <Heart className="mt-[5px] h-3.5 w-3.5 shrink-0 fill-red-500 text-red-500" />
+      <Heart className="mt-[5px] h-3.5 w-3.5 shrink-0 text-wechat-nickname" />
       <div className="flex flex-1 flex-wrap gap-1">
         {likes.map((name, idx) => (
           <div

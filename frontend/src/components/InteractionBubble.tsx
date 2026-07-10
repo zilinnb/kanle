@@ -157,7 +157,7 @@ export default function InteractionBubble({
       {likes.length > 0 && !hideLikes && (
         showAvatars ? (
           <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1.5">
-            <Heart className="h-4 w-4 shrink-0 fill-red-500 text-red-500" />
+            <Heart className="h-4 w-4 shrink-0 text-wechat-nickname" />
             {displayLikes.map((like, i) => (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -170,7 +170,7 @@ export default function InteractionBubble({
           </div>
         ) : (
           <div className="flex items-start gap-1.5 text-[14px] font-normal leading-[22px] text-wechat-nickname md:text-[15px]">
-            <Heart className="mt-[2.5px] h-4 w-4 shrink-0 fill-red-500 text-red-500 md:mt-[2px] md:h-[18px] md:w-[18px]" />
+            <Heart className="mt-[2.5px] h-4 w-4 shrink-0 text-wechat-nickname md:mt-[2px] md:h-[18px] md:w-[18px]" />
             <span className="break-all">{likesText}</span>
           </div>
         )
