@@ -1464,6 +1464,7 @@ img.inline-emoji.emoji-error {
 .image-group-wrapper {
   margin: 0.8em 0;
   user-select: none;
+  position: relative;
 }
 .image-group-wrapper.is-selected {
   outline: 2px solid var(--wechat-nickname, #576b95);
@@ -1471,7 +1472,7 @@ img.inline-emoji.emoji-error {
   border-radius: 8px;
 }
 
-/* 编辑器中的工具条 */
+/* 编辑器中的浮动工具条 */
 .image-group-toolbar {
   display: flex;
   align-items: center;
@@ -1504,6 +1505,21 @@ img.inline-emoji.emoji-error {
   display: block;
 }
 
+/* 单图布局：自然宽高比，不强制正方形 */
+.image-group-layout-single .image-group-item {
+  aspect-ratio: auto;
+}
+.image-group-layout-single .image-grid-item {
+  object-fit: contain;
+  max-height: 500px;
+}
+
+/* 空位占位符 */
+.image-group-slot {
+  aspect-ratio: 1;
+  border-radius: 4px;
+}
+
 /* 文章正文中的图片网格 */
 .article-content .article-image-grid,
 .article-editor-area .article-image-grid {
@@ -1520,6 +1536,14 @@ img.inline-emoji.emoji-error {
   object-fit: cover;
   margin: 0;
   border-radius: 0;
+}
+
+/* 文章正文中的单图：自然宽高比 */
+.article-content .article-image-grid[data-layout="single"] img,
+.article-editor-area .article-image-grid[data-layout="single"] img {
+  aspect-ratio: auto;
+  max-height: 500px;
+  object-fit: contain;
 }
 
 /* ===== 斜杠命令菜单（tippy.js 弹窗） ===== */

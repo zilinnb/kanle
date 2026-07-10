@@ -20,7 +20,7 @@ import { VideoEmbed } from "./editor/nodes/video-embed";
 import { DoubanEmbed } from "./editor/nodes/douban-embed";
 import { ArticleEmbed } from "./editor/nodes/article-embed";
 import { LinkCardNode } from "./editor/nodes/link-card";
-import { ImageGroup } from "./editor/nodes/image-group";
+import { ImageGroup, countToLayout, type ImageGroupItem } from "./editor/nodes/image-group";
 import { SlashCommand } from "./editor/slash-command/slash-command";
 import { TrailingParagraph } from "./editor/extensions/trailing-paragraph";
 import { CodeBlockExit } from "./editor/extensions/code-block-exit";
@@ -163,14 +163,23 @@ export default function ArticleEditor({
         setUploading(true);
         (async () => {
           try {
+            const uploaded: ImageGroupItem[] = [];
             for (const file of imageFiles) {
               try {
                 const url = await uploadImage(file, tk);
-                const node = view.state.schema.nodes.image.create({ src: url, alt: "" });
-                view.dispatch(view.state.tr.replaceSelectionWith(node));
+                uploaded.push({ src: url, alt: "" });
               } catch (err) {
                 console.error("图片上传失败:", err);
               }
+            }
+            if (uploaded.length > 0) {
+              const limited = uploaded.slice(0, 9);
+              const layout = countToLayout(limited.length);
+              const node = view.state.schema.nodes.imageGroup.create({
+                images: limited,
+                layout,
+              });
+              view.dispatch(view.state.tr.replaceSelectionWith(node));
             }
           } finally {
             setUploading(false);
@@ -200,14 +209,23 @@ export default function ArticleEditor({
         setUploading(true);
         (async () => {
           try {
+            const uploaded: ImageGroupItem[] = [];
             for (const file of imageFiles) {
               try {
                 const url = await uploadImage(file, tk);
-                const node = view.state.schema.nodes.image.create({ src: url, alt: "" });
-                view.dispatch(view.state.tr.replaceSelectionWith(node));
+                uploaded.push({ src: url, alt: "" });
               } catch (err) {
                 console.error("图片上传失败:", err);
               }
+            }
+            if (uploaded.length > 0) {
+              const limited = uploaded.slice(0, 9);
+              const layout = countToLayout(limited.length);
+              const node = view.state.schema.nodes.imageGroup.create({
+                images: limited,
+                layout,
+              });
+              view.dispatch(view.state.tr.replaceSelectionWith(node));
             }
           } finally {
             setUploading(false);
@@ -312,7 +330,7 @@ export default function ArticleEditor({
     if (!editor) return;
     editor.chain().focus().insertContent({
       type: "imageGroup",
-      attrs: { images: [], columns: 3 },
+      attrs: { images: [], layout: "triple" },
     }).run();
   }, [editor]);
 
