@@ -8,7 +8,7 @@
 #    bash docker-upgrade.sh --auto       # 全自动（不确认）
 #
 #  ✨ 自动提取现有容器配置，重建容器，数据零丢失
-#  ✨ 升级前自动备份数据库到 ./backup/
+#  ✨ 升级前自动备份: 数据库 + 上传文件(图片/视频/音频) + 插件
 #  ✨ 支持 docker run 和 docker compose 两种部署方式
 # ============================================================
 
@@ -118,41 +118,80 @@ echo -e "\n  ${BOLD}数据卷（升级后保留）:${NC}"
 docker volume ls --format '  {{.Name}}' | grep -i kanle 2>/dev/null || echo "  (未找到 kanle 数据卷)"
 
 # ============================================================
-# [3] 数据库备份
+# [3] 备份数据（数据库 + 上传文件 + 插件）
 # ============================================================
-if [ "$SKIP_BACKUP" = "false" ] && [ "$has_mysql" = "true" ]; then
-  echo -e "\n${CYAN}[3/6]${NC} 备份数据库..."
-
+if [ "$SKIP_BACKUP" = "false" ]; then
+  echo -e "\n${CYAN}[3/6]${NC} 备份数据（数据库 + 文件）..."
   mkdir -p "$BACKUP_DIR"
-  BACKUP_FILE="$BACKUP_DIR/kanle-$(date +%Y%m%d-%H%M%S).sql.gz"
+  BACKUP_TS=$(date +%Y%m%d-%H%M%S)
 
-  # 从容器环境变量提取数据库信息
-  DB_NAME_VAL=$(echo "$BACKEND_ENV" | grep '^DB_NAME=' | cut -d= -f2)
-  DB_USER_VAL=$(echo "$BACKEND_ENV" | grep '^DB_USER=' | cut -d= -f2)
-  DB_PASSWORD_VAL=$(echo "$BACKEND_ENV" | grep '^DB_PASSWORD=' | cut -d= -f2)
+  # --- 3a. 数据库备份 ---
+  if [ "$has_mysql" = "true" ]; then
+    BACKUP_FILE="$BACKUP_DIR/db-${BACKUP_TS}.sql.gz"
+    DB_NAME_VAL=$(echo "$BACKEND_ENV" | grep '^DB_NAME=' | cut -d= -f2)
+    DB_USER_VAL=$(echo "$BACKEND_ENV" | grep '^DB_USER=' | cut -d= -f2)
+    DB_PASSWORD_VAL=$(echo "$BACKEND_ENV" | grep '^DB_PASSWORD=' | cut -d= -f2)
 
-  if [ -n "$DB_NAME_VAL" ] && [ -n "$DB_USER_VAL" ]; then
-    echo -e "  ${YELLOW}正在导出数据库 ${DB_NAME_VAL}...${NC}"
-    docker exec "$MYSQL_CONTAINER" mysqldump \
-      -u"$DB_USER_VAL" \
-      -p"$DB_PASSWORD_VAL" \
-      --single-transaction \
-      --quick \
-      "$DB_NAME_VAL" 2>/dev/null | gzip > "$BACKUP_FILE"
+    if [ -n "$DB_NAME_VAL" ] && [ -n "$DB_USER_VAL" ]; then
+      echo -e "  ${YELLOW}备份数据库 ${DB_NAME_VAL}...${NC}"
+      docker exec "$MYSQL_CONTAINER" mysqldump \
+        -u"$DB_USER_VAL" \
+        -p"$DB_PASSWORD_VAL" \
+        --single-transaction \
+        --quick \
+        "$DB_NAME_VAL" 2>/dev/null | gzip > "$BACKUP_FILE"
 
-    if [ -s "$BACKUP_FILE" ]; then
-      BACKUP_SIZE=$(du -h "$BACKUP_FILE" | cut -f1)
-      echo -e "  ${GREEN}✓ 数据库已备份: ${BACKUP_FILE} (${BACKUP_SIZE})${NC}"
+      if [ -s "$BACKUP_FILE" ]; then
+        DB_SIZE=$(du -h "$BACKUP_FILE" | cut -f1)
+        echo -e "  ${GREEN}✓ 数据库: ${BACKUP_FILE} (${DB_SIZE})${NC}"
+      else
+        echo -e "  ${YELLOW}⚠️  数据库备份为空（容器未启动或密码错误），跳过${NC}"
+        rm -f "$BACKUP_FILE"
+      fi
     else
-      echo -e "  ${YELLOW}⚠️  备份文件为空，数据库可能未启动或密码错误${NC}"
-      echo -e "  ${YELLOW}   跳过备份，继续升级...${NC}"
-      rm -f "$BACKUP_FILE"
+      echo -e "  ${YELLOW}⚠️  无法提取数据库配置，跳过数据库备份${NC}"
     fi
-  else
-    echo -e "  ${YELLOW}⚠️  无法提取数据库配置，跳过备份${NC}"
   fi
+
+  # --- 3b. 上传文件备份（图片/视频/音频）---
+  if [ "$has_backend" = "true" ]; then
+    UPLOADS_BACKUP="$BACKUP_DIR/uploads-${BACKUP_TS}.tar.gz"
+    echo -e "  ${YELLOW}备份上传文件（图片/视频/音频）...${NC}"
+
+    # 优先尝试从容器内 /app/public/uploads 导出
+    if docker exec "$BACKEND_CONTAINER" test -d /app/public/uploads 2>/dev/null; then
+      docker exec "$BACKEND_CONTAINER" tar czf - -C /app/public/uploads . 2>/dev/null > "$UPLOADS_BACKUP"
+      if [ -s "$UPLOADS_BACKUP" ]; then
+        UPLOADS_SIZE=$(du -h "$UPLOADS_BACKUP" | cut -f1)
+        UPLOADS_COUNT=$(docker exec "$BACKEND_CONTAINER" find /app/public/uploads -type f 2>/dev/null | wc -l)
+        echo -e "  ${GREEN}✓ 上传文件: ${UPLOADS_BACKUP} (${UPLOADS_SIZE}, ${UPLOADS_COUNT} 个文件)${NC}"
+      else
+        echo -e "  ${YELLOW}⚠️  上传文件备份为空${NC}"
+        rm -f "$UPLOADS_BACKUP"
+      fi
+    else
+      echo -e "  ${YELLOW}⚠️  容器内未找到 /app/public/uploads 目录，跳过${NC}"
+    fi
+
+    # --- 3c. 插件备份 ---
+    PLUGINS_BACKUP="$BACKUP_DIR/plugins-${BACKUP_TS}.tar.gz"
+    if docker exec "$BACKEND_CONTAINER" test -d /app/plugins 2>/dev/null; then
+      echo -e "  ${YELLOW}备份插件...${NC}"
+      docker exec "$BACKEND_CONTAINER" tar czf - -C /app/plugins . 2>/dev/null > "$PLUGINS_BACKUP"
+      if [ -s "$PLUGINS_BACKUP" ]; then
+        PLUGINS_SIZE=$(du -h "$PLUGINS_BACKUP" | cut -f1)
+        echo -e "  ${GREEN}✓ 插件: ${PLUGINS_BACKUP} (${PLUGINS_SIZE})${NC}"
+      else
+        rm -f "$PLUGINS_BACKUP"
+      fi
+    fi
+  fi
+
+  # 备份摘要
+  echo -e "\n  ${BOLD}备份摘要:${NC}"
+  ls -lh "$BACKUP_DIR"/*-"$BACKUP_TS".* 2>/dev/null | awk '{printf "  %s %s\n", $5, $9}' || echo "  (无备份文件)"
 else
-  echo -e "\n${CYAN}[3/6]${NC} 跳过数据库备份${NC}"
+  echo -e "\n${CYAN}[3/6]${NC} 跳过备份${NC}"
 fi
 
 # ============================================================
@@ -165,6 +204,15 @@ echo -e "  1. 拉取最新镜像"
 echo -e "  2. 停止并删除旧容器"
 echo -e "  3. 用相同配置启动新容器"
 echo -e "  4. ${GREEN}数据卷不会被删除${NC}（数据库、上传文件、插件全部保留）"
+echo -e ""
+echo -e "  ${BOLD}已备份内容:${NC}"
+if [ "$SKIP_BACKUP" = "false" ] && [ -d "$BACKUP_DIR" ]; then
+  echo -e "  数据库:   backup/db-*.sql.gz"
+  echo -e "  上传文件: backup/uploads-*.tar.gz (图片/视频/音频)"
+  echo -e "  插件:     backup/plugins-*.tar.gz"
+else
+  echo -e "  ${YELLOW}(跳过了备份)${NC}"
+fi
 echo -e "  ${BOLD}----------------------------------------${NC}"
 
 if [ "$AUTO_MODE" = "false" ]; then
@@ -311,8 +359,12 @@ echo "  前端日志:  docker logs -f $FRONTEND_CONTAINER"
 echo "  后端日志:  docker logs -f $BACKEND_CONTAINER"
 if [ -d "$BACKUP_DIR" ] && [ "$(ls -A $BACKUP_DIR 2>/dev/null)" ]; then
   echo ""
-  echo -e "${BOLD}数据库备份:${NC}"
-  echo "  位置: $(ls -1 $BACKUP_DIR/*.sql.gz 2>/dev/null | tail -1)"
-  echo "  恢复:  gunzip < backup/xxx.sql.gz | docker exec -i $MYSQL_CONTAINER mysql -u用户名 -p密码 数据库名"
+  echo -e "${BOLD}备份文件恢复命令:${NC}"
+  echo -e "  ${BOLD}# 恢复数据库:${NC}"
+  echo "  gunzip < backup/db-xxx.sql.gz | docker exec -i $MYSQL_CONTAINER mysql -u用户名 -p密码 数据库名"
+  echo -e "  ${BOLD}# 恢复上传文件:${NC}"
+  echo "  docker exec -i $BACKEND_CONTAINER tar xzf - -C /app/public/uploads < backup/uploads-xxx.tar.gz"
+  echo -e "  ${BOLD}# 恢复插件:${NC}"
+  echo "  docker exec -i $BACKEND_CONTAINER tar xzf - -C /app/plugins < backup/plugins-xxx.tar.gz"
 fi
 echo ""

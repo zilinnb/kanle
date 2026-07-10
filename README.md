@@ -606,7 +606,7 @@ bash docker-upgrade.sh --auto
 升级脚本流程：
 1. **检测现有容器** — 自动找到 kanle-frontend、kanle-backend、kanle-mysql
 2. **提取配置** — 从现有容器提取镜像、环境变量、端口、数据卷挂载
-3. **备份数据库** — 自动 `mysqldump` 到 `./backup/kanle-YYYYMMDD-HHMMSS.sql.gz`
+3. **备份数据** — 数据库 `db-*.sql.gz` + 上传文件 `uploads-*.tar.gz` + 插件 `plugins-*.tar.gz`
 4. **拉取最新镜像** — `docker pull zilinnb/kanle-frontend:latest` + `zilinnb/kanle-backend:latest`
 5. **重建容器** — 停止旧容器 → 删除旧容器 → 用相同配置启动新容器
 6. **验证** — 检查容器状态，确认数据卷完好
@@ -615,7 +615,12 @@ bash docker-upgrade.sh --auto
 >
 > 📁 **备份位置**：`./backup/` 目录，恢复命令：
 > ```bash
-> gunzip < backup/kanle-xxx.sql.gz | docker exec -i kanle-mysql mysql -u用户名 -p密码 数据库名
+> # 恢复数据库
+> gunzip < backup/db-xxx.sql.gz | docker exec -i kanle-mysql mysql -u用户名 -p密码 数据库名
+> # 恢复上传文件（图片/视频/音频）
+> docker exec -i kanle-backend tar xzf - -C /app/public/uploads < backup/uploads-xxx.tar.gz
+> # 恢复插件
+> docker exec -i kanle-backend tar xzf - -C /app/plugins < backup/plugins-xxx.tar.gz
 > ```
 
 ### Docker Compose 升级
