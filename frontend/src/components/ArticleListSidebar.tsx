@@ -33,6 +33,8 @@ function formatDate(dateStr: string): string {
 export default function ArticleListSidebar() {
   const [articles, setArticles] = useState<ArticleListItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hasDouban, setHasDouban] = useState(false);
+  const [doubanLoaded, setDoubanLoaded] = useState(false);
   const sidebarScrollRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
   const currentId = pathname?.split("/").pop() || "";
@@ -70,87 +72,97 @@ export default function ArticleListSidebar() {
     };
   }, [loading]);
 
+  const showArticles = loading || articles.length > 0;
+  const showDouban = !doubanLoaded || hasDouban;
+  const showSidebar = showArticles || showDouban;
+
+  if (!showSidebar) return null;
+
   return (
     <aside className="hidden lg:block lg:fixed lg:top-6 lg:right-[calc(50%+324px)] lg:w-[220px] xl:w-[260px]">
       <div
         ref={sidebarScrollRef}
         className="no-scrollbar space-y-4 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto lg:overscroll-contain"
       >
-        <div className="rounded-2xl bg-wechat-white p-4 shadow-[0_8px_40px_-12px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.4)]">
-          <h3 className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-wechat-text">
-            <BookText className="h-4 w-4 text-wechat-nickname" />
-            文章列表
-          </h3>
-          {loading ? (
-            <div className="space-y-1">
-              {[...Array(5)].map((_, i) => (
-                <div key={i} className="px-2 py-2">
-                  <div className="h-3 w-3/4 animate-pulse rounded bg-wechat-bubble dark:bg-white/5" />
-                  <div className="mt-1.5 h-2.5 w-full animate-pulse rounded bg-wechat-bubble dark:bg-white/5" />
-                </div>
-              ))}
-            </div>
-          ) : articles.length === 0 ? (
-            <div className="flex flex-col items-center py-4 text-wechat-time">
-              <BookText className="mb-1 h-5 w-5" />
-              <p className="text-xs">暂无文章</p>
-            </div>
-          ) : (
-            <ul className="space-y-1">
-              {articles.map((article) => {
-                const href = `/articles/${article.shortId || article.id}`;
-                const isActive = article.id === currentId || article.shortId === currentId;
-                return (
-                  <li key={article.id}>
-                    <Link
-                      href={href}
-                      className={`group flex gap-2 rounded-lg p-1.5 transition-colors ${
-                        isActive
-                          ? "bg-wechat-nickname/10"
-                          : "hover:bg-wechat-hover dark:hover:bg-white/5"
-                      }`}
-                    >
-                      {(article.cover || defaultCover) && (
-                        <div className="relative h-12 w-16 shrink-0 overflow-hidden rounded-md bg-wechat-bubble dark:bg-white/5">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={toAbsoluteUrl(article.cover || defaultCover)}
-                            alt=""
-                            className="h-full w-full object-cover"
-                            loading="lazy"
-                          />
-                        </div>
-                      )}
-                      <div className="min-w-0 flex-1">
-                        <p
-                          className={`line-clamp-2 text-[13px] font-medium leading-snug ${
-                            isActive
-                              ? "text-wechat-nickname"
-                              : "text-wechat-text group-hover:text-wechat-nickname"
-                          }`}
-                        >
-                          {article.title || "(无标题)"}
-                        </p>
-                        <div className="mt-0.5 flex items-center gap-1.5">
-                          <span className="text-[11px] text-wechat-time/70">
-                            {formatDate(article.createdAt)}
-                          </span>
-                          {article.category && (
-                            <span className="rounded bg-wechat-bubble px-1 py-0.5 text-[10px] text-wechat-time dark:bg-white/5">
-                              {article.category}
+        {showArticles && (
+          <div className="rounded-2xl bg-wechat-white p-4 shadow-[0_8px_40px_-12px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.4)]">
+            <h3 className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-wechat-text">
+              <BookText className="h-4 w-4 text-wechat-nickname" />
+              文章列表
+            </h3>
+            {loading ? (
+              <div className="space-y-1">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="px-2 py-2">
+                    <div className="h-3 w-3/4 animate-pulse rounded bg-wechat-bubble dark:bg-white/5" />
+                    <div className="mt-1.5 h-2.5 w-full animate-pulse rounded bg-wechat-bubble dark:bg-white/5" />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <ul className="space-y-1">
+                {articles.map((article) => {
+                  const href = `/articles/${article.shortId || article.id}`;
+                  const isActive = article.id === currentId || article.shortId === currentId;
+                  return (
+                    <li key={article.id}>
+                      <Link
+                        href={href}
+                        className={`group flex gap-2 rounded-lg p-1.5 transition-colors ${
+                          isActive
+                            ? "bg-wechat-nickname/10"
+                            : "hover:bg-wechat-hover dark:hover:bg-white/5"
+                        }`}
+                      >
+                        {(article.cover || defaultCover) && (
+                          <div className="relative h-12 w-16 shrink-0 overflow-hidden rounded-md bg-wechat-bubble dark:bg-white/5">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={toAbsoluteUrl(article.cover || defaultCover)}
+                              alt=""
+                              className="h-full w-full object-cover"
+                              loading="lazy"
+                            />
+                          </div>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <p
+                            className={`line-clamp-2 text-[13px] font-medium leading-snug ${
+                              isActive
+                                ? "text-wechat-nickname"
+                                : "text-wechat-text group-hover:text-wechat-nickname"
+                            }`}
+                          >
+                            {article.title || "(无标题)"}
+                          </p>
+                          <div className="mt-0.5 flex items-center gap-1.5">
+                            <span className="text-[11px] text-wechat-time/70">
+                              {formatDate(article.createdAt)}
                             </span>
-                          )}
+                            {article.category && (
+                              <span className="rounded bg-wechat-bubble px-1 py-0.5 text-[10px] text-wechat-time dark:bg-white/5">
+                                {article.category}
+                              </span>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </div>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+        )}
 
-        <DoubanSidebar />
+        {showDouban && (
+          <DoubanSidebar
+            onDataStatus={(hasData) => {
+              setHasDouban(hasData);
+              setDoubanLoaded(true);
+            }}
+          />
+        )}
       </div>
     </aside>
   );

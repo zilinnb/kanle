@@ -438,83 +438,80 @@ export default function Sidebar({ owner }: SidebarProps) {
         {/* Notifications card — 仅登录博主可见 */}
         {loggedIn && <AdminNotifications variant="sidebar" />}
 
-        {/* Friend links card */}
-        <div className="rounded-2xl bg-wechat-white p-4 shadow-[0_8px_40px_-12px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.4)]">
-          <h3 className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-wechat-text">
-            <BookUser className="h-4 w-4 text-wechat-nickname" />
-            友情链接
-          </h3>
-          {!friendsLoaded ? (
-            <div className="space-y-2">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="flex items-center gap-2.5 px-2 py-1.5">
-                  <div className="h-7 w-7 shrink-0 animate-pulse rounded-[5px] bg-wechat-bubble dark:bg-white/5" />
-                  <div className="flex-1 space-y-1.5">
-                    <div className="h-3 w-1/2 animate-pulse rounded bg-wechat-bubble dark:bg-white/5" />
-                    <div className="h-2.5 w-3/4 animate-pulse rounded bg-wechat-bubble dark:bg-white/5" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : friendLinks.length === 0 ? (
-            <div className="flex flex-col items-center py-4 text-wechat-time">
-              <Link2 className="mb-1 h-5 w-5" />
-              <p className="text-xs">暂无友情链接</p>
-            </div>
-          ) : (
-            <ul className="space-y-1">
-              {friendLinks.map((link) => (
-                <li key={link.id}>
-                  <a
-                    href={link.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="group flex items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors hover:bg-wechat-hover"
-                  >
-                    <div className="relative h-7 w-7 shrink-0 overflow-hidden rounded-[5px] bg-wechat-bubble">
-                      {resolveFriendAvatar(link, 56) ? (
-                        <Image
-                          src={resolveFriendAvatar(link, 56)}
-                          alt={link.name}
-                          fill
-                          className="object-cover"
-                          sizes="28px"
-                          unoptimized
-                        />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center">
-                          <BookUser className="h-3.5 w-3.5 text-wechat-time" />
-                        </div>
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-[13px] font-medium text-wechat-nickname">
-                        {link.name}
-                      </p>
-                      {link.desc && (
-                        <p className="truncate text-xs text-wechat-time">
-                          {link.desc}
-                        </p>
-                      )}
-                    </div>
-                    <ExternalLink className="ml-1 h-3 w-3 shrink-0 text-wechat-time transition-colors group-hover:text-wechat-text" />
-                  </a>
-                </li>
-              ))}
-              {friendsLoadingMore &&
-                [...Array(2)].map((_, i) => (
-                  <li key={`fsk-${i}`} className="flex items-center gap-2.5 px-2 py-1.5">
+        {/* Friend links card — 仅在有友链时显示 */}
+        {(!friendsLoaded || friendLinks.length > 0) && (
+          <div className="rounded-2xl bg-wechat-white p-4 shadow-[0_8px_40px_-12px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.4)]">
+            <h3 className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-wechat-text">
+              <BookUser className="h-4 w-4 text-wechat-nickname" />
+              友情链接
+            </h3>
+            {!friendsLoaded ? (
+              <div className="space-y-2">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="flex items-center gap-2.5 px-2 py-1.5">
                     <div className="h-7 w-7 shrink-0 animate-pulse rounded-[5px] bg-wechat-bubble dark:bg-white/5" />
                     <div className="flex-1 space-y-1.5">
                       <div className="h-3 w-1/2 animate-pulse rounded bg-wechat-bubble dark:bg-white/5" />
                       <div className="h-2.5 w-3/4 animate-pulse rounded bg-wechat-bubble dark:bg-white/5" />
                     </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <ul className="space-y-1">
+                {friendLinks.map((link) => (
+                  <li key={link.id}>
+                    <a
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group flex items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors hover:bg-wechat-hover"
+                    >
+                      <div className="relative h-7 w-7 shrink-0 overflow-hidden rounded-[5px] bg-wechat-bubble">
+                        {resolveFriendAvatar(link, 56) ? (
+                          <Image
+                            src={resolveFriendAvatar(link, 56)}
+                            alt={link.name}
+                            fill
+                            className="object-cover"
+                            sizes="28px"
+                            unoptimized
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center">
+                            <BookUser className="h-3.5 w-3.5 text-wechat-time" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-[13px] font-medium text-wechat-nickname">
+                          {link.name}
+                        </p>
+                        {link.desc && (
+                          <p className="truncate text-xs text-wechat-time">
+                            {link.desc}
+                          </p>
+                        )}
+                      </div>
+                      <ExternalLink className="ml-1 h-3 w-3 shrink-0 text-wechat-time transition-colors group-hover:text-wechat-text" />
+                    </a>
                   </li>
                 ))}
-              <div ref={friendsSentinelRef} className="h-1" />
-            </ul>
-          )}
-        </div>
+                {friendsLoadingMore &&
+                  [...Array(2)].map((_, i) => (
+                    <li key={`fsk-${i}`} className="flex items-center gap-2.5 px-2 py-1.5">
+                      <div className="h-7 w-7 shrink-0 animate-pulse rounded-[5px] bg-wechat-bubble dark:bg-white/5" />
+                      <div className="flex-1 space-y-1.5">
+                        <div className="h-3 w-1/2 animate-pulse rounded bg-wechat-bubble dark:bg-white/5" />
+                        <div className="h-2.5 w-3/4 animate-pulse rounded bg-wechat-bubble dark:bg-white/5" />
+                      </div>
+                    </li>
+                  ))}
+                <div ref={friendsSentinelRef} className="h-1" />
+              </ul>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Publish Modal */}

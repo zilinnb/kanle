@@ -101,7 +101,13 @@ function DoubanSkeleton({ count = 3 }: { count?: number }) {
   );
 }
 
-export default function DoubanSidebar({ embedded = false }: { embedded?: boolean } = {}) {
+export default function DoubanSidebar({
+  embedded = false,
+  onDataStatus,
+}: {
+  embedded?: boolean;
+  onDataStatus?: (hasData: boolean) => void;
+} = {}) {
   const API_URL = getApiUrl();
 
   const [items, setItems] = useState<DoubanItem[]>([]);
@@ -213,6 +219,13 @@ export default function DoubanSidebar({ embedded = false }: { embedded?: boolean
 
   const totalCount = typeCounts ? typeCounts.movie + typeCounts.book + typeCounts.music : 0;
   const isEmpty = !loading && totalCount === 0;
+
+  // 通知父组件数据状态（有数据/无数据）
+  useEffect(() => {
+    if (!loading) {
+      onDataStatus?.(totalCount > 0);
+    }
+  }, [loading, totalCount, onDataStatus]);
 
   const innerContent = isEmpty ? (
     <div className="flex flex-col items-center py-4 text-wechat-time">

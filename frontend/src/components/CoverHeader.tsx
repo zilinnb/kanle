@@ -14,7 +14,7 @@ interface CoverHeaderProps {
   coverUrls?: string[];
 }
 
-const MAX_PARALLAX = 80;
+const MAX_PARALLAX = 40;
 
 /**
  * 模块级变量：记录当前"页面加载"周期内选中的背景图索引。
@@ -105,35 +105,25 @@ export default function CoverHeader({ user, avatarHref, coverUrls }: CoverHeader
         {/* Image clipping layer: overflow-hidden only clips the cover image,
             not the avatar that crosses the cover/body boundary. */}
         <div className="absolute inset-0 overflow-hidden bg-wechat-bubble md:rounded-t-2xl">
-          {/* Parallax wrapper: taller than container so it can offset downward
-              without revealing blank space at the top. */}
-          <div
-            className="absolute left-0 right-0"
-            style={
-              isDesktop
-                ? {
-                    top: `-${MAX_PARALLAX}px`,
-                    height: `calc(100% + ${MAX_PARALLAX * 2}px)`,
-                    transform: `translateY(${parallax}px)`,
-                  }
-                : { top: 0, height: "100%" }
-            }
-          >
-            {allCovers.map((src, idx) => (
-              <Image
-                key={src}
-                src={src}
-                alt="朋友圈封面"
-                fill
-                priority={idx === 0}
-                onLoadingComplete={() => handleImageLoad(idx)}
-                className={`object-cover transition-opacity duration-1000 ${
-                  idx === visibleIdx ? "opacity-100" : "opacity-0"
-                }`}
-                sizes="(max-width: 768px) 100vw, 600px"
-              />
-            ))}
-          </div>
+          {allCovers.map((src, idx) => (
+            <Image
+              key={src}
+              src={src}
+              alt="朋友圈封面"
+              fill
+              priority={idx === 0}
+              onLoadingComplete={() => handleImageLoad(idx)}
+              className={`object-cover transition-opacity duration-1000 ${
+                idx === visibleIdx ? "opacity-100" : "opacity-0"
+              }`}
+              style={
+                isDesktop
+                  ? { transform: `translate3d(0, ${parallax}px, 0) scale(1.25)` }
+                  : undefined
+              }
+              sizes="(max-width: 768px) 100vw, 600px"
+            />
+          ))}
 
           {/* Bottom gradient for nickname readability */}
           <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" />
