@@ -19,6 +19,7 @@ import {
   Video,
   Film,
   FileText,
+  LayoutGrid,
 } from "lucide-react";
 import SlashCommandList, {
   type SlashCommandItem,
@@ -101,6 +102,18 @@ export const COMMANDS: CommandItem[] = [
     action: (editor) => {
       const storage = (editor.storage as Record<string, any>).slashCommand;
       storage?.openImagePicker?.();
+    },
+  },
+  {
+    title: "图片网格",
+    icon: LayoutGrid,
+    description: "多图布局（单图/两图/三图/九宫格）",
+    keywords: "image grid gallery layout 九宫格 六宫格",
+    action: (editor) => {
+      editor.chain().focus().insertContent({
+        type: "imageGroup",
+        attrs: { images: [], columns: 3 },
+      }).run();
     },
   },
   {

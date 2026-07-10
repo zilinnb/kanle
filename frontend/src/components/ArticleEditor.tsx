@@ -20,6 +20,7 @@ import { VideoEmbed } from "./editor/nodes/video-embed";
 import { DoubanEmbed } from "./editor/nodes/douban-embed";
 import { ArticleEmbed } from "./editor/nodes/article-embed";
 import { LinkCardNode } from "./editor/nodes/link-card";
+import { ImageGroup } from "./editor/nodes/image-group";
 import { SlashCommand } from "./editor/slash-command/slash-command";
 import { TrailingParagraph } from "./editor/extensions/trailing-paragraph";
 import { CodeBlockExit } from "./editor/extensions/code-block-exit";
@@ -67,6 +68,10 @@ export default function ArticleEditor({
   const initializedRef = useRef(false);
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
+
+  // Refs for use in editorProps (which are defined before editor is created)
+  const tokenRef = useRef(token);
+  tokenRef.current = token;
 
   // Panel states
   const [showLinkCardPanel, setShowLinkCardPanel] = useState(false);
@@ -124,6 +129,7 @@ export default function ArticleEditor({
       DoubanEmbed,
       ArticleEmbed,
       LinkCardNode,
+      ImageGroup,
       SlashCommand,
       TrailingParagraph,
       CodeBlockExit,
@@ -132,6 +138,83 @@ export default function ArticleEditor({
     immediatelyRender: false,
     onUpdate: ({ editor }) => {
       onChangeRef.current(editor.getHTML());
+    },
+    editorProps: {
+      handlePaste: (view, event: ClipboardEvent) => {
+        const clipboardData = event.clipboardData;
+        if (!clipboardData) return false;
+
+        const items = clipboardData.items;
+        const imageFiles: File[] = [];
+        for (let i = 0; i < items.length; i++) {
+          const item = items[i];
+          if (item.type.startsWith("image/")) {
+            const file = item.getAsFile();
+            if (file) imageFiles.push(file);
+          }
+        }
+
+        if (imageFiles.length === 0) return false;
+
+        event.preventDefault();
+        const tk = tokenRef.current;
+        if (!tk) return true;
+
+        setUploading(true);
+        (async () => {
+          try {
+            for (const file of imageFiles) {
+              try {
+                const url = await uploadImage(file, tk);
+                const node = view.state.schema.nodes.image.create({ src: url, alt: "" });
+                view.dispatch(view.state.tr.replaceSelectionWith(node));
+              } catch (err) {
+                console.error("图片上传失败:", err);
+              }
+            }
+          } finally {
+            setUploading(false);
+          }
+        })();
+        return true;
+      },
+      handleDrop: (view, event: DragEvent) => {
+        const dataTransfer = event.dataTransfer;
+        if (!dataTransfer) return false;
+
+        const files = dataTransfer.files;
+        const imageFiles: File[] = [];
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i];
+          if (file.type.startsWith("image/")) {
+            imageFiles.push(file);
+          }
+        }
+
+        if (imageFiles.length === 0) return false;
+
+        event.preventDefault();
+        const tk = tokenRef.current;
+        if (!tk) return true;
+
+        setUploading(true);
+        (async () => {
+          try {
+            for (const file of imageFiles) {
+              try {
+                const url = await uploadImage(file, tk);
+                const node = view.state.schema.nodes.image.create({ src: url, alt: "" });
+                view.dispatch(view.state.tr.replaceSelectionWith(node));
+              } catch (err) {
+                console.error("图片上传失败:", err);
+              }
+            }
+          } finally {
+            setUploading(false);
+          }
+        })();
+        return true;
+      },
     },
   });
 
@@ -223,6 +306,15 @@ export default function ArticleEditor({
     },
     [editor, token]
   );
+
+  // Insert image group
+  const handleInsertImageGroup = useCallback(() => {
+    if (!editor) return;
+    editor.chain().focus().insertContent({
+      type: "imageGroup",
+      attrs: { images: [], columns: 3 },
+    }).run();
+  }, [editor]);
 
   const onFileChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -324,6 +416,7 @@ export default function ArticleEditor({
           onOpenDouban={() => setShowDoubanPicker(true)}
           onOpenArticle={() => setShowArticlePicker(true)}
           onOpenImagePicker={() => fileInputRef.current?.click()}
+          onInsertImageGroup={handleInsertImageGroup}
         />
 
         {/* Editor area / Source mode */}

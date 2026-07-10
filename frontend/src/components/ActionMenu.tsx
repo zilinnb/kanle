@@ -89,7 +89,7 @@ export default function ActionMenu({
               className={itemCls}
             >
               <Heart
-                className={iconCls}
+                className={`${iconCls} ${liked ? "text-red-500" : ""}`}
                 fill={liked ? "currentColor" : "none"}
                 strokeWidth={1.8}
               />

@@ -37,6 +37,7 @@ import {
   Plus as PlusIcon,
   Minus as MinusIcon,
   Trash2,
+  LayoutGrid,
 } from "lucide-react";
 import { EMOJI_LIST } from "@/lib/emoji";
 import EmojiPicker from "@/components/EmojiPicker";
@@ -72,6 +73,7 @@ interface ToolbarProps {
   onOpenDouban: () => void;
   onOpenArticle: () => void;
   onOpenImagePicker: () => void;
+  onInsertImageGroup: () => void;
 }
 
 interface ToolBtn {
@@ -95,6 +97,7 @@ export default function Toolbar({
   onOpenDouban,
   onOpenArticle,
   onOpenImagePicker,
+  onInsertImageGroup,
 }: ToolbarProps) {
   const [showLink, setShowLink] = useState(false);
   const [linkUrl, setLinkUrl] = useState("");
@@ -497,6 +500,15 @@ export default function Toolbar({
         >
           {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImageIcon className="h-4 w-4" />}
         </button>
+
+        {/* 图片网格 */}
+        {renderBtn({
+          key: "imageGrid",
+          title: "图片网格",
+          icon: <LayoutGrid className="h-4 w-4" />,
+          onClick: onInsertImageGroup,
+          disabled: sourceMode,
+        })}
       </div>
 
       <Divider />

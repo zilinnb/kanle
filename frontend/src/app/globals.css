@@ -1458,6 +1458,70 @@ img.inline-emoji.emoji-error {
   background: var(--wechat-surface);
 }
 
+/* ===== 图片网格（编辑器 NodeView + 文章正文渲染） ===== */
+
+/* 编辑器中的图片网格 NodeView 包裹层 */
+.image-group-wrapper {
+  margin: 0.8em 0;
+  user-select: none;
+}
+.image-group-wrapper.is-selected {
+  outline: 2px solid var(--wechat-nickname, #576b95);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/* 编辑器中的工具条 */
+.image-group-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px;
+  margin-bottom: 6px;
+  border-radius: 8px;
+  background: var(--wechat-bubble, #f7f7f7);
+  flex-wrap: wrap;
+}
+
+/* 编辑器中的网格 */
+.image-group-grid {
+  display: grid;
+  gap: 4px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.image-group-item {
+  position: relative;
+  overflow: hidden;
+  border-radius: 4px;
+  aspect-ratio: 1;
+}
+.image-group-item .image-grid-item {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* 文章正文中的图片网格 */
+.article-content .article-image-grid,
+.article-editor-area .article-image-grid {
+  display: grid;
+  gap: 4px;
+  margin: 0.8em 0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.article-content .article-image-grid img,
+.article-editor-area .article-image-grid img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  margin: 0;
+  border-radius: 0;
+}
+
 /* ===== 斜杠命令菜单（tippy.js 弹窗） ===== */
 .slash-command-list {
   background: var(--wechat-surface, #fff);
