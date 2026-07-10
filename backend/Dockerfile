@@ -3,20 +3,25 @@ FROM node:22-alpine AS builder
 
 WORKDIR /app/backend
 
+# 启用 corepack + pnpm
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
 COPY package*.json ./
-RUN npm ci
+RUN pnpm install --no-frozen-lockfile
 
 COPY tsconfig.json ./
 COPY src ./src
-RUN npm run build
+RUN pnpm build
 
 # ===== Stage 2: Runtime =====
 FROM node:22-alpine AS runtime
 
 WORKDIR /app/backend
 
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
 COPY package*.json ./
-RUN npm ci --omit=dev && npm cache clean --force
+RUN pnpm install --prod --no-frozen-lockfile && pnpm store prune
 
 COPY --from=builder /app/backend/dist ./dist
 COPY docker-entrypoint.sh ./

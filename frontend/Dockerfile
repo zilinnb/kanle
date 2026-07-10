@@ -3,13 +3,18 @@ FROM node:22-alpine AS deps
 
 WORKDIR /app/frontend
 
+# 启用 corepack + pnpm
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
 COPY package*.json ./
-RUN npm ci
+RUN pnpm install --no-frozen-lockfile
 
 # ===== Stage 2: Builder =====
 FROM node:22-alpine AS builder
 
 WORKDIR /app/frontend
+
+RUN corepack enable && corepack prepare pnpm@latest --activate
 
 COPY --from=deps /app/frontend/node_modules ./node_modules
 COPY . .
@@ -30,7 +35,7 @@ ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
 ENV BACKEND_URL=$BACKEND_URL
 ENV NODE_OPTIONS=--max-old-space-size=4096
 
-RUN npm run build
+RUN pnpm build
 
 # ===== Stage 3: Runtime =====
 FROM node:22-alpine AS runtime

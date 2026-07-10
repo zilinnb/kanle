@@ -259,7 +259,40 @@ cd kanle
 docker compose up -d --build
 ```
 
-### 方式五：手动部署（PM2 + Nginx）
+### 方式五：pnpm 一键部署脚本（适配宝塔面板 / 1Panel）
+
+适合使用宝塔面板或 1Panel 管理服务器的用户。脚本自动检测面板类型，交互式配置，全程使用 pnpm 安装依赖。
+
+```bash
+# 下载脚本
+curl -sL https://raw.githubusercontent.com/zilinnb/kanle/main/deploy/pnpm-deploy.sh -o pnpm-deploy.sh
+
+# 交互式部署（按提示输入，回车 = 默认值）
+bash pnpm-deploy.sh
+
+# 更新代码 + 重新构建（不重新配置）
+bash pnpm-deploy.sh --update
+```
+
+脚本流程：
+1. **环境检查** — Node.js 18+、PM2、pnpm（自动通过 corepack 安装）
+2. **安装路径** — 默认 `/www/wwwroot/kanle`
+3. **数据库配置** — 地址、端口、库名、用户、密码
+4. **管理员配置** — 用户名、邮箱、密码
+5. **JWT 密钥** — 回车自动生成
+6. **前端端口** — 默认 3000，只需放行此端口
+7. **自动部署** — git clone → pnpm install → build → db:seed → pm2 start → 生成 Nginx 配置
+
+脚本会根据检测到的面板类型输出对应的 Nginx 配置指引：
+- **宝塔面板**：网站 → 添加站点 → 配置文件替换
+- **1Panel**：网站 → 创建反向代理
+- **通用**：`/etc/nginx/conf.d/kanle.conf`
+
+> ✨ 使用 pnpm 安装依赖比 npm 快 3 倍，磁盘占用更小。
+>
+> 更新代码只需 `bash pnpm-deploy.sh --update`，自动拉取代码 + 重新构建 + 重启 PM2。
+
+### 方式六：手动部署（PM2 + Nginx）
 
 前置要求：Node.js 22 LTS、MySQL 5.7+、PM2、Nginx、pnpm
 
@@ -290,7 +323,7 @@ sudo nginx -t && sudo nginx -s reload
 sudo certbot --nginx -d yourdomain.com   # SSL 证书
 ```
 
-### 方式六：宝塔面板部署
+### 方式七：宝塔面板部署
 
 适合使用宝塔面板（BT Panel）管理服务器的用户，全程图形化操作 + 少量终端命令。
 
