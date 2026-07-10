@@ -1,8 +1,7 @@
 module.exports = {
   apps: [{
     name: "kanle-frontend",
-    script: "pnpm",
-    args: "start",
+    script: ".next/standalone/server.js",
     cwd: "/www/wwwroot/kanle/frontend",
     exec_mode: "fork",
     instances: 1,

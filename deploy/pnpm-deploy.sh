@@ -145,6 +145,11 @@ if [ "$1" = "--update" ]; then
   echo -e "  ${YELLOW}停止前端进程（避免 .next/static 缺失导致崩溃）...${NC}"
   pm2 stop kanle-frontend 2>/dev/null
   pnpm build
+
+  echo -e "  ${YELLOW}复制静态文件到 standalone 目录...${NC}"
+  cp -r .next/static .next/standalone/.next/static
+  cp -r public .next/standalone/public
+
   pm2 start kanle-frontend 2>/dev/null || pm2 restart kanle-frontend 2>/dev/null
 
   echo -e "${CYAN}[4/4]${NC} 重启后端..."
@@ -361,12 +366,17 @@ EOF
 
 # 修改 ecosystem.config.js 中的端口（如果有自定义）
 if [ "$FRONTEND_PORT" != "3003" ]; then
-  sed -i "s/-p 3003/-p ${FRONTEND_PORT}/" "$INSTALL_DIR/frontend/ecosystem.config.js" 2>/dev/null || true
+  sed -i "s/PORT: \"3003\"/PORT: \"${FRONTEND_PORT}\"/" "$INSTALL_DIR/frontend/ecosystem.config.js" 2>/dev/null || true
 fi
 
 mkdir -p "$INSTALL_DIR/frontend/logs"
 pm2 delete kanle-frontend 2>/dev/null || true
 pnpm build
+
+# 复制静态文件到 standalone 目录（standalone server 不含 static/public）
+cp -r .next/static .next/standalone/.next/static
+cp -r public .next/standalone/public
+
 pm2 start "$INSTALL_DIR/frontend/ecosystem.config.js" --name kanle-frontend
 echo -e "  ${GREEN}前端已启动${NC}"
 
