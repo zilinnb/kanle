@@ -26,6 +26,7 @@ import { ImageGroup, countToLayout, layoutMaxImages, type ImageGroupItem, type I
 import { SlashCommand } from "./editor/slash-command/slash-command";
 import { TrailingParagraph } from "./editor/extensions/trailing-paragraph";
 import { CodeBlockExit } from "./editor/extensions/code-block-exit";
+import { CodeBlock as CustomCodeBlock } from "./editor/nodes/code-block";
 import Toolbar from "./editor/Toolbar";
 import { EditorContext } from "./editor/editor-context";
 import ArticlePicker from "./editor/ArticlePicker";
@@ -141,7 +142,9 @@ export default function ArticleEditor({
     extensions: [
       StarterKit.configure({
         heading: { levels: [1, 2, 3] },
+        codeBlock: false,
       }),
+      CustomCodeBlock,
       Underline,
       Link.extend({
         parseHTML() {

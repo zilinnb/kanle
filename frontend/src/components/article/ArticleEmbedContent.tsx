@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState, useCallback } from "react";
+import { useMemo, useRef, useState, useCallback, useEffect } from "react";
 import type { MouseEvent as ReactMouseEvent } from "react";
 import {
   sanitizeHtml,
@@ -148,6 +148,104 @@ export default function ArticleEmbedContent({
     setViewerIndex(-1);
     setOriginRect(null);
   }, []);
+
+  /**
+   * 增强文章详情页的 <pre> 代码块：
+   * 包装为 macOS 风格（红黄绿圆点 + 语言标签 + 复制按钮 + 行号）
+   */
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const pres = container.querySelectorAll<HTMLPreElement>(
+      ".article-html-segment pre:not(.macos-enhanced-code)"
+    );
+    if (pres.length === 0) return;
+
+    const handlers: Array<() => void> = [];
+
+    pres.forEach((pre) => {
+      const code = pre.querySelector("code");
+      if (!code) return;
+
+      // 提取语言
+      const cls = code.className || "";
+      const langMatch = cls.match(/language-(\w+)/);
+      const lang = langMatch ? langMatch[1] : "plaintext";
+      const langLabel = lang === "plaintext" ? "Text" : lang.charAt(0).toUpperCase() + lang.slice(1);
+
+      // 提取代码文本（用于行号和复制）
+      const codeText = code.textContent || "";
+
+      // 创建包装容器
+      const wrapper = document.createElement("div");
+      wrapper.className = "macos-enhanced-pre";
+
+      // 标题栏
+      const header = document.createElement("div");
+      header.className = "macos-enhanced-header";
+      header.innerHTML = `
+        <div class="macos-traffic-lights">
+          <span class="dot red"></span>
+          <span class="dot yellow"></span>
+          <span class="dot green"></span>
+        </div>
+        <span class="macos-enhanced-lang">${langLabel}</span>
+        <button class="macos-enhanced-copy" type="button">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          <span>复制</span>
+        </button>
+      `;
+
+      // 代码主体（行号 + 代码）
+      const body = document.createElement("div");
+      body.className = "macos-enhanced-body";
+
+      // 行号
+      const lineCount = codeText.split("\n").length;
+      const lineNumbers = document.createElement("div");
+      lineNumbers.className = "macos-line-numbers";
+      lineNumbers.textContent = Array.from({ length: lineCount }, (_, i) => i + 1).join("\n");
+
+      // 代码区域（保留原始 pre）
+      pre.classList.add("macos-enhanced-code");
+      pre.removeAttribute("style");
+
+      body.appendChild(lineNumbers);
+      body.appendChild(pre.cloneNode(true));
+
+      wrapper.appendChild(header);
+      wrapper.appendChild(body);
+
+      // 替换原始 pre
+      pre.replaceWith(wrapper);
+
+      // 复制按钮事件
+      const copyBtn = wrapper.querySelector<HTMLButtonElement>(".macos-enhanced-copy");
+      if (copyBtn) {
+        const handleCopy = () => {
+          navigator.clipboard.writeText(codeText).then(() => {
+            const label = copyBtn.querySelector("span");
+            if (label) {
+              const originalText = label.textContent;
+              label.textContent = "已复制";
+              copyBtn.style.color = "#28c840";
+              setTimeout(() => {
+                label.textContent = originalText;
+                copyBtn.style.color = "";
+              }, 2000);
+            }
+          });
+        };
+        copyBtn.addEventListener("click", handleCopy);
+        handlers.push(() => copyBtn.removeEventListener("click", handleCopy));
+      }
+    });
+
+    return () => {
+      handlers.forEach((fn) => fn());
+    };
+  }, [segments]);
 
   /**
    * 事件委托：容器上的 click 事件，检测点击目标是否为可预览图片。

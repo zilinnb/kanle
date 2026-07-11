@@ -828,58 +828,289 @@ img.inline-emoji.emoji-error {
 .article-content a:hover {
   text-decoration: underline;
 }
+/* ── 内联代码：红色文字（主流代码高亮风格）── */
 .article-editor-area code,
 .article-content code {
-  background: var(--wechat-bubble);
+  background: rgba(239, 68, 68, 0.08);
+  color: #e83a3a;
   padding: 0.15em 0.35em;
   border-radius: 3px;
-  font-size: 0.9em;
+  font-size: 0.875em;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  word-break: break-all;
 }
-.article-editor-area pre,
-.article-content pre {
-  background: var(--wechat-bubble);
-  padding: 0.8em 1em;
-  border-radius: 8px;
-  overflow-x: auto;
-  margin: 0.8em 0;
+.dark .article-editor-area code,
+.dark .article-content code,
+.dark .rich-editor-area code,
+.dark .rich-content code {
+  background: rgba(239, 68, 68, 0.15) !important;
+  color: #ff6b6b !important;
 }
+/* pre 内的 code 不受内联红色影响 */
 .article-editor-area pre code,
 .article-content pre code {
   background: transparent;
+  color: inherit;
   padding: 0;
-  font-size: 0.9em;
+  font-size: 0.875em;
   line-height: 1.6;
+  word-break: normal;
 }
 
-/* 夜间模式：代码块强制深色背景，覆盖导入文章中的内联浅色样式 */
-.dark .article-content pre,
-.dark .article-editor-area pre,
-.dark .rich-content pre,
-.dark .rich-editor-area pre {
-  background: #1a1a20 !important;
-  color: #d4d4d4 !important;
-  border: 1px solid #2d2d34;
+/* ── macOS 风格代码块 ── */
+.macos-code-wrapper {
+  margin: 1em 0;
 }
-.dark .article-content pre code,
-.dark .article-editor-area pre code,
-.dark .rich-content pre code,
-.dark .rich-editor-area pre code {
+.macos-code-container {
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #e2e2e5;
+  background: #f6f6f8;
+  position: relative;
+}
+.macos-code-container.is-selected {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+/* macOS 标题栏 */
+.macos-code-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #e8e8ec;
+  border-bottom: 1px solid #d8d8dc;
+  user-select: none;
+}
+.macos-traffic-lights {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.macos-traffic-lights .dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.macos-traffic-lights .dot.red { background: #ff5f57; }
+.macos-traffic-lights .dot.yellow { background: #febc2e; }
+.macos-traffic-lights .dot.green { background: #28c840; }
+.macos-lang-select {
+  font-size: 12px;
+  color: #666;
+  background: transparent;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  font-family: inherit;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: background 0.15s;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.macos-lang-select:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+.macos-lang-select option {
+  background: #fff;
+  color: #333;
+}
+.macos-copy-btn {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #888;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 2px 8px;
+  border-radius: 4px;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+.macos-copy-btn:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: #555;
+}
+/* 代码区域 */
+.macos-code-body {
+  position: relative;
+  overflow: hidden;
+}
+.macos-code-content {
+  margin: 0 !important;
+  padding: 12px 16px !important;
+  background: #f6f6f8 !important;
+  border-radius: 0 !important;
+  overflow-x: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #1e1e1e;
+}
+.macos-code-content code {
   background: transparent !important;
-  color: #d4d4d4 !important;
+  color: inherit !important;
+  padding: 0 !important;
+  font-size: inherit !important;
 }
-.dark .article-content code,
-.dark .article-editor-area code,
-.dark .rich-content code,
-.dark .rich-editor-area code {
-  background: #2d2d34 !important;
-  color: #d4d4d4 !important;
+
+/* ── 夜间模式：macOS 代码块 ── */
+.dark .macos-code-container {
+  background: #1a1b26;
+  border-color: #2a2b36;
 }
-/* 语法高亮 span 在夜间模式提亮，避免深色文字在深色背景上不可见 */
+.dark .macos-code-header {
+  background: #16171f;
+  border-bottom-color: #2a2b36;
+}
+.dark .macos-lang-select {
+  color: #9ca3af;
+}
+.dark .macos-lang-select:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+.dark .macos-lang-select option {
+  background: #1a1b26;
+  color: #d4d4d4;
+}
+.dark .macos-copy-btn {
+  color: #9ca3af;
+}
+.dark .macos-copy-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #d4d4d4;
+}
+.dark .macos-code-content {
+  background: #1a1b26 !important;
+  color: #c0caf5 !important;
+}
+
+/* ── 文章详情页：增强 pre 元素（macOS 风格包装）── */
+.macos-enhanced-pre {
+  margin: 1em 0;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #e2e2e5;
+  background: #f6f6f8;
+}
+.dark .macos-enhanced-pre {
+  background: #1a1b26;
+  border-color: #2a2b36;
+}
+.macos-enhanced-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #e8e8ec;
+  border-bottom: 1px solid #d8d8dc;
+  user-select: none;
+}
+.dark .macos-enhanced-header {
+  background: #16171f;
+  border-bottom-color: #2a2b36;
+}
+.macos-enhanced-header .macos-traffic-lights {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.macos-enhanced-header .macos-traffic-lights .dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.macos-enhanced-header .macos-traffic-lights .dot.red { background: #ff5f57; }
+.macos-enhanced-header .macos-traffic-lights .dot.yellow { background: #febc2e; }
+.macos-enhanced-header .macos-traffic-lights .dot.green { background: #28c840; }
+.macos-enhanced-lang {
+  font-size: 12px;
+  color: #666;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.dark .macos-enhanced-lang {
+  color: #9ca3af;
+}
+.macos-enhanced-copy {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #888;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 2px 8px;
+  border-radius: 4px;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+.macos-enhanced-copy:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: #555;
+}
+.dark .macos-enhanced-copy {
+  color: #9ca3af;
+}
+.dark .macos-enhanced-copy:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #d4d4d4;
+}
+.macos-enhanced-body {
+  display: flex;
+  overflow: hidden;
+}
+.macos-line-numbers {
+  flex-shrink: 0;
+  padding: 12px 8px 12px 16px;
+  text-align: right;
+  background: #eeeef0;
+  color: #bbb;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  user-select: none;
+  min-width: 2.5em;
+}
+.dark .macos-line-numbers {
+  background: #14151c;
+  color: #4a4b57;
+}
+.macos-enhanced-code {
+  flex: 1;
+  margin: 0 !important;
+  padding: 12px 16px !important;
+  background: #f6f6f8 !important;
+  border-radius: 0 !important;
+  overflow-x: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #1e1e1e;
+}
+.dark .macos-enhanced-code {
+  background: #1a1b26 !important;
+  color: #c0caf5 !important;
+}
+.macos-enhanced-code code {
+  background: transparent !important;
+  color: inherit !important;
+  padding: 0 !important;
+  font-size: inherit !important;
+}
+
+/* 夜间模式：语法高亮 span 提亮 */
 .dark .article-content pre code span[style*="color"],
 .dark .article-editor-area pre code span[style*="color"],
-.dark .rich-content pre code span[style*="color"],
-.dark .rich-editor-area pre code span[style*="color"] {
+.dark .macos-enhanced-code span[style*="color"],
+.dark .macos-code-content span[style*="color"] {
   filter: brightness(1.5);
 }
 .article-editor-area img,

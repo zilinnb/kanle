@@ -296,7 +296,7 @@ export default function Toolbar({
           <Highlighter className="h-4 w-4" />
         </button>
         {showHighlightPicker && (
-          <div className="absolute left-0 top-9 z-30 w-44 rounded-lg border border-gray-200 bg-white p-2 shadow-lg dark:border-white/10 dark:bg-[#2a2a30]">
+          <div className="absolute left-0 top-9 z-30 w-48 rounded-lg border border-gray-200 bg-white p-2 shadow-lg dark:border-white/10 dark:bg-[#2a2a30]">
             <div className="grid grid-cols-5 gap-1.5">
               {HIGHLIGHT_COLORS.map((c) => (
                 <button
@@ -308,6 +308,27 @@ export default function Toolbar({
                   style={{ backgroundColor: c }}
                 />
               ))}
+            </div>
+            {/* 自定义调色盘 */}
+            <div className="mt-2 flex items-center gap-2 border-t border-gray-100 pt-2 dark:border-white/10">
+              <label
+                className="relative flex h-7 w-7 cursor-pointer items-center justify-center rounded border border-gray-200 dark:border-white/10"
+                onMouseDown={preventBlur}
+                title="自定义高亮色"
+              >
+                <input
+                  type="color"
+                  className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                  onChange={(e) => {
+                    editor.chain().focus().setHighlight({ color: e.target.value }).run();
+                  }}
+                />
+                <div
+                  className="h-4 w-4 rounded-full border border-gray-300 dark:border-white/20"
+                  style={{ background: "conic-gradient(red, orange, yellow, green, cyan, blue, purple, magenta, red)" }}
+                />
+              </label>
+              <span className="text-xs text-gray-500 dark:text-gray-400">自定义颜色</span>
             </div>
             <button
               type="button"
@@ -338,7 +359,7 @@ export default function Toolbar({
           <Palette className="h-4 w-4" />
         </button>
         {showColorPicker && (
-          <div className="absolute left-0 top-9 z-30 w-44 rounded-lg border border-gray-200 bg-white p-2 shadow-lg dark:border-white/10 dark:bg-[#2a2a30]">
+          <div className="absolute left-0 top-9 z-30 w-48 rounded-lg border border-gray-200 bg-white p-2 shadow-lg dark:border-white/10 dark:bg-[#2a2a30]">
             <div className="grid grid-cols-5 gap-1.5">
               {TEXT_COLORS.map((c) => (
                 <button
@@ -350,6 +371,27 @@ export default function Toolbar({
                   style={{ backgroundColor: c }}
                 />
               ))}
+            </div>
+            {/* 自定义调色盘 */}
+            <div className="mt-2 flex items-center gap-2 border-t border-gray-100 pt-2 dark:border-white/10">
+              <label
+                className="relative flex h-7 w-7 cursor-pointer items-center justify-center rounded border border-gray-200 dark:border-white/10"
+                onMouseDown={preventBlur}
+                title="自定义颜色"
+              >
+                <input
+                  type="color"
+                  className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                  onChange={(e) => {
+                    editor.chain().focus().setColor(e.target.value).run();
+                  }}
+                />
+                <div
+                  className="h-4 w-4 rounded-full border border-gray-300 dark:border-white/20"
+                  style={{ background: "conic-gradient(red, orange, yellow, green, cyan, blue, purple, magenta, red)" }}
+                />
+              </label>
+              <span className="text-xs text-gray-500 dark:text-gray-400">自定义颜色</span>
             </div>
             <button
               type="button"
