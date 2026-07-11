@@ -20,7 +20,9 @@ import { VideoEmbed } from "./editor/nodes/video-embed";
 import { DoubanEmbed } from "./editor/nodes/douban-embed";
 import { ArticleEmbed } from "./editor/nodes/article-embed";
 import { LinkCardNode } from "./editor/nodes/link-card";
-import { ImageGroup, countToLayout, type ImageGroupItem } from "./editor/nodes/image-group";
+import type { Node as PMNode, ResolvedPos } from "@tiptap/pm/model";
+import type { NodeSelection } from "@tiptap/pm/state";
+import { ImageGroup, countToLayout, layoutMaxImages, type ImageGroupItem, type ImageGroupLayout } from "./editor/nodes/image-group";
 import { SlashCommand } from "./editor/slash-command/slash-command";
 import { TrailingParagraph } from "./editor/extensions/trailing-paragraph";
 import { CodeBlockExit } from "./editor/extensions/code-block-exit";
@@ -53,6 +55,54 @@ interface ArticleEditorProps {
   onChange: (html: string) => void;
   token: string;
   placeholder?: string;
+}
+
+function findAdjacentImageGroup(state: { selection: { $from: ResolvedPos; node?: PMNode; from: number } }): { pos: number; node: PMNode } | null {
+  const { selection } = state;
+
+  // Case 1: imageGroup is selected as a NodeSelection
+  if (selection.node && (selection as NodeSelection).node?.type?.name === "imageGroup") {
+    return { pos: selection.from, node: (selection as NodeSelection).node };
+  }
+
+  const $from = selection.$from;
+
+  // Case 2: cursor is in a text block adjacent to an imageGroup sibling
+  // Walk up to find block container level (usually depth 1 = doc's direct child)
+  for (let d = $from.depth; d >= 1; d--) {
+    const index = $from.index(d);
+    const parent = $from.node(d);
+    const atBlockStart = $from.parentOffset === 0;
+    const atBlockEnd = $from.parentOffset === $from.parent.content.size;
+
+    // Previous sibling is imageGroup and cursor is at the start of current block
+    if (atBlockStart && index > 0) {
+      const prev = parent.child(index - 1);
+      if (prev.type.name === "imageGroup") {
+        return { pos: $from.before(d) - prev.nodeSize, node: prev };
+      }
+    }
+
+    // Next sibling is imageGroup and cursor is at the end of current block
+    if (atBlockEnd && index < parent.childCount - 1) {
+      const next = parent.child(index + 1);
+      if (next.type.name === "imageGroup") {
+        return { pos: $from.after(d), node: next };
+      }
+    }
+  }
+
+  // Case 3: cursor is between blocks (nodeBefore/nodeAfter are block-level)
+  const before = $from.nodeBefore;
+  if (before && before.type.name === "imageGroup") {
+    return { pos: $from.pos - before.nodeSize, node: before };
+  }
+  const after = $from.nodeAfter;
+  if (after && after.type.name === "imageGroup") {
+    return { pos: $from.pos, node: after };
+  }
+
+  return null;
 }
 
 export default function ArticleEditor({
@@ -173,13 +223,32 @@ export default function ArticleEditor({
               }
             }
             if (uploaded.length > 0) {
+              const { state } = view;
+              const adjacent = findAdjacentImageGroup(state);
+
+              if (adjacent) {
+                const existingImages: ImageGroupItem[] = adjacent.node.attrs.images || [];
+                const layout: ImageGroupLayout = adjacent.node.attrs.layout || "triple";
+                const maxImages = layoutMaxImages(layout);
+                const remaining = maxImages - existingImages.length;
+                if (remaining > 0) {
+                  const toAdd = uploaded.slice(0, remaining);
+                  const tr = state.tr.setNodeMarkup(adjacent.pos, undefined, {
+                    ...adjacent.node.attrs,
+                    images: [...existingImages, ...toAdd],
+                  });
+                  view.dispatch(tr);
+                  return;
+                }
+              }
+
               const limited = uploaded.slice(0, 9);
               const layout = countToLayout(limited.length);
-              const node = view.state.schema.nodes.imageGroup.create({
+              const node = state.schema.nodes.imageGroup.create({
                 images: limited,
                 layout,
               });
-              view.dispatch(view.state.tr.replaceSelectionWith(node));
+              view.dispatch(state.tr.replaceSelectionWith(node));
             }
           } finally {
             setUploading(false);
@@ -219,13 +288,34 @@ export default function ArticleEditor({
               }
             }
             if (uploaded.length > 0) {
+              const { state } = view;
+              const dropPos = view.posAtCoords({ left: event.clientX, top: event.clientY });
+              const $from = dropPos ? state.doc.resolve(dropPos.pos) : state.selection.$from;
+              const adjacent = findAdjacentImageGroup({ selection: { $from, from: $from.pos } });
+
+              if (adjacent) {
+                const existingImages: ImageGroupItem[] = adjacent.node.attrs.images || [];
+                const layout: ImageGroupLayout = adjacent.node.attrs.layout || "triple";
+                const maxImages = layoutMaxImages(layout);
+                const remaining = maxImages - existingImages.length;
+                if (remaining > 0) {
+                  const toAdd = uploaded.slice(0, remaining);
+                  const tr = state.tr.setNodeMarkup(adjacent.pos, undefined, {
+                    ...adjacent.node.attrs,
+                    images: [...existingImages, ...toAdd],
+                  });
+                  view.dispatch(tr);
+                  return;
+                }
+              }
+
               const limited = uploaded.slice(0, 9);
               const layout = countToLayout(limited.length);
-              const node = view.state.schema.nodes.imageGroup.create({
+              const node = state.schema.nodes.imageGroup.create({
                 images: limited,
                 layout,
               });
-              view.dispatch(view.state.tr.replaceSelectionWith(node));
+              view.dispatch(state.tr.replaceSelectionWith(node));
             }
           } finally {
             setUploading(false);

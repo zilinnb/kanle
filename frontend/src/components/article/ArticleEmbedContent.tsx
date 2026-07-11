@@ -1,17 +1,19 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useRef, useState, useEffect, useCallback } from "react";
 import {
   sanitizeHtml,
   plainTextToHtml,
   looksLikeHtml,
 } from "@/lib/sanitize";
 import { replaceEmojiShortcodes, normalizeInlineEmoji } from "@/lib/emoji";
-import type { PostMusic, PostVideo, PostDouban } from "@/lib/mock-data";
+import type { PostMusic, PostVideo, PostDouban, PostImage } from "@/lib/mock-data";
+import { toAbsoluteUrl } from "@/lib/upload";
 import MusicEmbedCard from "./MusicEmbedCard";
 import VideoPlayer from "@/components/VideoPlayer";
 import DoubanEmbedCard from "./DoubanEmbedCard";
 import ArticleEmbedCard from "./ArticleEmbedCard";
+import ImageViewer from "@/components/ImageViewer";
 import type { ArticleEmbedData } from "../editor/embed-utils";
 
 interface ArticleEmbedContentProps {
@@ -126,9 +128,62 @@ export default function ArticleEmbedContent({
   className,
 }: ArticleEmbedContentProps) {
   const segments = useMemo(() => splitContent(content), [content]);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [viewerIndex, setViewerIndex] = useState(-1);
+  const [originRect, setOriginRect] = useState<DOMRect | null>(null);
+  const [imageList, setImageList] = useState<PostImage[]>([]);
+
+  const openViewer = useCallback((i: number, rect: DOMRect) => {
+    setOriginRect(rect);
+    setViewerIndex(i);
+  }, []);
+
+  const closeViewer = useCallback(() => {
+    setViewerIndex(-1);
+    setOriginRect(null);
+  }, []);
+
+  // After render: collect all <img> in HTML segments and attach click-to-preview
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const imgs = container.querySelectorAll<HTMLImageElement>(
+      ".article-html-segment img"
+    );
+    const srcs: PostImage[] = [];
+    const handlers: Array<{ el: HTMLImageElement; handler: (e: Event) => void }> = [];
+
+    imgs.forEach((img, i) => {
+      const src = toAbsoluteUrl(img.getAttribute("src") || "");
+      if (!src) return;
+      srcs.push(src);
+
+      img.style.cursor = "zoom-in";
+      img.dataset.viewerIndex = String(srcs.length - 1);
+
+      const handler = (e: Event) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const idx = parseInt(img.dataset.viewerIndex || "0", 10);
+        openViewer(idx, img.getBoundingClientRect());
+      };
+      img.addEventListener("click", handler);
+      handlers.push({ el: img, handler });
+    });
+
+    setImageList(srcs);
+
+    return () => {
+      handlers.forEach(({ el, handler }) => {
+        el.removeEventListener("click", handler);
+        el.style.cursor = "";
+      });
+    };
+  }, [segments, openViewer]);
 
   return (
-    <div className={className}>
+    <div className={className} ref={containerRef}>
       {segments.map((seg, i) => {
         if (seg.kind === "music") {
           return (
@@ -153,10 +208,19 @@ export default function ArticleEmbedContent({
         return (
           <div
             key={i}
+            className="article-html-segment"
             dangerouslySetInnerHTML={{ __html: renderHtmlSegment(seg.html) }}
           />
         );
       })}
+      {viewerIndex >= 0 && imageList.length > 0 && (
+        <ImageViewer
+          images={imageList}
+          initialIndex={viewerIndex}
+          originRect={originRect}
+          onClose={closeViewer}
+        />
+      )}
     </div>
   );
 }

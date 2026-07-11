@@ -14,9 +14,11 @@ import {
   Grid3x3,
   Rows3,
   Plus,
+  FolderOpen,
 } from "lucide-react";
-import { uploadImage } from "@/lib/upload";
+import { uploadImage, toAbsoluteUrl } from "@/lib/upload";
 import { useEditorContext } from "../editor-context";
+import MediaPicker, { type PickerMediaItem } from "@/components/MediaPicker";
 import {
   type ImageGroupItem,
   type ImageGroupLayout,
@@ -45,6 +47,7 @@ export default function ImageGroupNodeView({
   const { token } = useEditorContext();
   const [uploading, setUploading] = useState(false);
   const [hovered, setHovered] = useState(false);
+  const [showMediaPicker, setShowMediaPicker] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const replaceIndexRef = useRef<number | null>(null);
 
@@ -97,6 +100,32 @@ export default function ImageGroupNodeView({
     },
     [uploadFiles]
   );
+
+  const handleMediaSelect = useCallback(
+    (item: PickerMediaItem) => {
+      const newImage: ImageGroupItem = {
+        src: toAbsoluteUrl(item.url),
+        alt: item.filename || "",
+        video: item.livePhotoVideo ? toAbsoluteUrl(item.livePhotoVideo) : undefined,
+      };
+      if (replaceIndexRef.current !== null && replaceIndexRef.current >= 0) {
+        const next = [...images];
+        next[replaceIndexRef.current] = newImage;
+        updateAttributes({ images: next });
+      } else {
+        const remaining = maxImages - images.length;
+        if (remaining > 0) {
+          updateAttributes({ images: [...images, newImage] });
+        }
+      }
+      replaceIndexRef.current = null;
+    },
+    [images, maxImages, updateAttributes]
+  );
+
+  const handleOpenMediaPicker = useCallback(() => {
+    setShowMediaPicker(true);
+  }, []);
 
   const handleDeleteImage = useCallback(
     (index: number) => {
@@ -195,6 +224,17 @@ export default function ImageGroupNodeView({
             </button>
             <button
               type="button"
+              title="从媒体库导入"
+              onMouseDown={stopInteraction}
+              onClick={handleOpenMediaPicker}
+              disabled={images.length >= maxImages}
+              className="flex items-center gap-1 rounded bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-200 disabled:opacity-50 dark:bg-white/10 dark:text-gray-300 dark:hover:bg-white/20"
+            >
+              <FolderOpen className="h-3.5 w-3.5" />
+              媒体库
+            </button>
+            <button
+              type="button"
               title="删除整块"
               onMouseDown={stopInteraction}
               onClick={() => deleteNode()}
@@ -217,6 +257,19 @@ export default function ImageGroupNodeView({
             <ImagePlus className="h-6 w-6" />
           )}
           <span className="text-sm">点击添加图片</span>
+          <button
+            type="button"
+            title="从媒体库导入"
+            onMouseDown={stopInteraction}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleOpenMediaPicker();
+            }}
+            className="mt-1 flex items-center gap-1 rounded bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-200 dark:bg-white/10 dark:text-gray-300 dark:hover:bg-white/20"
+          >
+            <FolderOpen className="h-3.5 w-3.5" />
+            从媒体库导入
+          </button>
         </div>
       ) : (
         <div
@@ -275,6 +328,15 @@ export default function ImageGroupNodeView({
         onChange={onFileChange}
         className="hidden"
       />
+      {showMediaPicker && (
+        <MediaPicker
+          open={showMediaPicker}
+          onClose={() => setShowMediaPicker(false)}
+          onSelect={handleMediaSelect}
+          category="image"
+          title="从媒体库导入图片"
+        />
+      )}
     </NodeViewWrapper>
   );
 }

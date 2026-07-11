@@ -5,6 +5,7 @@ import ImageGroupNodeView from "../node-views/ImageGroupNodeView";
 export interface ImageGroupItem {
   src: string;
   alt: string;
+  video?: string;
 }
 
 export type ImageGroupLayout = "single" | "double" | "triple" | "grid6" | "grid9";

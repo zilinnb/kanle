@@ -9,6 +9,7 @@ import { getImageSrc } from "@/lib/post-image";
 import { toAbsoluteUrl, toHttps } from "@/lib/upload";
 import { renderContent } from "@/lib/sanitize";
 import { useMusicPlayer } from "@/lib/music-player-store";
+import { useSiteSettings } from "@/lib/site-settings-store";
 
 type TileKind = "image" | "video" | "music" | "link" | "text" | "article";
 
@@ -21,12 +22,12 @@ function resolveCover(url: string | undefined | null): string {
   return toHttps(toAbsoluteUrl(url));
 }
 
-function buildCover(post: Post): { kind: TileKind; cover: string; text: string } {
+function buildCover(post: Post, defaultCover: string): { kind: TileKind; cover: string; text: string } {
   const contentText = (post.content || "").replace(/<[^>]*>/g, "").trim();
 
-  // 文章类型优先：用 cover 字段作为缩略图，标题/摘要单独处理
+  // 文章类型优先：用 cover 字段作为缩略图，无封面时回退到站点默认封面（与首页 PostCard 一致）
   if (post.type === "article") {
-    return { kind: "article", cover: resolveCover(post.cover), text: post.title || contentText };
+    return { kind: "article", cover: resolveCover(post.cover || defaultCover), text: post.title || contentText };
   }
 
   if (post.images && post.images.length > 0) {
@@ -161,7 +162,8 @@ function DefaultCover({ kind }: { kind: Exclude<TileKind, "image" | "video" | "t
 
 export default function ProfilePostCard({ post }: ProfilePostCardProps) {
   const router = useRouter();
-  const { kind, cover, text } = buildCover(post);
+  const defaultCover = useSiteSettings((s) => s.defaultCover);
+  const { kind, cover, text } = buildCover(post, defaultCover);
 
   // 文章类型跳转到文章详情页，动态跳转到动态详情页
   const goDetail = () =>
