@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useRef, useState, useEffect, useCallback } from "react";
+import { useMemo, useRef, useState, useCallback } from "react";
+import type { MouseEvent as ReactMouseEvent } from "react";
 import {
   sanitizeHtml,
   plainTextToHtml,
@@ -112,6 +113,17 @@ function splitContent(content: string): Segment[] {
   return segments;
 }
 
+/** 判断图片是否为内联表情（不应预览） */
+function isInlineEmoji(img: HTMLImageElement): boolean {
+  if (img.classList.contains("inline-emoji")) return true;
+  const src = img.getAttribute("src") || "";
+  if (src.includes("/emoji/")) return true;
+  // 表情图片通常很小（高度 ≤ 2em ≈ 32px）
+  const h = img.getBoundingClientRect().height;
+  if (h > 0 && h <= 36) return true;
+  return false;
+}
+
 /**
  * 渲染文章正文，将 data-embed 占位 div 替换为交互式 React 组件（音乐/视频）。
  *
@@ -119,8 +131,7 @@ function splitContent(content: string): Segment[] {
  * embed 占位直接渲染为 React 组件（MusicEmbedCard / VideoPlayer），
  * HTML 片段用 dangerouslySetInnerHTML 渲染。
  *
- * 相比 createPortal 方案，此方案将 embed 组件纳入正常 React 树，
- * 不依赖 useLayoutEffect 时序，无 hydration 冲突风险。
+ * 图片预览采用事件委托：在容器上监听 click 事件，点击 img 时收集所有可预览图片并打开 ImageViewer。
  */
 export default function ArticleEmbedContent({
   content,
@@ -133,57 +144,59 @@ export default function ArticleEmbedContent({
   const [originRect, setOriginRect] = useState<DOMRect | null>(null);
   const [imageList, setImageList] = useState<PostImage[]>([]);
 
-  const openViewer = useCallback((i: number, rect: DOMRect) => {
-    setOriginRect(rect);
-    setViewerIndex(i);
-  }, []);
-
   const closeViewer = useCallback(() => {
     setViewerIndex(-1);
     setOriginRect(null);
   }, []);
 
-  // After render: collect all <img> in HTML segments and attach click-to-preview
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
+  /**
+   * 事件委托：容器上的 click 事件，检测点击目标是否为可预览图片。
+   * 相比为每个 img 单独绑定事件，事件委托更健壮：
+   * - 不依赖 useEffect 时序
+   * - 自动适应 DOM 变化（如懒加载图片后续出现）
+   * - 不会因 React 重渲染而丢失事件绑定
+   */
+  const handleContainerClick = useCallback(
+    (e: ReactMouseEvent<HTMLDivElement>) => {
+      const target = e.target as HTMLElement;
+      if (target.tagName !== "IMG") return;
 
-    const imgs = container.querySelectorAll<HTMLImageElement>(
-      ".article-html-segment img"
-    );
-    const srcs: PostImage[] = [];
-    const handlers: Array<{ el: HTMLImageElement; handler: (e: Event) => void }> = [];
-
-    imgs.forEach((img, i) => {
-      const src = toAbsoluteUrl(img.getAttribute("src") || "");
+      const img = target as HTMLImageElement;
+      const src = img.getAttribute("src") || "";
       if (!src) return;
-      srcs.push(src);
+      if (isInlineEmoji(img)) return;
 
-      img.style.cursor = "zoom-in";
-      img.dataset.viewerIndex = String(srcs.length - 1);
+      const container = containerRef.current;
+      if (!container) return;
 
-      const handler = (e: Event) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const idx = parseInt(img.dataset.viewerIndex || "0", 10);
-        openViewer(idx, img.getBoundingClientRect());
-      };
-      img.addEventListener("click", handler);
-      handlers.push({ el: img, handler });
-    });
-
-    setImageList(srcs);
-
-    return () => {
-      handlers.forEach(({ el, handler }) => {
-        el.removeEventListener("click", handler);
-        el.style.cursor = "";
+      // 收集所有可预览的图片（排除表情）
+      const allImgs = Array.from(
+        container.querySelectorAll<HTMLImageElement>(".article-html-segment img")
+      ).filter((el) => {
+        const s = el.getAttribute("src") || "";
+        if (!s) return false;
+        if (isInlineEmoji(el)) return false;
+        return true;
       });
-    };
-  }, [segments, openViewer]);
+
+      const idx = allImgs.indexOf(img);
+      if (idx < 0) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+
+      const images: PostImage[] = allImgs.map((el) =>
+        toAbsoluteUrl(el.getAttribute("src") || "")
+      );
+      setImageList(images);
+      setOriginRect(img.getBoundingClientRect());
+      setViewerIndex(idx);
+    },
+    []
+  );
 
   return (
-    <div className={className} ref={containerRef}>
+    <div className={className} ref={containerRef} onClick={handleContainerClick}>
       {segments.map((seg, i) => {
         if (seg.kind === "music") {
           return (
