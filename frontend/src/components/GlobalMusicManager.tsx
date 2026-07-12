@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { getGlobalAudio } from "@/lib/global-audio";
 import { useMusicPlayer, type LyricLine, type PlaylistTrack } from "@/lib/music-player-store";
+import { useSiteSettings } from "@/lib/site-settings-store";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
 const AUDIO_BASE = API_URL.replace("/api", "");
@@ -78,16 +79,19 @@ export default function GlobalMusicManager() {
     if (initRef.current) return;
     initRef.current = true;
 
-    fetch(`${API_URL}/music`)
-      .then((res) => (res.ok ? res.json() : {}))
-      .then((data: {
+    // 并行获取音乐数据和站点设置（确保 musicAutoplay 可用）
+    Promise.all([
+      fetch(`${API_URL}/music`).then((res) => (res.ok ? res.json() : {})),
+      useSiteSettings.getState().fetchSettings(),
+    ])
+      .then(([data]: [{
         mp3url?: string;
         name?: string;
         id?: string;
         lyric?: string;
         playlist?: PlaylistTrack[];
         currentIndex?: number;
-      }) => {
+      }, void]) => {
         if (!data.mp3url) {
           // 后端未配置音乐：标记已加载（避免顶栏一直显示骨架），停止切歌过渡
           useMusicPlayer.setState({ musicLoaded: true, switching: false });
@@ -96,14 +100,26 @@ export default function GlobalMusicManager() {
         const playlist: PlaylistTrack[] = Array.isArray(data.playlist) && data.playlist.length > 0
           ? data.playlist.map((t) => ({ ...t, mp3url: toAbsolute(t.mp3url) }))
           : [];
+        const musicUrl = toAbsolute(data.mp3url);
         useMusicPlayer.getState().initMusic({
-          mp3url: toAbsolute(data.mp3url),
+          mp3url: musicUrl,
           name: data.name || "",
           id: data.id || "",
           lyric: data.lyric ? parseLyric(data.lyric) : null,
           playlist,
           currentIndex: data.currentIndex || 0,
         });
+
+        // 自动播放：站点设置开启时尝试播放（浏览器可能阻止，静默失败）
+        if (useSiteSettings.getState().musicAutoplay) {
+          const audio = getGlobalAudio();
+          if (audio) {
+            audio.src = musicUrl;
+            audio.play().catch(() => {
+              // 浏览器阻止自动播放，用户需手动点击播放
+            });
+          }
+        }
       })
       .catch(() => {
         // fetch 失败（网络错误/后端不可达）：标记已加载，避免骨架永久占位

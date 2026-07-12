@@ -111,6 +111,8 @@ export interface Post {
   region?: string;
   /** 文章类型：original=原创，repost=转载，ai=AI生成 */
   articleType?: "original" | "repost" | "ai";
+  /** 转载来源链接（articleType=repost 时填写） */
+  repostUrl?: string;
   author: User;
   content: string;
   images: PostImage[];
@@ -309,12 +311,66 @@ function minutesAgo(n: number): string {
   return d.toISOString();
 }
 
-export function formatWeChatDate(iso: string): string {
+/**
+ * 时区安全的时间格式化工具。
+ *
+ * 问题：new Date(iso).getHours() 等方法使用运行环境的本地时区。
+ * SSR (Next.js 服务器) 默认 UTC，而用户浏览器是 UTC+8，
+ * 导致同一时间戳在服务端和客户端渲染出不同结果，
+ * 引发 hydration mismatch 和 ISR 缓存页面时间错误。
+ *
+ * 解决：使用 Intl.DateTimeFormat 指定 timeZone: "Asia/Shanghai"，
+ * 确保服务端和客户端始终输出中国时间。
+ */
+const CST_TIMEZONE = "Asia/Shanghai";
+
+interface CSTDateParts {
+  year: number;
+  month: number; // 1-based
+  day: number;
+  hour: number;
+  minute: number;
+}
+
+function getCSTParts(iso: string): CSTDateParts {
   const date = new Date(iso);
-  const year = date.getFullYear();
-  const month = date.getMonth() + 1;
-  const day = date.getDate();
-  return `${year}年${month}月${day}日`;
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: CST_TIMEZONE,
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(date);
+
+  const get = (type: string): string =>
+    parts.find((p) => p.type === type)?.value || "0";
+
+  return {
+    year: parseInt(get("year"), 10),
+    month: parseInt(get("month"), 10),
+    day: parseInt(get("day"), 10),
+    hour: parseInt(get("hour"), 10) % 24, // 24:00 → 0
+    minute: parseInt(get("minute"), 10),
+  };
+}
+
+/** 获取当前时间在 CST 时区的日期部分（用于"今天/昨天"判断） */
+function getCSTNowParts(): CSTDateParts {
+  return getCSTParts(new Date().toISOString());
+}
+
+/** 计算两个 CST 日期之间相差的天数（按自然日，非 24h 滚动） */
+function diffCSTDays(a: CSTDateParts, b: CSTDateParts): number {
+  const dateA = new Date(a.year, a.month - 1, a.day);
+  const dateB = new Date(b.year, b.month - 1, b.day);
+  return Math.round((dateB.getTime() - dateA.getTime()) / (24 * 60 * 60 * 1000));
+}
+
+export function formatWeChatDate(iso: string): string {
+  const p = getCSTParts(iso);
+  return `${p.year}年${p.month}月${p.day}日`;
 }
 
 export function formatRelativeTime(iso: string): string {
@@ -332,7 +388,8 @@ export function formatRelativeTime(iso: string): string {
   if (diffDay === 1) return "昨天";
   if (diffDay < 3) return `${diffDay}天前`;
 
-  return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
+  const p = getCSTParts(iso);
+  return `${p.year}年${p.month}月${p.day}日`;
 }
 
 /**
@@ -343,26 +400,28 @@ export function formatRelativeTime(iso: string): string {
  * - 更早（不同年）→ "2026年4月27日 17:07"
  */
 export function formatDetailTime(iso: string): string {
-  const date = new Date(iso);
-  const now = new Date();
+  const p = getCSTParts(iso);
+  const now = getCSTNowParts();
   const pad = (n: number) => n.toString().padStart(2, "0");
-  const hhmm = `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  const hhmm = `${pad(p.hour)}:${pad(p.minute)}`;
 
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const dateStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  const diffDays = Math.round((todayStart.getTime() - dateStart.getTime()) / (24 * 60 * 60 * 1000));
+  const days = diffCSTDays(p, now);
 
-  if (diffDays === 0) return `今天 ${hhmm}`;
-  if (diffDays === 1) return `昨天 ${hhmm}`;
+  if (days === 0) return `今天 ${hhmm}`;
+  if (days === 1) return `昨天 ${hhmm}`;
 
-  return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日 ${hhmm}`;
+  // 同年省略年份
+  if (p.year === now.year) {
+    return `${p.month}月${p.day}日 ${hhmm}`;
+  }
+  return `${p.year}年${p.month}月${p.day}日 ${hhmm}`;
 }
 
 /** 文章详情页时间格式：始终完整日期 "2026年2月11日 15:13"（不显示今天/昨天） */
 export function formatArticleTime(iso: string): string {
-  const date = new Date(iso);
+  const p = getCSTParts(iso);
   const pad = (n: number) => n.toString().padStart(2, "0");
-  return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日 ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  return `${p.year}年${p.month}月${p.day}日 ${pad(p.hour)}:${pad(p.minute)}`;
 }
 
 const VIDEO_PLATFORM_LABELS: Record<string, string> = {

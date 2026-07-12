@@ -133,6 +133,8 @@ router.get("/posts", authenticate, requireAdmin, async (req: AuthRequest, res: R
       cover: p.cover || "",
       category: p.category || "",
       content: (p.content || "").replace(/<[^>]+>/g, "").slice(0, 200),
+      articleType: p.articleType || "original",
+      repostUrl: p.repostUrl || "",
       pinned: !!p.pinned,
       isAd: !!p.isAd,
       status: p.status || "published",

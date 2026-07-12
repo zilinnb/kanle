@@ -22,7 +22,7 @@ interface ImageViewerProps {
 
 const MIN_SCALE = 1;
 const MAX_SCALE = 5;
-const ANIM_MS = 280;
+const ANIM_MS = 220;
 
 function touchDistance(a: { clientX: number; clientY: number }, b: { clientX: number; clientY: number }) {
   return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
@@ -188,6 +188,7 @@ export default function ImageViewer({
   // 双击放大检测
   const lastTapTimeRef = useRef(0);
   const pendingCloseRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const justDoubleTappedRef = useRef(false);
   useEffect(() => {
     liveRef.current = live;
@@ -214,6 +215,10 @@ export default function ImageViewer({
       if (pendingCloseRef.current) {
         clearTimeout(pendingCloseRef.current);
         pendingCloseRef.current = null;
+      }
+      if (closeTimerRef.current) {
+        clearTimeout(closeTimerRef.current);
+        closeTimerRef.current = null;
       }
     };
   }, []);
@@ -284,8 +289,22 @@ export default function ImageViewer({
       }
     }
     setClosing(true);
-    window.setTimeout(onClose, ANIM_MS);
+    if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    closeTimerRef.current = setTimeout(() => {
+      closeTimerRef.current = null;
+      onClose();
+    }, ANIM_MS);
   }, [closing, originRect, onClose]);
+
+  // 取消关闭：双击放大时回滚关闭动画（动画进行中也可逆转）
+  const cancelClose = useCallback(() => {
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+    setClosing(false);
+    setCloseTransform(null);
+  }, []);
 
   // 键盘控制
   useEffect(() => {
@@ -440,6 +459,8 @@ export default function ImageViewer({
               clearTimeout(pendingCloseRef.current);
               pendingCloseRef.current = null;
             }
+            // 关闭动画进行中时回滚（pending 已触发但双击仍在窗口内）
+            if (closing) cancelClose();
             justDoubleTappedRef.current = true;
             const lastTouch = e.changedTouches[0];
             if (lastTouch) {
@@ -467,7 +488,7 @@ export default function ImageViewer({
       el.removeEventListener("touchend", onTouchEnd);
       el.removeEventListener("touchcancel", onTouchEnd);
     };
-  }, [close, count, goNext, goPrev, toggleZoomAtPoint]);
+  }, [close, cancelClose, count, goNext, goPrev, toggleZoomAtPoint]);
 
   // 桌面拖拽（放大时拖拽 + 最小缩放时水平滑动切换）
   useEffect(() => {
@@ -584,21 +605,27 @@ export default function ImageViewer({
     }
   };
 
-  // 点击背景关闭（拖拽产生的 click 不关闭；延迟以允许双击放大取消关闭）
+  // 点击背景关闭（拖拽产生的 click 不关闭）
   const onBgClick = (e: ReactMouseEvent<HTMLDivElement>) => {
     if (e.target !== e.currentTarget) return;
     if (dragRef.current.moved) return;
-    // 双击放大后触发的 click 不关闭
+    if (closing) return;
+    // 双击放大后触发的合成 click 不关闭（仅移动端需要）
     if (justDoubleTappedRef.current) {
       justDoubleTappedRef.current = false;
       return;
     }
-    // 延迟关闭，给双击放大留出取消窗口
-    if (pendingCloseRef.current) clearTimeout(pendingCloseRef.current);
-    pendingCloseRef.current = setTimeout(() => {
-      pendingCloseRef.current = null;
+    if (isDesktop) {
+      // 桌面端：立即关闭，双击放大通过 cancelClose 回滚动画
       close();
-    }, 280);
+    } else {
+      // 移动端：短暂延迟，给双击放大留出取消窗口
+      if (pendingCloseRef.current) clearTimeout(pendingCloseRef.current);
+      pendingCloseRef.current = setTimeout(() => {
+        pendingCloseRef.current = null;
+        close();
+      }, 200);
+    }
   };
 
   // 计算 img transform
@@ -636,7 +663,10 @@ export default function ImageViewer({
           clearTimeout(pendingCloseRef.current);
           pendingCloseRef.current = null;
         }
-        justDoubleTappedRef.current = true;
+        // 关闭动画进行中时回滚（桌面端立即关闭后双击放大可逆转）
+        if (closing) cancelClose();
+        // justDoubleTappedRef 仅移动端需要（抑制双击后的合成 click）
+        if (!isDesktop) justDoubleTappedRef.current = true;
         const cx = e.clientX;
         const cy = e.clientY;
         requestAnimationFrame(() => {

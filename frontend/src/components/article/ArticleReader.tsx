@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { flushSync } from "react-dom";
 import Link from "next/link";
-import { Heart, Share2, MessageCircle } from "lucide-react";
+import { Heart, Share2, MessageCircle, ExternalLink } from "lucide-react";
 import { Post, formatArticleTime } from "@/lib/mock-data";
 import { resolveAvatar } from "@/lib/avatar";
 import { getCurrentUser, authFetchHeaders } from "@/lib/auth";
@@ -213,6 +213,24 @@ export default function ArticleReader({ post }: ArticleReaderProps) {
           {post.region ? ` ${post.region}` : ""}
         </span>
       </div>
+
+      {/* 转载来源卡片 */}
+      {post.articleType === "repost" && post.repostUrl && (
+        <a
+          href={post.repostUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-4 flex items-center gap-3 rounded-xl border border-black/5 bg-gray-50 px-4 py-3 transition-colors hover:bg-gray-100 dark:border-white/5 dark:bg-white/5 dark:hover:bg-white/10"
+        >
+          <ExternalLink className="h-4 w-4 shrink-0 text-wechat-text-secondary" />
+          <div className="min-w-0 flex-1">
+            <div className="text-xs text-wechat-text-secondary">转载来源</div>
+            <div className="truncate text-sm text-wechat-link">
+              {post.repostUrl}
+            </div>
+          </div>
+        </a>
+      )}
 
       {/* 正文内容（含内联音乐/视频嵌入） */}
       <ArticleEmbedContent

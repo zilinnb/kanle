@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Loader2, X, Image as ImageIcon, MapPin, Heart, MessageSquare, Pin } from "lucide-react";
+import { ArrowLeft, Loader2, X, Image as ImageIcon, MapPin, Heart, MessageSquare, Pin, Link2, FolderOpen } from "lucide-react";
 import ArticleEditor, { buildMusicEmbedHtml, buildLinkCardHtml, buildVideoEmbedHtml } from "@/components/ArticleEditor";
+import MediaPicker from "@/components/MediaPicker";
 import { apiFetch, getToken } from "@/lib/api-fetch";
 import { uploadImage, toAbsoluteUrl } from "@/lib/upload";
 import { wgs84ToGcj02 } from "@/lib/coord-transform";
@@ -21,6 +22,7 @@ export default function ArticleEditorPage({ articleId }: ArticleEditorPageProps)
   const [content, setContent] = useState("");
   const [cover, setCover] = useState("");
   const [articleType, setArticleType] = useState<"original" | "repost" | "ai">("original");
+  const [repostUrl, setRepostUrl] = useState("");
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState<null | "published" | "draft">(null);
   const [uploadingCover, setUploadingCover] = useState(false);
@@ -29,6 +31,7 @@ export default function ArticleEditorPage({ articleId }: ArticleEditorPageProps)
   const [likesDisabled, setLikesDisabled] = useState(false);
   const [commentsDisabled, setCommentsDisabled] = useState(false);
   const [pinned, setPinned] = useState(false);
+  const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
   const coverInputRef = useRef<HTMLInputElement | null>(null);
   // 编辑模式：加载完成后记录初始快照，用于判断是否有未保存改动
   const initialSnapshotRef = useRef<{ title: string; content: string } | null>(null);
@@ -58,6 +61,7 @@ export default function ArticleEditorPage({ articleId }: ArticleEditorPageProps)
         setContent(mergedContent);
         setCover(data.cover || "");
         setArticleType(data.articleType || "original");
+        setRepostUrl(data.repostUrl || "");
         setRegion(data.region || "");
         setLikesDisabled(!!data.likesDisabled);
         setCommentsDisabled(!!data.commentsDisabled);
@@ -154,6 +158,10 @@ export default function ArticleEditorPage({ articleId }: ArticleEditorPageProps)
         alert("请输入正文内容");
         return;
       }
+      if (articleType === "repost" && !repostUrl.trim()) {
+        alert("转载文章请填写转载来源链接");
+        return;
+      }
     }
     setSaving(status);
     try {
@@ -171,6 +179,7 @@ export default function ArticleEditorPage({ articleId }: ArticleEditorPageProps)
         cover,
         category: "",
         articleType,
+        repostUrl: articleType === "repost" ? repostUrl.trim() : "",
         region: region || undefined,
         likesDisabled,
         commentsDisabled,
@@ -213,7 +222,7 @@ export default function ArticleEditorPage({ articleId }: ArticleEditorPageProps)
     } finally {
       setSaving(null);
     }
-  }, [title, content, cover, articleType, region, likesDisabled, commentsDisabled, pinned, isEdit, articleId, router]);
+  }, [title, content, cover, articleType, repostUrl, region, likesDisabled, commentsDisabled, pinned, isEdit, articleId, router]);
 
   // 判断是否有未保存改动
   // - 新建模式：标题或正文任一非空即视为有内容
@@ -308,7 +317,7 @@ export default function ArticleEditorPage({ articleId }: ArticleEditorPageProps)
       </div>
 
       {/* 文章类型选择 */}
-      <div className="mb-3 flex items-center gap-2 lg:-mx-4 lg:mb-0 lg:shrink-0 lg:border-b lg:border-adm-border lg:px-4 lg:py-2">
+      <div className="mb-3 flex flex-wrap items-center gap-2 lg:-mx-4 lg:mb-0 lg:shrink-0 lg:border-b lg:border-adm-border lg:px-4 lg:py-2">
         <span className="shrink-0 text-xs font-medium text-adm-text-secondary">类型</span>
         <div className="flex gap-1">
           {[
@@ -330,6 +339,20 @@ export default function ArticleEditorPage({ articleId }: ArticleEditorPageProps)
             </button>
           ))}
         </div>
+        {/* 转载链接输入框 */}
+        {articleType === "repost" && (
+          <div className="flex min-w-0 flex-1 items-center gap-1.5">
+            <Link2 className="h-3.5 w-3.5 shrink-0 text-adm-text-tertiary" />
+            <input
+              type="url"
+              value={repostUrl}
+              onChange={(e) => setRepostUrl(e.target.value)}
+              placeholder="转载来源链接（必填）"
+              maxLength={500}
+              className="min-w-0 flex-1 rounded-lg border border-adm-border bg-adm-card px-3 py-1.5 text-xs text-adm-text placeholder:text-adm-text-tertiary focus:outline-none focus:ring-2 focus:ring-gray-400/30 dark:bg-[#1e1e22]"
+            />
+          </div>
+        )}
       </div>
 
       {/* 左右分栏：编辑器（左/中） + 封面（右） — 桌面端各自独立滚动 */}
@@ -369,22 +392,36 @@ export default function ArticleEditorPage({ articleId }: ArticleEditorPageProps)
                   </button>
                 </div>
               ) : (
-                <button
-                  type="button"
-                  onClick={() => coverInputRef.current?.click()}
-                  disabled={uploadingCover}
-                  className="flex aspect-video w-full flex-col items-center justify-center gap-1.5 rounded-lg border-2 border-dashed border-adm-border text-adm-text-tertiary transition-colors hover:border-gray-500 hover:text-gray-600 dark:hover:border-gray-400 dark:hover:text-gray-300"
-                >
+                <div className="flex aspect-video w-full flex-col items-center justify-center gap-1.5 rounded-lg border-2 border-dashed border-adm-border text-adm-text-tertiary">
                   {uploadingCover ? (
                     <Loader2 className="h-5 w-5 animate-spin" />
                   ) : (
                     <>
                       <ImageIcon className="h-5 w-5" />
-                      <span className="text-xs">点击上传</span>
+                      <span className="text-xs">未设置封面</span>
                     </>
                   )}
-                </button>
+                </div>
               )}
+              <div className="mt-2 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => coverInputRef.current?.click()}
+                  disabled={uploadingCover}
+                  className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-adm-border bg-adm-card px-3 py-2 text-xs font-medium text-adm-text-secondary transition-colors hover:bg-adm-card-hover disabled:opacity-50"
+                >
+                  <ImageIcon className="h-3.5 w-3.5" />
+                  上传图片
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMediaPickerOpen(true)}
+                  className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-adm-border bg-adm-card px-3 py-2 text-xs font-medium text-adm-text-secondary transition-colors hover:bg-adm-card-hover"
+                >
+                  <FolderOpen className="h-3.5 w-3.5" />
+                  媒体库
+                </button>
+              </div>
               <input
                 ref={coverInputRef}
                 type="file"
@@ -459,6 +496,18 @@ export default function ArticleEditorPage({ articleId }: ArticleEditorPageProps)
           </div>
         </aside>
       </div>
+
+      {/* 媒体库选择器 */}
+      <MediaPicker
+        open={mediaPickerOpen}
+        onClose={() => setMediaPickerOpen(false)}
+        onSelect={(item) => {
+          setCover(item.url);
+          setMediaPickerOpen(false);
+        }}
+        category="image"
+        title="选择封面图片"
+      />
     </div>
   );
 }

@@ -63,366 +63,171 @@
 | 前端 | Next.js 16 · React 19 · Tailwind CSS v4 · Zustand |
 | 后端 | Express 5 · Sequelize 6 · TypeScript 6 |
 | 数据库 | MySQL 5.7 / 8.0 |
-| 部署 | Docker Compose / Docker CLI / PM2 + Nginx |
+| 部署 | PM2 + Nginx |
 
-## 快速部署
+---
 
-### 方式一：Docker CLI 交互式脚本（推荐）
+## 部署教程（Debian 12 全新服务器）
 
-下载脚本运行，按提示交互输入配置即可，**全部参数都支持回车采用默认值**：
+本教程适用于一台全新的 Debian 12 服务器，从零开始安装所有依赖并部署 kanle。
 
-```bash
-# 1. 下载脚本
-curl -sL https://raw.githubusercontent.com/zilinnb/kanle/main/deploy/docker-cli.sh -o docker-cli.sh
+### 前置条件
 
-# 2. 运行（按提示输入，回车 = 默认值）
-bash docker-cli.sh
-```
+- 一台 Debian 12 服务器（root 或 sudo 权限）
+- 一个域名（可选，没有也可用 IP 访问）
+- 云服务商安全组放行 80 和 443 端口
 
-交互流程示例：
+### 代码仓库
 
-```
-========================================
-  kanle · Docker 交互式部署
-========================================
+kanle 在 GitHub 和 Gitee 上均有仓库，分为稳定版和开发版：
 
-[1/5] MySQL 配置
-  是否使用宿主机已安装的 MySQL（如宝塔面板自带的）？[y/N]: y
-  数据库主机地址 [host.docker.internal]:         ← 回车用默认
-  数据库端口 [3306]:                              ← 回车用默认
-  数据库名 [moment_blog]: kanle                   ← 输入你的库名
-  数据库用户名 [kanle]:                           ← 回车用默认
-  数据库密码（必填，不回显）: ********             ← 输入密码
+| 版本 | GitHub | Gitee |
+|---|---|---|
+| 稳定版（推荐） | `https://github.com/zilinnb/kanle.git` | `https://gitee.com/ziln_cn/kanle.git` |
+| 开发版（功能前沿） | — | `https://gitee.com/ziln_cn/kanle-next.git` |
 
-[2/5] 前端端口配置
-  前端访问端口 [3000]:                            ← 回车用默认
-  → 后端不对外暴露端口（通过 rewrites 代理，只需放行 3000）
+> 国内服务器推荐使用 Gitee，克隆速度更快。
 
-[3/5] 管理员配置
-  管理员用户名 [admin]:                           ← 回车用默认
-  管理员邮箱 [admin@kanle.net]:                   ← 回车用默认
-  管理员密码 [123456]:                            ← 回车用默认
-
-[4/5] JWT 密钥
-  JWT 密钥（回车自动生成）:                       ← 回车自动生成
-
-[5/5] 确认配置
-  ...（打印所有配置）
-  确认部署？[Y/n]:                                ← 回车确认
-```
-
-**两种 MySQL 模式**：
-- **Docker 容器模式**（默认，回车 N）：开箱即用，脚本自动拉起 MySQL 容器，数据库密码可回车自动生成
-- **宿主机 MySQL 模式**（输入 y）：适配宝塔面板等已装 MySQL 的场景，脚本跳过 MySQL 容器，backend 容器通过 `host.docker.internal` 连接宿主机
-
-> ✨ **前后端共用 3000 端口**：前端通过 Next.js rewrites 把 `/api/` 和 `/uploads/` 代理到后端容器（Docker 内部通信），后端不需要对外暴露端口。**只需放行前端端口（3000）**，无需放行 4000。
->
-> ✨ **预构建镜像通用**：`NEXT_PUBLIC_API_URL=/api` 是相对路径，任何 IP/域名都能用，无需从源码构建。
->
-> 脚本支持重复运行：已存在的容器会跳过，删除后重建只需 `docker rm -f kanle-frontend kanle-backend kanle-mysql` 再运行。
-> 自动化部署（CI/重复部署）可加 `--no-prompt` 参数跳过交互，全部采用默认值。
-
-<details>
-<summary>🖥️ 选择「宿主机 MySQL」模式时，宝塔面板需要先做这些操作</summary>
-
-运行脚本前，在宝塔面板完成以下配置（否则容器连不上数据库）：
-
-1. **创建数据库**：宝塔 → 数据库 → 添加数据库
-   - 数据库名：和脚本交互时输入的「数据库名」一致（如 `moment_blog`）
-   - 用户名：和脚本交互时输入的「数据库用户名」一致（如 `kanle`）
-   - 密码：自定义强密码（运行脚本时输入同样的密码）
-   - 访问权限：**所有人**（必须！容器来源 IP 是 172.17.0.1，选「本地服务器」会被拒绝）
-   - 字符集：`utf8mb4`
-
-2. **放行 3306 端口**：宝塔 → 安全 → 放行 3306
-   - 安全起见可限制来源 IP 为 `172.17.0.0/16`（Docker 默认网段）
-
-3. **如果之前跑过 Docker 容器模式**，会有旧的 `kanle-mysql` 容器占着 3306 端口，先删除它：
-   ```bash
-   docker rm -f kanle-mysql
-   ```
-
-4. 运行 `bash docker-cli.sh`，第 1 步选 `y`，按提示输入宿主机 MySQL 信息即可。
-
-**数据库主机地址怎么填？**
-
-| 场景 | 填什么 |
-|---|---|
-| 同机部署（推荐） | `host.docker.internal`（脚本自动加 host-gateway） |
-| host.docker.internal 不生效 | `172.17.0.1`（Docker 默认网桥的宿主机 IP） |
-| 跨机器部署 | 宿主机内网/公网 IP（如 `192.168.1.100`） |
-
-</details>
-
-### 方式二：Docker Compose
+### 第 1 步：系统更新
 
 ```bash
-# 1. 下载配置文件
-curl -sL https://raw.githubusercontent.com/zilinnb/kanle/main/docker-compose.yml -o docker-compose.yml
-curl -sL https://raw.githubusercontent.com/zilinnb/kanle/main/.env.example -o .env
-
-# 2. 修改 .env（至少修改 DB_PASSWORD、JWT_SECRET）
-vi .env
-
-# 3. 一键启动
-docker compose up -d
-
-# 4. 查看日志
-docker compose logs -f
+apt update && apt upgrade -y
+apt install -y curl wget git vim build-essential
 ```
 
-### 方式三：Docker CLI 手动命令
-
-不想用脚本或 yml？用 `docker run` 命令逐个启动，完全自定义：
+### 第 2 步：安装 Node.js 20 LTS
 
 ```bash
-# 1. 创建网络
-docker network create kanle-net
+# 添加 NodeSource 仓库
+curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
 
-# 2. 启动 MySQL（替换 your_db_password）
-docker run -d \
-  --name kanle-mysql \
-  --network kanle-net \
-  -e MYSQL_ROOT_PASSWORD=your_db_password \
-  -e MYSQL_DATABASE=moment_blog \
-  -e MYSQL_USER=kanle \
-  -e MYSQL_PASSWORD=your_db_password \
-  -v kanle-mysql-data:/var/lib/mysql \
-  --restart unless-stopped \
-  mysql:8.0
+# 安装 Node.js
+apt install -y nodejs
 
-# 3. 启动后端（不暴露端口，通过前端 rewrites 代理）
-# 也可用 mysql:5.7 替代上面步骤 2 中的 mysql:8.0
-docker run -d \
-  --name kanle-backend \
-  --network kanle-net \
-  -e DB_HOST=kanle-mysql \
-  -e DB_USER=kanle \
-  -e DB_PASSWORD=your_db_password \
-  -e DB_NAME=moment_blog \
-  -e JWT_SECRET=your_jwt_secret \
-  -e ADMIN_EMAIL=admin@kanle.net \
-  -e ADMIN_PASSWORD=123456 \
-  -e ADMIN_USERNAME=admin \
-  -e CLIENT_URL=http://kanle-frontend:3000 \
-  -e REVALIDATE_SECRET=kanle-revalidate \
-  -v kanle-uploads:/app/backend/public/uploads \
-  -v kanle-plugins:/app/backend/plugins \
-  --restart unless-stopped \
-  zilinnb/kanle-backend:latest
-
-# 4. 启动前端（唯一需要映射端口的容器）
-docker run -d \
-  --name kanle-frontend \
-  --network kanle-net \
-  -e REVALIDATE_SECRET=kanle-revalidate \
-  -p 3000:3000 \
-  --restart unless-stopped \
-  zilinnb/kanle-frontend:latest
-```
-
-> 后端不映射 4000 端口，通过前端 Next.js rewrites 代理 `/api/` 和 `/uploads/`。只需放行 3000。
-
-常用操作：
-
-```bash
-# 查看日志
-docker logs -f kanle-backend
-docker logs -f kanle-frontend
-
-# 停止
-docker stop kanle-frontend kanle-backend kanle-mysql
-
-# 启动（已创建的容器）
-docker start kanle-mysql kanle-backend kanle-frontend
-
-# 删除容器（数据保留在 volume 中）
-docker rm -f kanle-frontend kanle-backend kanle-mysql
-```
-
-镜像标签可选：
-- `latest`：稳定版
-- `dev`：开发版，功能前沿但相对不稳定
-
-### 方式四：从源码构建（自定义后端容器名时使用）
-
-预构建镜像已内置 `NEXT_PUBLIC_API_URL=/api` + `BACKEND_URL=http://kanle-backend:4000`，任何域名/IP 都通用。仅当需要改后端容器名时才需从源码构建：
-
-```bash
-# 1. 克隆项目
-git clone https://github.com/zilinnb/kanle.git
-cd kanle
-
-# 2. 修改 docker-compose.yml：注释掉 frontend 的 image 行，取消 build 注释
-#    在 build.args 中指定 BACKEND_URL（如 http://my-backend:4000）
-# 3. 构建并启动
-docker compose up -d --build
-```
-
-### 方式五：pnpm 一键部署脚本（适配宝塔面板 / 1Panel）
-
-适合使用宝塔面板或 1Panel 管理服务器的用户。脚本自动检测面板类型，交互式配置，全程使用 pnpm 安装依赖。
-
-```bash
-# 下载脚本
-curl -sL https://raw.githubusercontent.com/zilinnb/kanle/main/deploy/pnpm-deploy.sh -o pnpm-deploy.sh
-
-# 交互式部署（按提示输入，回车 = 默认值）
-bash pnpm-deploy.sh
-
-# 更新代码 + 重新构建（不重新配置）
-bash pnpm-deploy.sh --update
-```
-
-脚本流程：
-1. **环境检查** — Node.js 18+、PM2、pnpm（自动通过 corepack 安装）
-2. **安装路径** — 默认 `/www/wwwroot/kanle`
-3. **数据库配置** — 地址、端口、库名、用户、密码
-4. **管理员配置** — 用户名、邮箱、密码
-5. **JWT 密钥** — 回车自动生成
-6. **前端端口** — 默认 3000，只需放行此端口
-7. **自动部署** — git clone → pnpm install → build → db:seed → pm2 start → 生成 Nginx 配置
-
-脚本会根据检测到的面板类型输出对应的 Nginx 配置指引：
-- **宝塔面板**：网站 → 添加站点 → 配置文件替换
-- **1Panel**：网站 → 创建反向代理
-- **通用**：`/etc/nginx/conf.d/kanle.conf`
-
-> ✨ 使用 pnpm 安装依赖比 npm 快 3 倍，磁盘占用更小。
-> PM2 执行 `pnpm start` 管理进程，`pm2 logs kanle-frontend` 可查看日志。
->
-> 更新代码只需 `bash pnpm-deploy.sh --update`，自动拉取代码 + 重新构建 + 重启 PM2。
-
-### 方式六：手动部署（PM2 + Nginx）
-
-前置要求：Node.js 22 LTS、MySQL 5.7+、PM2、Nginx、pnpm
-
-```bash
-# 一次性安装 pnpm（Node 16+ 自带 corepack）
-corepack enable && corepack prepare pnpm@latest --activate
-# 或: npm install -g pnpm
-
-# ===== 后端 =====
-cd backend
-pnpm install                  # 比 npm ci 快很多，磁盘占用小
-cp .env.example .env          # 编辑 .env，填写数据库等信息
-pnpm build
-pnpm db:seed                  # 初始化数据库 + 创建管理员
-pm2 start ecosystem.config.js
-
-# ===== 前端 =====
-cd frontend
-pnpm install
-cp .env.example .env.local    # 默认 NEXT_PUBLIC_API_URL=/api + BACKEND_URL=http://localhost:4000，无需修改
-pnpm build
-pm2 start ecosystem.config.js
-
-# ===== Nginx =====
-# 只需反代 3000，/api/ 和 /uploads/ 由 Next.js rewrites 自动代理到后端
-sudo cp deploy/nginx.conf /etc/nginx/conf.d/kanle.conf
-sudo nginx -t && sudo nginx -s reload
-sudo certbot --nginx -d yourdomain.com   # SSL 证书
-```
-
-### 方式七：宝塔面板部署
-
-适合使用宝塔面板（BT Panel）管理服务器的用户，全程图形化操作 + 少量终端命令。
-
-#### 第 1 步：安装宝塔面板
-
-如果服务器尚未安装宝塔面板：
-
-```bash
-# CentOS/Ubuntu/Debian 通用安装命令
-curl -sSO https://download.bt.cn/install/install_panel.sh && bash install_panel.sh
-```
-
-安装完成后，浏览器打开宝塔面板地址，登录后在弹出的「推荐安装套件」中选择 **LNMP（推荐）**：
-- **Nginx**：选 1.24 或以上
-- **MySQL**：选 5.7 或 8.0 均可
-- **PHP**：不需要，本项目基于 Node.js，可跳过
-- 勾选「编译安装」，点击「一键安装」
-
-#### 第 2 步：安装 Node.js + PM2 + pnpm
-
-1. 宝塔左侧菜单 → **软件商店**
-2. 搜索 **PM2管理器**，点击安装
-3. 安装完成后，在 PM2 管理器中设置 Node.js 版本为 **22.x**
-4. 在宝塔**终端**中启用 pnpm（Node 16+ 自带 corepack，一次性操作）：
-
-```bash
-corepack enable && corepack prepare pnpm@latest --activate
 # 验证
-pnpm -v
+node -v   # 应输出 v20.x.x
+npm -v    # 应输出 10.x.x
 ```
 
-> PM2 管理器自带 Node.js 和 PM2，无需手动安装。pnpm 通过 corepack 启用，比 npm 快很多、报错更少。
-
-#### 第 3 步：创建数据库
-
-1. 宝塔左侧菜单 → **数据库** → **添加数据库**
-2. 填写：
-   - 数据库名：`moment_blog`
-   - 用户名：`kanle`
-   - 密码：自定义一个强密码（记下来，后面要用）
-   - 访问权限：**本地服务器**
-   - 字符集：`utf8mb4`
-3. 点击**提交**
-
-#### 第 4 步：克隆代码
-
-宝塔左侧菜单 → **终端**，执行：
+### 第 3 步：启用 pnpm + 安装 PM2
 
 ```bash
-cd /www/wwwroot
-git clone https://gitee.com/ziln_cn/kanle.git
-# 如果用 GitHub: git clone https://github.com/zilinnb/kanle.git
+# 启用 pnpm（Node 16+ 自带 corepack，一次性操作）
+corepack enable
+corepack prepare pnpm@latest --activate
+
+# 全局安装 PM2
+npm install -g pm2
+
+# 验证
+pnpm -v   # 应输出 10.x.x
+pm2 -v    # 应输出 7.x.x
 ```
 
-> 也可通过宝塔**文件管理**上传代码压缩包再解压到 `/www/wwwroot/kanle`。
-
-#### 第 5 步：部署后端
-
-终端中执行：
+### 第 4 步：安装 MySQL
 
 ```bash
-cd /www/wwwroot/kanle/backend
+apt install -y mysql-server
+
+# 启动并设置开机自启
+systemctl start mysql
+systemctl enable mysql
+
+# 安全初始化（按提示设置 root 密码，其余选项一路 Y）
+mysql_secure_installation
+```
+
+### 第 5 步：创建数据库
+
+```bash
+mysql -u root -p
+```
+
+```sql
+CREATE DATABASE moment_blog CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'kanle'@'localhost' IDENTIFIED BY '你的强密码';
+GRANT ALL PRIVILEGES ON moment_blog.* TO 'kanle'@'localhost';
+FLUSH PRIVILEGES;
+EXIT;
+```
+
+> 记住密码，后面配置 `.env` 时要用。
+
+### 第 6 步：安装 Nginx
+
+```bash
+apt install -y nginx
+systemctl enable nginx
+```
+
+### 第 7 步：克隆代码
+
+```bash
+# 安装路径（可自定义，后续 Nginx 配置需对应修改）
+INSTALL_DIR=/opt/kanle
+
+# 方式 A：从 Gitee 克隆（国内推荐）
+git clone https://gitee.com/ziln_cn/kanle.git $INSTALL_DIR
+
+# 方式 B：从 Gitee 克隆开发版
+# git clone https://gitee.com/ziln_cn/kanle-next.git $INSTALL_DIR
+
+# 方式 C：从 GitHub 克隆
+# git clone https://github.com/zilinnb/kanle.git $INSTALL_DIR
+```
+
+### 第 8 步：部署后端
+
+```bash
+cd $INSTALL_DIR/backend
 
 # 安装依赖
 pnpm install
 
 # 配置环境变量
 cp .env.example .env
+vim .env
 ```
 
-编辑 `.env` 文件（终端中 `vi .env` 或用宝塔文件管理器编辑）：
+编辑 `.env`，修改以下关键字段：
 
 ```ini
+# MySQL（填入第 5 步设置的密码）
 DB_HOST=127.0.0.1
 DB_PORT=3306
 DB_USER=kanle
-DB_PASSWORD=你刚才设置的数据库密码
+DB_PASSWORD=你的强密码
 DB_NAME=moment_blog
-JWT_SECRET=改成一串随机长字符串
-JWT_EXPIRES_IN=7d
+
+# JWT 密钥（改为随机长字符串，可用 openssl rand -hex 32 生成）
+JWT_SECRET=请改成一串随机长字符串
+
+# 初始管理员（仅首次创建生效，之后修改不会更新已有账号）
 ADMIN_EMAIL=admin@kanle.net
 ADMIN_PASSWORD=123456
 ADMIN_USERNAME=admin
+
+# 前端地址（有域名填 https://你的域名.com，没域名填 http://服务器IP）
 CLIENT_URL=http://localhost:3000
+
+# 按需重验证密钥（须与前端一致，默认即可）
 REVALIDATE_SECRET=kanle-revalidate
 ```
 
-继续构建和初始化：
+构建并初始化数据库：
 
 ```bash
+# 编译 TypeScript
 pnpm build
-pnpm db:seed    # 初始化数据库表 + 创建管理员账号
+
+# 初始化数据库表 + 创建管理员账号
+pnpm db:seed
 ```
 
-用 PM2 启动后端：
+用 PM2 启动：
 
 ```bash
-pm2 start ecosystem.config.js --name kanle-backend
+pm2 start ecosystem.config.js
 pm2 save
 ```
 
@@ -433,10 +238,10 @@ curl http://localhost:4000/api/health
 # 返回 JSON 即正常
 ```
 
-#### 第 6 步：部署前端
+### 第 9 步：部署前端
 
 ```bash
-cd /www/wwwroot/kanle/frontend
+cd $INSTALL_DIR/frontend
 
 # 安装依赖
 pnpm install
@@ -445,230 +250,174 @@ pnpm install
 cp .env.example .env.local
 ```
 
-编辑 `.env.local`：
+`.env.local` 默认内容通常无需修改，如有域名可设置 `NEXT_PUBLIC_SITE_URL`：
 
 ```ini
-# /api 是相对路径，通过 Next.js rewrites 代理到后端，任何域名/IP 都通用
+# 后端 API 地址（相对路径 /api，通过 Next.js rewrites 代理，任何域名/IP 通用）
 NEXT_PUBLIC_API_URL=/api
+
 # 后端地址（rewrites 代理目标）
 BACKEND_URL=http://localhost:4000
+
+# 站点 URL（可选，用于 Cravatar 默认头像，有域名可设为 https://你的域名.com）
+NEXT_PUBLIC_SITE_URL=
+
+# 按需重验证密钥（须与后端 REVALIDATE_SECRET 一致）
 NEXT_PUBLIC_REVALIDATE_SECRET=kanle-revalidate
 REVALIDATE_SECRET=kanle-revalidate
+
+# standalone 服务监听
+PORT=3000
+HOSTNAME=0.0.0.0
 ```
 
 构建并启动：
 
 ```bash
+# 构建（standalone 模式，生成独立可运行产物）
 pnpm build
-pm2 start ecosystem.config.js --name kanle-frontend
+
+# 复制静态资源到 standalone 目录（必须执行，否则页面样式丢失）
+cp -r .next/static .next/standalone/.next/static
+
+# 用 PM2 启动
+pm2 start ecosystem.config.js
 pm2 save
 ```
 
-验证前端：
+验证前端是否正常：
 
 ```bash
 curl http://localhost:3000
 # 返回 HTML 即正常
 ```
 
-#### 第 7 步：配置网站（Nginx 反向代理）
+### 第 10 步：配置 Nginx 反向代理
 
-1. 宝塔左侧菜单 → **网站** → **添加站点**
-2. 填写：
-   - 域名：`你的域名.com`（没有域名可填服务器 IP）
-   - 根目录：`/www/wwwroot/kanle/frontend`（随便填，后面会改）
-   - PHP版本：**纯静态**
-   - 数据库：不创建
-3. 点击**提交**
+```bash
+# 复制项目提供的 Nginx 配置
+cp $INSTALL_DIR/deploy/nginx.conf /etc/nginx/conf.d/kanle.conf
 
-站点创建后，点击站点名 → **配置文件**，替换为以下内容：
-
-```nginx
-# /www/server/panel/vhost/nginx/你的域名.conf
-
-server {
-    listen 80;
-    server_name 你的域名.com;
-
-    # 只需反代 3000，/api/ 和 /uploads/ 由 Next.js rewrites 自动代理到后端
-    location / {
-        proxy_pass http://127.0.0.1:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-    }
-
-    # 上传文件大小限制
-    client_max_body_size 50m;
-}
+# 编辑配置，替换域名和安装路径
+vim /etc/nginx/conf.d/kanle.conf
 ```
 
-保存后，终端执行 `nginx -t && nginx -s reload` 重载 Nginx。
+需要修改的内容：
+- `server_name yourdomain.com` → 改为你的域名或 IP
+- `/opt/kanle` → 改为你的实际安装路径（如果用的不是 `/opt/kanle`）
 
-> 如果用的是域名，宝塔会自动创建对应的 Nginx 配置文件，直接在站点设置里编辑即可。
+测试并重载 Nginx：
 
-#### 第 8 步：配置 SSL 证书（可选，有域名时推荐）
+```bash
+nginx -t
+nginx -s reload
+```
 
-1. 宝塔 → **网站** → 点击站点名 → **SSL**
-2. 选择 **Let's Encrypt** → 勾选域名 → 点击**申请**
-3. 申请成功后，开启**强制 HTTPS**
+> **端口说明**：外部只需放行 80（HTTP）和 443（HTTPS）。前端 3000 和后端 4000 端口由 Nginx 反向代理，不需要对外暴露。
 
-> 宝塔会自动续期 Let's Encrypt 证书。
+### 第 11 步：配置 SSL 证书（有域名时推荐）
 
-#### 第 9 步：设置防火墙
+```bash
+# 安装 certbot
+apt install -y certbot python3-certbot-nginx
 
-1. 宝塔 → **安全** → 放行端口
-2. 确保放行：**80**（HTTP）、**443**（HTTPS）
-3. **不需要**放行 3000 和 4000（Nginx 反向代理，外部不直接访问）
+# 申请证书并自动配置 Nginx
+certbot --nginx -d 你的域名.com
 
-> 云服务器还需在云服务商控制台的安全组中放行 80 和 443。
+# 测试自动续期
+certbot renew --dry-run
+```
 
-#### 第 10 步：设置 PM2 开机自启
+### 第 12 步：配置防火墙
+
+```bash
+# 放行 HTTP 和 HTTPS
+ufw allow 80/tcp
+ufw allow 443/tcp
+ufw allow 22/tcp     # SSH
+ufw enable
+```
+
+> 云服务器还需在服务商控制台的安全组中放行 80 和 443。
+
+### 第 13 步：设置 PM2 开机自启
 
 ```bash
 pm2 startup
+# 按提示执行输出的命令（通常是 systemctl enable pm2-root 之类）
+
 pm2 save
 ```
 
-宝塔 → **软件商店** → PM2 管理器 → 设置 → 勾选**开机自启**。
-
-#### 常见问题
-
-**Q: 宝塔终端中 npm/node/pnpm 命令找不到？**
-
-宝塔的 PM2 管理器安装的 Node.js 可能不在默认 PATH 中。执行：
-
-```bash
-# 查找 node 路径
-which node || find /www -name node -type f 2>/dev/null
-
-# 添加到 PATH（写入 ~/.bashrc）
-echo 'export PATH="/www/server/nodejs/v22/bin:$PATH"' >> ~/.bashrc
-source ~/.bashrc
-
-# 重新启用 pnpm
-corepack enable && corepack prepare pnpm@latest --activate
-```
-
-**Q: 前端构建时内存不足？**
-
-```bash
-# 增加 Node.js 内存限制
-export NODE_OPTIONS="--max-old-space-size=2048"
-pnpm build
-```
-
-**Q: 改了域名后前端没生效？**
-
-`NEXT_PUBLIC_API_URL=/api` 是相对路径，换域名后**不需要重新构建**。只需修改 Nginx 配置中的 `server_name`，前端自动适配。
-
-**Q: 如何查看日志？**
-
-```bash
-pm2 logs kanle-backend      # 后端日志
-pm2 logs kanle-frontend     # 前端日志
-# 或在宝塔 PM2 管理器中直接查看
-```
+---
 
 ### 访问
 
-启动完成后，用 `http://你的服务器IP:3000` 打开：
-- 前端：`http://你的服务器IP:3000`（或你的域名）
-- 后台：访问地址 + `/admin/login`
+部署完成后，用 `http://你的域名.com` 或 `http://服务器IP` 打开：
+
+- 前端首页：`http://你的域名`
+- 后台管理：`http://你的域名/admin/login`
 - 默认账号：`admin`（用户名登录，也支持邮箱 `admin@kanle.net`）
 - 默认密码：`123456`
 
 > 生产环境务必修改 `ADMIN_PASSWORD`、`JWT_SECRET`、`DB_PASSWORD`。
-> 只需放行前端端口（3000），后端通过 rewrites 代理，无需放行 4000。
+
+---
 
 ## 升级（保留数据）
 
-### Docker 升级（推荐）
-
 ```bash
-# 下载升级脚本
-curl -sL https://raw.githubusercontent.com/zilinnb/kanle/main/deploy/docker-upgrade.sh -o docker-upgrade.sh
+cd $INSTALL_DIR
 
-# 交互式升级（自动备份 + 拉取新镜像 + 重建容器）
-bash docker-upgrade.sh
+# 拉取最新代码
+git pull
 
-# 跳过数据库备份
-bash docker-upgrade.sh --no-backup
+# 升级后端
+cd backend
+pnpm install
+pnpm build
+pm2 restart kanle-backend
 
-# 全自动升级（不确认）
-bash docker-upgrade.sh --auto
+# 升级前端
+cd ../frontend
+pnpm install
+pnpm build
+cp -r .next/static .next/standalone/.next/static
+pm2 restart kanle-frontend
 ```
 
-升级脚本流程：
-1. **检测现有容器** — 自动找到 kanle-frontend、kanle-backend、kanle-mysql
-2. **提取配置** — 从现有容器提取镜像、环境变量、端口、数据卷挂载
-3. **备份数据** — 数据库 `db-*.sql.gz` + 上传文件 `uploads-*.tar.gz` + 插件 `plugins-*.tar.gz`
-4. **拉取最新镜像** — `docker pull zilinnb/kanle-frontend:latest` + `zilinnb/kanle-backend:latest`
-5. **重建容器** — 停止旧容器 → 删除旧容器 → 用相同配置启动新容器
-6. **验证** — 检查容器状态，确认数据卷完好
-
-> ✅ **数据安全**：数据卷（`kanle-mysql-data`、`kanle-uploads`、`kanle-plugins`）不会被删除。升级只替换容器，不碰数据。
->
-> 📁 **备份位置**：`./backup/` 目录，恢复命令：
-> ```bash
-> # 恢复数据库
-> gunzip < backup/db-xxx.sql.gz | docker exec -i kanle-mysql mysql -u用户名 -p密码 数据库名
-> # 恢复上传文件（图片/视频/音频）
-> docker exec -i kanle-backend tar xzf - -C /app/public/uploads < backup/uploads-xxx.tar.gz
-> # 恢复插件
-> docker exec -i kanle-backend tar xzf - -C /app/plugins < backup/plugins-xxx.tar.gz
-> ```
-
-### Docker Compose 升级
-
-```bash
-docker compose pull
-docker compose up -d --force-recreate
-```
-
-### PM2 部署升级
-
-```bash
-bash deploy/pnpm-deploy.sh --update
-```
+> 数据库表通过 `sequelize.sync()` 自动同步结构变更，无需手动迁移。后端重启时会自动执行。
 
 ## 环境变量
 
-### 后端
+### 后端（`backend/.env`）
 
 | 变量 | 必填 | 默认值 | 说明 |
 |---|---|---|---|
-| `DB_HOST` | 是 | `127.0.0.1` | MySQL 地址（Docker 中为 `kanle-mysql`）|
+| `DB_HOST` | 是 | `127.0.0.1` | MySQL 地址 |
 | `DB_PORT` | 否 | `3306` | MySQL 端口 |
 | `DB_USER` | 是 | - | MySQL 用户名 |
 | `DB_PASSWORD` | 是 | - | MySQL 密码 |
 | `DB_NAME` | 否 | `moment_blog` | 数据库名 |
-| `JWT_SECRET` | 是 | - | JWT 密钥（生产务必改为随机长字符串）|
+| `JWT_SECRET` | 是 | - | JWT 密钥（生产务必改为随机长字符串） |
 | `JWT_EXPIRES_IN` | 否 | `7d` | Token 过期时间 |
-| `ADMIN_EMAIL` | 是 | `admin@kanle.net` | 初始管理员邮箱（仅首次创建生效）|
-| `ADMIN_PASSWORD` | 是 | `123456` | 初始管理员密码（仅首次创建生效）|
+| `ADMIN_EMAIL` | 是 | `admin@kanle.net` | 初始管理员邮箱（仅首次创建生效） |
+| `ADMIN_PASSWORD` | 是 | `123456` | 初始管理员密码（仅首次创建生效） |
 | `ADMIN_USERNAME` | 否 | `admin` | 管理员用户名 |
-| `CLIENT_URL` | 否 | `http://localhost:3000` | 前端地址（CORS + revalidate）|
-| `REVALIDATE_SECRET` | 否 | `kanle-revalidate` | 按需重验证密钥（须与前端一致）|
+| `CLIENT_URL` | 否 | `http://localhost:3000` | 前端地址（CORS + revalidate 回调） |
+| `REVALIDATE_SECRET` | 否 | `kanle-revalidate` | 按需重验证密钥（须与前端一致） |
 
-> **Docker 专属变量**（仅在 `.env` / `docker-compose.yml` 中使用）：
-> `MYSQL_VERSION`（默认 `8.0`，可选 `5.7`）、`MYSQL_ROOT_PASSWORD`（默认 `rootpass`）
+### 前端（`frontend/.env.local`）
 
-### 前端
+| 变量 | 必填 | 说明 |
+|---|---|---|
+| `NEXT_PUBLIC_API_URL` | 是 | 后端 API 地址，默认 `/api`（相对路径，通过 rewrites 代理，通用） |
+| `BACKEND_URL` | 是 | rewrites 代理目标，PM2 部署填 `http://localhost:4000` |
+| `NEXT_PUBLIC_SITE_URL` | 否 | 站点 URL（用于 Cravatar 默认头像，不设则回退 wavatar） |
+| `NEXT_PUBLIC_TWIKOO_ENV_ID` | 否 | Twikoo 评论系统环境 ID |
+| `REVALIDATE_SECRET` | 否 | 须与后端一致 |
 
-| 变量 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| `NEXT_PUBLIC_API_URL` | 构建时 | 是 | 后端 API 地址，默认 `/api`（相对路径，通过 rewrites 代理，通用） |
-| `BACKEND_URL` | 构建时 | 是 | rewrites 代理目标（Docker: `http://kanle-backend:4000`，PM2: `http://localhost:4000`） |
-| `NEXT_PUBLIC_SITE_URL` | 构建时 | 否 | 站点 URL（用于 Cravatar 默认头像，不设则回退 wavatar） |
-| `NEXT_PUBLIC_TWIKOO_ENV_ID` | 构建时 | 否 | Twikoo 评论系统环境 ID |
-| `REVALIDATE_SECRET` | 运行时 | 否 | 须与后端一致 |
-
-> `NEXT_PUBLIC_API_URL=/api` 是相对路径，通过 Next.js rewrites 代理到后端，任何域名/IP 都通用，无需因换域名而重新构建。
+> `NEXT_PUBLIC_API_URL=/api` 是相对路径，换域名后**不需要重新构建**。
 
 ## 后台配置
 
@@ -681,6 +430,7 @@ bash deploy/pnpm-deploy.sh --update
 | 高德地图 | 站点设置 → 高德地图配置 | JS API Key + Web 服务 Key，[高德开放平台](https://lbs.amap.com/)申请 |
 | 音乐插件 | 音乐管理 → 插件管理 | 上传 `.js` 插件或填写订阅 URL，支持酷狗/QQ/网易云/酷我 |
 | 豆瓣影单 | 站点设置 → 豆瓣配置 | 豆瓣 ID，自动同步电影/图书/音乐 |
+| 自动播放 | 音乐管理 → 进入网站自动播放 | 开启后访客进入网站自动播放歌单音乐 |
 | 站点信息 | 站点设置 | 站点名称、Favicon、背景图、备案号、夜间模式、RSS |
 
 ## 常见问题
@@ -688,52 +438,64 @@ bash deploy/pnpm-deploy.sh --update
 <details>
 <summary>换了域名需要重新构建前端吗？</summary>
 
-**不需要。** `NEXT_PUBLIC_API_URL=/api` 是相对路径，通过 Next.js rewrites 代理到后端，任何域名/IP 都通用。
-
-如果改了后端容器名（非 `kanle-backend`），则需要从源码构建前端，传入 `--build-arg BACKEND_URL=http://新容器名:4000`。
+**不需要。** `NEXT_PUBLIC_API_URL=/api` 是相对路径，通过 Next.js rewrites 代理到后端，任何域名/IP 都通用。只需修改 Nginx 配置中的 `server_name`。
 </details>
 
 <details>
 <summary>发动态后刷新页面没看到更新？</summary>
 
-检查三端 `REVALIDATE_SECRET` 是否一致：后端 `.env`、前端运行时、前端构建时的 `NEXT_PUBLIC_REVALIDATE_SECRET`。三者必须相同。
+检查后端 `.env` 的 `REVALIDATE_SECRET` 与前端 `.env.local` 的 `REVALIDATE_SECRET` / `NEXT_PUBLIC_REVALIDATE_SECRET` 是否一致。
 </details>
 
 <details>
 <summary>忘记管理员密码？</summary>
 
 ```bash
-# 后端目录下执行，密码会重置为 .env 中的 ADMIN_PASSWORD
+cd $INSTALL_DIR/backend
 node dist/scripts/reset-password.js
-
-# Docker 中执行
-docker exec kanle-backend node dist/scripts/reset-password.js
 ```
+密码会重置为 `.env` 中的 `ADMIN_PASSWORD`。
 </details>
 
 <details>
 <summary>MySQL 连不上？</summary>
 
-- Docker Compose：`DB_HOST` 应为 `mysql`（service 名）
-- Docker CLI：`DB_HOST` 应为 `kanle-mysql`（容器名）
-- 手动部署：`DB_HOST` 应为 `127.0.0.1`
-- 确认 MySQL 已启动且用户有权限
+- 确认 MySQL 已启动：`systemctl status mysql`
+- 确认用户有权限：`mysql -u kanle -p -e "SHOW DATABASES;"`
+- 确认 `.env` 中 `DB_HOST` 为 `127.0.0.1`（不要用 `localhost`，某些系统下可能有差异）
 </details>
 
 <details>
 <summary>上传的图片显示不出来？</summary>
 
-- Docker 部署：`/uploads/` 由 Next.js rewrites 自动代理到后端，无需额外配置
-- PM2 + Nginx 部署：确认 Nginx 已将 `/` 反代到 3000（rewrites 会处理 `/uploads/`）
-- 如果使用 CDN 域名，需在 `frontend/next.config.ts` 的 `images.remotePatterns` 中添加域名
+- 确认 Nginx 配置中 `/uploads/` 的 `alias` 路径正确指向 `backend/public/uploads/`
+- 确认后端 `public/uploads/` 目录存在且有读写权限
+- 如使用 CDN 域名，需在 `frontend/next.config.ts` 的 `images.remotePatterns` 中添加域名
 </details>
 
 <details>
-<summary>如何自定义端口？</summary>
+<summary>前端构建时内存不足？</summary>
 
-- Docker Compose：修改 `docker-compose.yml` 中 frontend 的 `ports: - "3000:3000"`
-- Docker CLI：`docker run -p 8080:3000`（前端映射到 8080）
-- 后端不需要映射端口（通过 rewrites 代理）
+```bash
+export NODE_OPTIONS="--max-old-space-size=2048"
+pnpm build
+```
+</details>
+
+<details>
+<summary>如何查看日志？</summary>
+
+```bash
+pm2 logs kanle-backend      # 后端日志
+pm2 logs kanle-frontend     # 前端日志
+pm2 logs                    # 所有日志
+```
+</details>
+
+<details>
+<summary>如何修改前端端口？</summary>
+
+编辑 `frontend/ecosystem.config.js`，修改 `env.PORT` 的值，然后同步修改 Nginx 配置中 `location /` 的 `proxy_pass` 端口，最后 `pm2 restart kanle-frontend && nginx -s reload`。
 </details>
 
 ## 开发

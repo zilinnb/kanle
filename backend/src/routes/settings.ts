@@ -43,6 +43,7 @@ router.get("/", async (_req: Request, res: Response) => {
     rssEnabled: setting.rssEnabled,
     rssIncludeMoments: setting.rssIncludeMoments,
     doubanId: setting.doubanId,
+    musicAutoplay: setting.musicAutoplay,
     defaultCover: admin?.cover || "",
   });
 });
@@ -76,6 +77,7 @@ router.put(
     body("rssEnabled").optional().isBoolean(),
     body("rssIncludeMoments").optional().isBoolean(),
     body("doubanId").optional().trim().isLength({ max: 100 }),
+    body("musicAutoplay").optional().isBoolean(),
     // Email config
     body("emailNotifyEnabled").optional().isBoolean(),
     body("notifyEmail").optional().trim().isLength({ max: 255 }),
@@ -130,6 +132,7 @@ router.put(
       rssEnabled: req.body.rssEnabled ?? setting.rssEnabled,
       rssIncludeMoments: req.body.rssIncludeMoments ?? setting.rssIncludeMoments,
       doubanId: req.body.doubanId ?? setting.doubanId,
+      musicAutoplay: req.body.musicAutoplay ?? setting.musicAutoplay,
       emailNotifyEnabled: req.body.emailNotifyEnabled ?? setting.emailNotifyEnabled,
       notifyEmail: req.body.notifyEmail ?? setting.notifyEmail,
       smtpHost: req.body.smtpHost ?? setting.smtpHost,

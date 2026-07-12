@@ -442,10 +442,6 @@ function MediaCard({ item, onClick }: { item: MediaItem; onClick: () => void }) 
         )}
       </div>
 
-      {/* 文件名 */}
-      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-2 py-1.5">
-        <p className="truncate text-[11px] text-white">{item.filename}</p>
-      </div>
     </button>
   );
 }

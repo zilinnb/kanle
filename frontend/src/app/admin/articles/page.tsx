@@ -5,6 +5,8 @@ import Link from "next/link";
 import { PenLine, Trash2, Loader2, FileText, ExternalLink, Pin, PinOff } from "lucide-react";
 import { apiFetch } from "@/lib/api-fetch";
 import { toAbsoluteUrl } from "@/lib/upload";
+import { formatArticleTime } from "@/lib/mock-data";
+import { useSiteSettings } from "@/lib/site-settings-store";
 
 interface ArticleListItem {
   id: string;
@@ -15,12 +17,20 @@ interface ArticleListItem {
   cover: string;
   category: string;
   content: string;
+  articleType: "original" | "repost" | "ai";
+  repostUrl: string;
   pinned: boolean;
   isAd: boolean;
   status: "published" | "draft";
   createdAt: string;
   author: string;
 }
+
+const ARTICLE_TYPE_BADGE: Record<string, { label: string; cls: string }> = {
+  original: { label: "原创", cls: "bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-400" },
+  repost: { label: "转载", cls: "bg-amber-50 text-amber-600 dark:bg-amber-500/15 dark:text-amber-400" },
+  ai: { label: "AI", cls: "bg-purple-50 text-purple-600 dark:bg-purple-500/15 dark:text-purple-400" },
+};
 
 export default function AdminArticlesPage() {
   const [articles, setArticles] = useState<ArticleListItem[]>([]);
@@ -29,6 +39,7 @@ export default function AdminArticlesPage() {
   const [pinning, setPinning] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const defaultCover = useSiteSettings((s) => s.defaultCover);
 
   const fetchArticles = useCallback(async (p: number) => {
     setLoading(true);
@@ -136,12 +147,13 @@ export default function AdminArticlesPage() {
               >
                 {/* Cover */}
                 <div className="h-20 w-32 shrink-0 overflow-hidden rounded-lg bg-adm-input">
-                  {article.cover ? (
+                  {article.cover || defaultCover ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      src={toAbsoluteUrl(article.cover)}
+                      src={toAbsoluteUrl(article.cover || defaultCover)}
                       alt={article.title}
                       className="h-full w-full object-cover"
+                      loading="lazy"
                     />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center">
@@ -158,9 +170,19 @@ export default function AdminArticlesPage() {
                         <h3 className="truncate font-medium text-adm-text">
                           {article.title || "无标题"}
                         </h3>
+                        {ARTICLE_TYPE_BADGE[article.articleType] && (
+                          <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium ${ARTICLE_TYPE_BADGE[article.articleType].cls}`}>
+                            {ARTICLE_TYPE_BADGE[article.articleType].label}
+                          </span>
+                        )}
                         {article.status === "draft" && (
                           <span className="shrink-0 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-500/15 dark:text-amber-400">
                             草稿
+                          </span>
+                        )}
+                        {article.pinned && (
+                          <span className="shrink-0 rounded bg-green-50 px-1.5 py-0.5 text-[10px] font-medium text-green-600 dark:bg-green-500/15 dark:text-green-400">
+                            置顶
                           </span>
                         )}
                       </div>
@@ -174,7 +196,7 @@ export default function AdminArticlesPage() {
                           </span>
                         )}
                         <span>
-                          {new Date(article.createdAt).toLocaleDateString("zh-CN")}
+                          {formatArticleTime(article.createdAt)}
                         </span>
                       </div>
                     </div>

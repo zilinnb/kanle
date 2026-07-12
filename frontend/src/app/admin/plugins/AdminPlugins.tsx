@@ -30,6 +30,7 @@ interface SiteSettings {
   musicSource: string;
   playlistId: string;
   socialLinks: string;
+  musicAutoplay: boolean;
 }
 
 const SETTINGS_DEFAULTS: SiteSettings = {
@@ -45,6 +46,7 @@ const SETTINGS_DEFAULTS: SiteSettings = {
   musicSource: "",
   playlistId: "",
   socialLinks: "[]",
+  musicAutoplay: false,
 };
 
 /** 插件 platform 名 → 对应的真实音乐平台名 */
@@ -609,6 +611,36 @@ export default function AdminPlugins() {
           <p className="mt-1.5 text-xs text-adm-text-tertiary">
             打开对应音源的歌曲页，URL 中的数字即为歌曲 ID
           </p>
+        </div>
+
+        {/* 自动播放开关 — 与又拍云/邮件配置开关保持统一样式 */}
+        <div
+          className="mb-5 flex cursor-pointer items-center justify-between rounded-lg border border-adm-border bg-adm-input px-4 py-3"
+          onClick={() => setSettings({ ...settings, musicAutoplay: !settings.musicAutoplay })}
+        >
+          <div>
+            <div className="text-sm font-medium text-adm-text">进入网站自动播放</div>
+            <div className="mt-0.5 text-xs text-adm-text-tertiary">
+              开启后，访客进入网站将自动播放歌单音乐（受浏览器自动播放策略限制）
+            </div>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={settings.musicAutoplay}
+            onClick={(e) => {
+              e.stopPropagation();
+              setSettings({ ...settings, musicAutoplay: !settings.musicAutoplay });
+            }}
+            className={`relative h-[22px] w-[40px] shrink-0 rounded-full transition-colors ${
+              settings.musicAutoplay ? "bg-green-500" : "bg-black/15 dark:bg-white/20"
+            }`}
+          >
+            <span
+              className="absolute left-[2px] top-[2px] h-[18px] w-[18px] rounded-full bg-white shadow transition-transform"
+              style={{ transform: settings.musicAutoplay ? "translateX(18px)" : "translateX(0)" }}
+            />
+          </button>
         </div>
 
         <button

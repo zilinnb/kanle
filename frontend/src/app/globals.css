@@ -1078,6 +1078,7 @@ img.inline-emoji.emoji-error {
   line-height: 1.6;
   user-select: none;
   min-width: 2.5em;
+  white-space: pre;
 }
 .dark .macos-line-numbers {
   background: #14151c;

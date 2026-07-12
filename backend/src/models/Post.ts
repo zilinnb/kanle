@@ -91,13 +91,15 @@ interface PostAttributes {
   region: string;
   /** 文章类型标记：original=原创，repost=转载，ai=AI生成 */
   articleType: "original" | "repost" | "ai";
+  /** 转载来源链接（articleType=repost 时必填） */
+  repostUrl: string;
   /** 阅读量（文章详情页 GET /:id?view=1 时原子递增） */
   viewCount: number;
   /** 发布状态：published=已发布（默认），draft=草稿（不在前端显示） */
   status: "published" | "draft";
 }
 
-interface PostCreationAttributes extends Optional<PostAttributes, "id" | "shortId" | "type" | "title" | "excerpt" | "cover" | "category" | "images" | "pinned" | "isAd" | "adAvatar" | "adNickname" | "likesDisabled" | "commentsDisabled" | "ip" | "region" | "articleType" | "viewCount" | "status"> {}
+interface PostCreationAttributes extends Optional<PostAttributes, "id" | "shortId" | "type" | "title" | "excerpt" | "cover" | "category" | "images" | "pinned" | "isAd" | "adAvatar" | "adNickname" | "likesDisabled" | "commentsDisabled" | "ip" | "region" | "articleType" | "repostUrl" | "viewCount" | "status"> {}
 
 class Post
   extends Model<PostAttributes, PostCreationAttributes>
@@ -127,6 +129,7 @@ class Post
   declare ip: string;
   declare region: string;
   declare articleType: "original" | "repost" | "ai";
+  declare repostUrl: string;
   declare viewCount: number;
   declare status: "published" | "draft";
   declare readonly createdAt: Date;
@@ -260,6 +263,11 @@ Post.init(
       type: DataTypes.ENUM("original", "repost", "ai"),
       allowNull: false,
       defaultValue: "original",
+    },
+    repostUrl: {
+      type: DataTypes.STRING(500),
+      allowNull: false,
+      defaultValue: "",
     },
     viewCount: {
       type: DataTypes.INTEGER,

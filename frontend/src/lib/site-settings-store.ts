@@ -25,6 +25,8 @@ interface SiteSettingsState {
   adOnArchives: boolean;
   /** 默认文章封面（博主个人资料背景图），文章未设置封面时使用 */
   defaultCover: string;
+  /** 进入网站是否自动播放歌单音乐 */
+  musicAutoplay: boolean;
   loaded: boolean;
   fetchSettings: () => Promise<void>;
 }
@@ -79,6 +81,7 @@ export const useSiteSettings = create<SiteSettingsState>((set, get) => ({
   backgroundImages: [],
   adOnArchives: false,
   defaultCover: "",
+  musicAutoplay: false,
   loaded: false,
   fetchSettings: async () => {
     if (get().loaded) return;
@@ -112,6 +115,7 @@ export const useSiteSettings = create<SiteSettingsState>((set, get) => ({
         backgroundImages: bgImages,
         adOnArchives: data.adOnArchives ?? false,
         defaultCover: data.defaultCover ?? "",
+        musicAutoplay: data.musicAutoplay ?? false,
         loaded: true,
       });
       cacheDisplay(finalSiteName, finalFaviconUrl);
