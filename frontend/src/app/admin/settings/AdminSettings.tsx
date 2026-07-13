@@ -23,7 +23,8 @@ import {
   Megaphone,
   Rss,
 } from "lucide-react";
-import { uploadImage, toAbsoluteUrl } from "@/lib/upload";
+import { uploadImage } from "@/lib/upload";
+import { getImageUrl } from "@/lib/site-settings-store";
 import { apiFetch, getToken } from "@/lib/api-fetch";
 import { SOCIAL_PLATFORMS, SocialIcon } from "@/components/SocialIcons";
 import MediaPicker from "@/components/MediaPicker";
@@ -53,6 +54,7 @@ interface SiteSettings {
   rssEnabled: boolean;
   rssIncludeMoments: boolean;
   doubanId: string;
+  cdnProxyUrl: string;
 }
 
 const DEFAULTS: SiteSettings = {
@@ -78,6 +80,7 @@ const DEFAULTS: SiteSettings = {
   rssEnabled: true,
   rssIncludeMoments: true,
   doubanId: "",
+  cdnProxyUrl: "",
 };
 
 interface SocialLink {
@@ -252,7 +255,7 @@ function ImageField({
         <div className={`relative shrink-0 overflow-hidden bg-adm-input ${previewClass}`}>
           {url ? (
             <Image
-              src={toAbsoluteUrl(url)}
+              src={getImageUrl(url)}
               alt={label}
               fill
               className="object-cover"
@@ -569,6 +572,31 @@ export default function AdminSettings() {
             留空使用内嵌 HarmonyOS Sans 字体（
             <code className="rounded bg-adm-input px-1 py-0.5 text-[11px]">/fonts/embedded-font.css</code>
             ）。填写后将以自定义 CSS 链接加载字体，需包含 @font-face 声明。
+          </p>
+        </div>
+
+        {/* CDN image proxy config */}
+        <div className="mb-6 mt-8 flex items-center gap-2 border-b border-adm-border pb-3">
+          <ImageIcon className="h-4 w-4 text-adm-text-tertiary" />
+          <h3 className="text-sm font-semibold text-adm-text">图片 CDN 加速</h3>
+        </div>
+
+        <div className="mb-6">
+          <label className="mb-1.5 block text-xs font-medium text-adm-text-secondary">
+            CDN 代理地址
+          </label>
+          <div className="relative">
+            <ImageIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-adm-text-tertiary" />
+            <input
+              type="text"
+              value={form.cdnProxyUrl}
+              onChange={(e) => setForm({ ...form, cdnProxyUrl: e.target.value })}
+              className="w-full rounded-xl border border-adm-border bg-adm-input py-2.5 pl-10 pr-3 text-sm text-adm-text transition-colors focus:border-adm-text-secondary focus:bg-adm-input-focus focus:outline-none focus:ring-1 focus:ring-adm-text-secondary"
+              placeholder="https://gimg0.baidu.com/gimg/app=2001&n=0&g=0n&fmt=jpeg&src="
+            />
+          </div>
+          <p className="mt-1.5 text-xs text-adm-text-tertiary">
+            填写后前端所有图片将经过此代理加载（地址 + 原图URL）。留空则使用原图地址。例如百度图床代理格式：<code className="rounded bg-adm-input px-1 py-0.5 text-[11px]">https://gimg0.baidu.com/gimg/app=2001&n=0&g=0n&fmt=jpeg&src=</code>
           </p>
         </div>
 

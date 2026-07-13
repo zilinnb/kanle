@@ -4,7 +4,7 @@ import { useState, useCallback } from "react";
 import { NodeViewWrapper, type NodeViewProps } from "@tiptap/react";
 import { Music as MusicIcon } from "lucide-react";
 import type { PostMusic } from "@/lib/mock-data";
-import { toAbsoluteUrl } from "@/lib/upload";
+import { getImageUrl } from "@/lib/site-settings-store";
 import { decodePayload, encodePayload } from "../embed-utils";
 import { useEditorContext } from "../editor-context";
 import MusicPanel from "@/components/admin/MusicPanel";
@@ -21,7 +21,7 @@ export default function MusicEmbedNodeView({
   const music = decodePayload<PostMusic>(node.attrs.payload);
   if (!music) return null;
 
-  const cover = music.cover ? toAbsoluteUrl(music.cover) : "";
+  const cover = music.cover ? getImageUrl(music.cover) : "";
   const title = music.name || "未知歌曲";
   const artist = music.artist || "未知艺术家";
 

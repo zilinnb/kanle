@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { cdnUrl } from "./upload";
 
 interface SiteSettingsState {
   /** 动态内容折叠字数阈值，0 表示不折叠 */
@@ -27,16 +28,18 @@ interface SiteSettingsState {
   defaultCover: string;
   /** 进入网站是否自动播放歌单音乐 */
   musicAutoplay: boolean;
+  /** 图片 CDN 代理地址（空则用原图）。格式：https://cdn.example.com/src= （直接拼接原图地址） */
+  cdnProxyUrl: string;
   loaded: boolean;
   fetchSettings: () => Promise<void>;
 }
 
 const DEFAULT_SITE_NAME = "朋友圈博客";
 
-/** 从 localStorage 读取缓存的 siteName/faviconUrl，避免页面初次渲染时闪烁 */
-function loadCachedDisplay(): { siteName: string; faviconUrl: string } {
+/** 从 localStorage 读取缓存的 siteName/faviconUrl/cdnProxyUrl，避免页面初次渲染时闪烁 */
+function loadCachedDisplay(): { siteName: string; faviconUrl: string; cdnProxyUrl: string } {
   if (typeof window === "undefined") {
-    return { siteName: DEFAULT_SITE_NAME, faviconUrl: "" };
+    return { siteName: DEFAULT_SITE_NAME, faviconUrl: "", cdnProxyUrl: "" };
   }
   try {
     const cached = localStorage.getItem("site_settings_display_cache");
@@ -45,21 +48,22 @@ function loadCachedDisplay(): { siteName: string; faviconUrl: string } {
       return {
         siteName: parsed.siteName || DEFAULT_SITE_NAME,
         faviconUrl: parsed.faviconUrl || "",
+        cdnProxyUrl: parsed.cdnProxyUrl || "",
       };
     }
   } catch {
     // ignore
   }
-  return { siteName: DEFAULT_SITE_NAME, faviconUrl: "" };
+  return { siteName: DEFAULT_SITE_NAME, faviconUrl: "", cdnProxyUrl: "" };
 }
 
-/** 将 siteName/faviconUrl 缓存到 localStorage，供下次页面加载时使用 */
-function cacheDisplay(siteName: string, faviconUrl: string) {
+/** 将 siteName/faviconUrl/cdnProxyUrl 缓存到 localStorage，供下次页面加载时使用 */
+function cacheDisplay(siteName: string, faviconUrl: string, cdnProxyUrl: string) {
   if (typeof window === "undefined") return;
   try {
     localStorage.setItem(
       "site_settings_display_cache",
-      JSON.stringify({ siteName, faviconUrl })
+      JSON.stringify({ siteName, faviconUrl, cdnProxyUrl })
     );
   } catch {
     // ignore
@@ -75,6 +79,7 @@ export const useSiteSettings = create<SiteSettingsState>((set, get) => ({
   darkModeEndTime: "06:00",
   siteName: cachedDisplay.siteName,
   faviconUrl: cachedDisplay.faviconUrl,
+  cdnProxyUrl: cachedDisplay.cdnProxyUrl,
   domain: "",
   beian: "",
   beianUrl: "",
@@ -116,11 +121,33 @@ export const useSiteSettings = create<SiteSettingsState>((set, get) => ({
         adOnArchives: data.adOnArchives ?? false,
         defaultCover: data.defaultCover ?? "",
         musicAutoplay: data.musicAutoplay ?? false,
+        cdnProxyUrl: data.cdnProxyUrl ?? "",
         loaded: true,
       });
-      cacheDisplay(finalSiteName, finalFaviconUrl);
+      cacheDisplay(finalSiteName, finalFaviconUrl, data.cdnProxyUrl ?? cachedDisplay.cdnProxyUrl);
     } catch {
       set({ loaded: true });
     }
   },
 }));
+
+/**
+ * 返回一个绑定了当前 cdnProxyUrl 的图片 URL 转换函数。
+ * 用法：const cdn = useCdnUrl(); <img src={cdn(url)} />
+ * cdnProxyUrl 为空时等价于 toAbsoluteUrl + toHttps（用原图）。
+ */
+export function useCdnUrl(): (url: string) => string {
+  const cdnProxyUrl = useSiteSettings((s) => s.cdnProxyUrl);
+  return (url: string) => cdnUrl(url, cdnProxyUrl);
+}
+
+/**
+ * 非 hook 版本的图片 URL 转换：同步读取 store 中的 cdnProxyUrl 并应用 CDN。
+ * 适用于工具函数（如 normalizeImages）、事件处理等非 React 渲染上下文。
+ * 组件渲染中优先使用 useCdnUrl() 以订阅 store 更新自动重渲染。
+ */
+export function getImageUrl(url: string): string {
+  const cdnProxyUrl = useSiteSettings.getState().cdnProxyUrl;
+  return cdnUrl(url, cdnProxyUrl);
+}
+

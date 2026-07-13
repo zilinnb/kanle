@@ -16,7 +16,8 @@ import {
   Plus,
   FolderOpen,
 } from "lucide-react";
-import { uploadImage, toAbsoluteUrl } from "@/lib/upload";
+import { uploadImage } from "@/lib/upload";
+import { getImageUrl } from "@/lib/site-settings-store";
 import { useEditorContext } from "../editor-context";
 import MediaPicker, { type PickerMediaItem } from "@/components/MediaPicker";
 import {
@@ -104,9 +105,9 @@ export default function ImageGroupNodeView({
   const handleMediaSelect = useCallback(
     (item: PickerMediaItem) => {
       const newImage: ImageGroupItem = {
-        src: toAbsoluteUrl(item.url),
+        src: getImageUrl(item.url),
         alt: item.filename || "",
-        video: item.livePhotoVideo ? toAbsoluteUrl(item.livePhotoVideo) : undefined,
+        video: item.livePhotoVideo ? getImageUrl(item.livePhotoVideo) : undefined,
       };
       if (replaceIndexRef.current !== null && replaceIndexRef.current >= 0) {
         const next = [...images];

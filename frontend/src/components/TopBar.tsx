@@ -43,7 +43,8 @@ import { getGlobalAudio } from "@/lib/global-audio";
 import { useMusicPlayer } from "@/lib/music-player-store";
 import { Post, MUSIC_PLUGIN_LABELS, type PostLocation, type PostImage, type PostVideo, type PostDouban } from "@/lib/mock-data";
 import { isLivePhoto, getImageSrc } from "@/lib/post-image";
-import { uploadImage, toAbsoluteUrl, toHttps } from "@/lib/upload";
+import { uploadImage, toHttps } from "@/lib/upload";
+import { getImageUrl } from "@/lib/site-settings-store";
 import { useExitAnimation } from "@/lib/use-exit-animation";
 import RichTextEditor from "./RichTextEditor";
 import LazyImage from "./LazyImage";
@@ -86,7 +87,7 @@ function resolveFriendAvatar(link: { avatar?: string; email?: string }, size = 9
     if (!avatar.startsWith("http") && avatar.includes("@")) {
       return cravatarUrl(avatar, size);
     }
-    return toAbsoluteUrl(avatar);
+    return getImageUrl(avatar);
   }
   const email = (link.email || "").trim();
   if (email) return cravatarUrl(email, size);
@@ -1684,10 +1685,10 @@ export function PublishModal({
                 ) : (
                   <div className="grid grid-rows-3 grid-flow-col gap-0.5 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
                     {mediaItems.map((item) => {
-                      const fullUrl = toAbsoluteUrl(item.url);
+                      const fullUrl = getImageUrl(item.url);
                       const isSelected = images.some((img) => {
                         const imgSrc = typeof img === "string" ? img : img.src;
-                        return imgSrc === item.url || imgSrc === fullUrl || toAbsoluteUrl(imgSrc) === fullUrl;
+                        return imgSrc === item.url || imgSrc === fullUrl || getImageUrl(imgSrc) === fullUrl;
                       });
                       return (
                         <button

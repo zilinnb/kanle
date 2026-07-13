@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react";
 import { NodeViewWrapper, type NodeViewProps } from "@tiptap/react";
 import { FileText, Pencil } from "lucide-react";
-import { toAbsoluteUrl } from "@/lib/upload";
+import { getImageUrl } from "@/lib/site-settings-store";
 import { decodePayload, encodePayload, type ArticleEmbedData } from "../embed-utils";
 import ArticlePicker from "../ArticlePicker";
 
@@ -17,7 +17,7 @@ export default function ArticleEmbedNodeView({
   const article = decodePayload<ArticleEmbedData>(node.attrs.payload);
   if (!article) return null;
 
-  const cover = article.cover ? toAbsoluteUrl(article.cover) : "";
+  const cover = article.cover ? getImageUrl(article.cover) : "";
   const title = article.title || "文章";
   const excerpt = article.excerpt || "";
 

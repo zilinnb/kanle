@@ -6,7 +6,7 @@ import Link from "next/link";
 import { BookUser, Camera, ExternalLink, Eye, EyeOff, LayoutDashboard, Link2, Lock, LogOut, MoreVertical, UserRound } from "lucide-react";
 import { User as UserType } from "@/lib/mock-data";
 import { cravatarUrl } from "@/lib/avatar";
-import { toAbsoluteUrl } from "@/lib/upload";
+import { getImageUrl } from "@/lib/site-settings-store";
 import { PublishModal, type LoggedInUser } from "@/components/TopBar";
 import { SocialIcon, getSocialPlatform } from "@/components/SocialIcons";
 import AdminNotifications from "@/components/AdminNotifications";
@@ -27,7 +27,7 @@ function resolveFriendAvatar(link: { avatar?: string; email?: string }, size = 9
     if (!avatar.startsWith("http") && avatar.includes("@")) {
       return cravatarUrl(avatar, size);
     }
-    return toAbsoluteUrl(avatar);
+    return getImageUrl(avatar);
   }
   const email = (link.email || "").trim();
   if (email) return cravatarUrl(email, size);
@@ -54,7 +54,6 @@ export default function Sidebar({ owner }: SidebarProps) {
   const [friendsPage, setFriendsPage] = useState(1);
   const [friendsHasMore, setFriendsHasMore] = useState(false);
   const [friendsLoadingMore, setFriendsLoadingMore] = useState(false);
-  const friendsSentinelRef = useRef<HTMLDivElement>(null);
   const friendsLoadingRef = useRef(false);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
   const [loggedIn, setLoggedIn] = useState<LoggedInUser | null>(null);
@@ -122,11 +121,11 @@ export default function Sidebar({ owner }: SidebarProps) {
   }, [showUserMenu]);
 
   useEffect(() => {
-    fetch(`${API_URL}/friends`)
+    fetch(`${API_URL}/friends?page=1&limit=5`)
       .then((res) => (res.ok ? res.json() : { data: [], pagination: { hasMore: false } }))
       .then((data: { data: FriendLink[]; pagination?: { hasMore: boolean } }) => {
         setFriendLinks(data.data || []);
-        setFriendsHasMore(false);
+        setFriendsHasMore(data.pagination?.hasMore || false);
       })
       .catch(() => {})
       .finally(() => setFriendsLoaded(true));
@@ -138,7 +137,7 @@ export default function Sidebar({ owner }: SidebarProps) {
     setFriendsLoadingMore(true);
     const nextPage = friendsPage + 1;
     try {
-      const res = await fetch(`${API_URL}/friends?page=${nextPage}&limit=10`);
+      const res = await fetch(`${API_URL}/friends?page=${nextPage}&limit=5`);
       const data = await res.json();
       if (Array.isArray(data.data)) {
         setFriendLinks((prev) => [...prev, ...data.data]);
@@ -152,20 +151,6 @@ export default function Sidebar({ owner }: SidebarProps) {
       friendsLoadingRef.current = false;
     }
   }, [friendsPage, friendsHasMore]);
-
-  // IntersectionObserver：友链滚动到底部自动加载更多
-  useEffect(() => {
-    if (!friendsSentinelRef.current) return;
-    const sentinel = friendsSentinelRef.current;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) loadMoreFriends();
-      },
-      { rootMargin: "50px" }
-    );
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, [loadMoreFriends]);
 
   useEffect(() => {
     fetch(`${API_URL}/settings`)
@@ -507,7 +492,17 @@ export default function Sidebar({ owner }: SidebarProps) {
                       </div>
                     </li>
                   ))}
-                <div ref={friendsSentinelRef} className="h-1" />
+                {friendsHasMore && !friendsLoadingMore && (
+                  <li>
+                    <button
+                      type="button"
+                      onClick={loadMoreFriends}
+                      className="w-full rounded-lg py-2 text-center text-xs text-wechat-nickname transition-colors hover:bg-wechat-hover dark:hover:bg-white/5"
+                    >
+                      加载更多
+                    </button>
+                  </li>
+                )}
               </ul>
             )}
           </div>

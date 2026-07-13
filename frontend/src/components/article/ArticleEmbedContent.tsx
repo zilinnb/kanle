@@ -9,7 +9,7 @@ import {
 } from "@/lib/sanitize";
 import { replaceEmojiShortcodes, normalizeInlineEmoji } from "@/lib/emoji";
 import type { PostMusic, PostVideo, PostDouban, PostImage } from "@/lib/mock-data";
-import { toAbsoluteUrl } from "@/lib/upload";
+import { getImageUrl } from "@/lib/site-settings-store";
 import MusicEmbedCard from "./MusicEmbedCard";
 import VideoPlayer from "@/components/VideoPlayer";
 import DoubanEmbedCard from "./DoubanEmbedCard";
@@ -282,7 +282,7 @@ export default function ArticleEmbedContent({
       e.stopPropagation();
 
       const images: PostImage[] = allImgs.map((el) =>
-        toAbsoluteUrl(el.getAttribute("src") || "")
+        getImageUrl(el.getAttribute("src") || "")
       );
       setImageList(images);
       setOriginRect(img.getBoundingClientRect());

@@ -23,7 +23,16 @@ export default function ActionMenu({
   pinned = false,
 }: ActionMenuProps) {
   const [open, setOpen] = useState(false);
+  // 退出动画：open=false 后延迟卸载，期间播放 pop-out 动画
+  const [closing, setClosing] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const closeMenu = () => {
+    if (!open) return;
+    setClosing(true);
+    setOpen(false);
+    setTimeout(() => setClosing(false), 180);
+  };
 
   // 管理员登录后菜单项多（赞/评论/置顶/编辑/删除），手机端需要紧凑布局
   // 未登录时只有赞/评论，用大尺寸（手机和电脑一样大）
@@ -42,7 +51,7 @@ export default function ActionMenu({
         containerRef.current &&
         !containerRef.current.contains(event.target as Node)
       ) {
-        setOpen(false);
+        closeMenu();
       }
     }
     const timer = setTimeout(() => {
@@ -54,6 +63,7 @@ export default function ActionMenu({
       document.removeEventListener("mousedown", onPointerDown);
       document.removeEventListener("touchstart", onPointerDown);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   const Divider = () => <div className="h-[20px] w-px bg-[#5c5c5c]" />;
@@ -66,7 +76,13 @@ export default function ActionMenu({
       {/* 两个点按钮 — 微信朋友圈风格 */}
       <button
         type="button"
-        onClick={() => setOpen((prev) => !prev)}
+        onClick={() => {
+          if (open) {
+            closeMenu();
+          } else {
+            setOpen(true);
+          }
+        }}
         className="flex h-[20px] w-[28px] items-center justify-center rounded-[4px] bg-wechat-bubble transition-colors hover:bg-wechat-hover active:bg-wechat-border"
         aria-label="操作"
       >
@@ -77,14 +93,16 @@ export default function ActionMenu({
       </button>
 
       {/* 弹出菜单：赞 / 评论 / 编辑 / 删除 — 微信朋友圈风格 */}
-      {open && (
-        <div className="absolute right-full top-1/2 z-20 mr-1.5 flex h-[38px] origin-right -translate-y-1/2 items-center overflow-hidden rounded-[7px] bg-[#4c4c4c] text-white shadow-lg animate-pop-in">
+      {(open || closing) && (
+        <div
+          className={`absolute right-full top-1/2 z-20 mr-1.5 flex h-[38px] origin-right -translate-y-1/2 items overflow-hidden rounded-[7px] bg-[#4c4c4c] text-white shadow-lg ${closing ? "animate-pop-out" : "animate-pop-in"}`}
+        >
           {onLike && (
             <button
               type="button"
               onClick={() => {
                 onLike();
-                setOpen(false);
+                closeMenu();
               }}
               className={itemCls}
             >
@@ -102,7 +120,7 @@ export default function ActionMenu({
               type="button"
               onClick={() => {
                 onComment();
-                setOpen(false);
+                closeMenu();
               }}
               className={itemCls}
             >
@@ -116,7 +134,7 @@ export default function ActionMenu({
               type="button"
               onClick={() => {
                 onPin();
-                setOpen(false);
+                closeMenu();
               }}
               className={itemCls}
             >
@@ -134,7 +152,7 @@ export default function ActionMenu({
               type="button"
               onClick={() => {
                 onEdit();
-                setOpen(false);
+                closeMenu();
               }}
               className={itemCls}
             >
@@ -148,7 +166,7 @@ export default function ActionMenu({
               type="button"
               onClick={() => {
                 onDelete();
-                setOpen(false);
+                closeMenu();
               }}
               className={itemCls}
             >

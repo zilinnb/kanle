@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { User } from "@/lib/mock-data";
 import { resolveAvatar } from "@/lib/avatar";
-import { toAbsoluteUrl } from "@/lib/upload";
+import { getImageUrl } from "@/lib/site-settings-store";
 
 interface CoverHeaderProps {
   user: User;
@@ -29,7 +29,7 @@ export default function CoverHeader({ user, avatarHref, coverUrls }: CoverHeader
 
   // 所有封面图转为绝对 URL
   const allCovers = (coverUrls && coverUrls.length > 0 ? coverUrls : [user.cover])
-    .map(toAbsoluteUrl)
+    .map(getImageUrl)
     .filter(Boolean);
 
   // 可见图索引：-1 表示不显示任何图（避免初始显示第 0 张再切换到随机张）

@@ -6,10 +6,9 @@ import { useRouter } from "next/navigation";
 import { Play, Pause, Music2, Link as LinkIcon, FileText } from "lucide-react";
 import type { Post, PostMusic, PostImage } from "@/lib/mock-data";
 import { getImageSrc } from "@/lib/post-image";
-import { toAbsoluteUrl, toHttps } from "@/lib/upload";
 import { renderContent } from "@/lib/sanitize";
 import { useMusicPlayer } from "@/lib/music-player-store";
-import { useSiteSettings } from "@/lib/site-settings-store";
+import { useSiteSettings, getImageUrl } from "@/lib/site-settings-store";
 
 type TileKind = "image" | "video" | "music" | "link" | "text" | "article";
 
@@ -19,7 +18,7 @@ interface ProfilePostCardProps {
 
 function resolveCover(url: string | undefined | null): string {
   if (!url) return "";
-  return toHttps(toAbsoluteUrl(url));
+  return getImageUrl(url);
 }
 
 function buildCover(post: Post, defaultCover: string): { kind: TileKind; cover: string; text: string } {

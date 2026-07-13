@@ -6,9 +6,8 @@ import { createPortal } from "react-dom";
 import { Bell, Link2, MessageSquare, Music, Play, X } from "lucide-react";
 import { actorAvatarUrl } from "@/lib/avatar";
 import { getCurrentUser, CurrentUser } from "@/lib/auth";
-import { toAbsoluteUrl } from "@/lib/upload";
 import { useExitAnimation } from "@/lib/use-exit-animation";
-import { useSiteSettings } from "@/lib/site-settings-store";
+import { useSiteSettings, getImageUrl } from "@/lib/site-settings-store";
 import { renderTextWithEmoji } from "@/lib/emoji";
 import FadeImage from "@/components/FadeImage";
 
@@ -134,7 +133,7 @@ export default function AdminNotifications({ variant = "mobile" }: AdminNotifica
     setLoading(true);
     setPage(1);
 
-    fetch(`${API_URL}/notifications?page=1&limit=10`, {
+    fetch(`${API_URL}/notifications?page=1&limit=5`, {
       headers: { Authorization: `Bearer ${user.token}` },
     })
       .then((res) => (res.ok ? res.json() : { data: [], pagination: { hasMore: false } }))
@@ -152,7 +151,7 @@ export default function AdminNotifications({ variant = "mobile" }: AdminNotifica
     setLoadingMore(true);
     const nextPage = page + 1;
     try {
-      const res = await fetch(`${API_URL}/notifications?page=${nextPage}&limit=10`, {
+      const res = await fetch(`${API_URL}/notifications?page=${nextPage}&limit=5`, {
         headers: { Authorization: `Bearer ${user.token}` },
       });
       const data = await res.json();
@@ -343,7 +342,7 @@ export default function AdminNotifications({ variant = "mobile" }: AdminNotifica
                       return (
                         <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded bg-wechat-bubble">
                           <FadeImage
-                            src={toAbsoluteUrl(coverImg)}
+                            src={getImageUrl(coverImg)}
                             alt=""
                             className="h-full w-full object-cover"
                             onError={(e) => {
@@ -503,7 +502,7 @@ export default function AdminNotifications({ variant = "mobile" }: AdminNotifica
                                 return (
                                   <div className="relative h-10 w-10 overflow-hidden rounded-md bg-wechat-bubble">
                                     <FadeImage
-                                      src={toAbsoluteUrl(coverImg)}
+                                      src={getImageUrl(coverImg)}
                                       alt=""
                                       className="h-full w-full object-cover"
                                       onError={(e) => {
@@ -520,7 +519,7 @@ export default function AdminNotifications({ variant = "mobile" }: AdminNotifica
                                 return (
                                   <div className="relative h-10 w-10 overflow-hidden rounded-md bg-wechat-bubble">
                                     <FadeImage
-                                      src={toAbsoluteUrl(coverImg)}
+                                      src={getImageUrl(coverImg)}
                                       alt=""
                                       className="h-full w-full object-cover"
                                       onError={(e) => {
@@ -535,7 +534,7 @@ export default function AdminNotifications({ variant = "mobile" }: AdminNotifica
                                 return (
                                   <div className="relative h-10 w-10 overflow-hidden rounded-md bg-wechat-bubble">
                                     <FadeImage
-                                      src={toAbsoluteUrl(coverImg)}
+                                      src={getImageUrl(coverImg)}
                                       alt=""
                                       className="h-full w-full object-cover"
                                       onError={(e) => {
@@ -552,7 +551,7 @@ export default function AdminNotifications({ variant = "mobile" }: AdminNotifica
                                 return (
                                   <div className="relative h-10 w-10 overflow-hidden rounded-md bg-wechat-bubble">
                                     <FadeImage
-                                      src={toAbsoluteUrl(coverImg)}
+                                      src={getImageUrl(coverImg)}
                                       alt=""
                                       className="h-full w-full object-cover"
                                       onError={(e) => {

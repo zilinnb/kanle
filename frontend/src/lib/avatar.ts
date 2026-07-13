@@ -1,5 +1,5 @@
 import md5 from "blueimp-md5";
-import { toAbsoluteUrl } from "./upload";
+import { getImageUrl } from "./site-settings-store";
 
 // 站点 URL（用于构造默认头像的绝对 URL）
 // 优先用 NEXT_PUBLIC_SITE_URL；否则从 NEXT_PUBLIC_API_URL 推导（兼容旧配置）
@@ -35,7 +35,7 @@ export function cravatarUrl(email: string, size = 200): string {
  */
 export function resolveAvatar(avatar: string, email: string, size = 200): string {
   if (avatar && avatar.trim()) {
-    return toAbsoluteUrl(avatar);
+    return getImageUrl(avatar);
   }
   return cravatarUrl(email, size);
 }

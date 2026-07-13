@@ -44,6 +44,7 @@ router.get("/", async (_req: Request, res: Response) => {
     rssIncludeMoments: setting.rssIncludeMoments,
     doubanId: setting.doubanId,
     musicAutoplay: setting.musicAutoplay,
+    cdnProxyUrl: setting.cdnProxyUrl,
     defaultCover: admin?.cover || "",
   });
 });
@@ -78,6 +79,7 @@ router.put(
     body("rssIncludeMoments").optional().isBoolean(),
     body("doubanId").optional().trim().isLength({ max: 100 }),
     body("musicAutoplay").optional().isBoolean(),
+    body("cdnProxyUrl").optional().trim().isLength({ max: 500 }),
     // Email config
     body("emailNotifyEnabled").optional().isBoolean(),
     body("notifyEmail").optional().trim().isLength({ max: 255 }),
@@ -133,6 +135,7 @@ router.put(
       rssIncludeMoments: req.body.rssIncludeMoments ?? setting.rssIncludeMoments,
       doubanId: req.body.doubanId ?? setting.doubanId,
       musicAutoplay: req.body.musicAutoplay ?? setting.musicAutoplay,
+      cdnProxyUrl: req.body.cdnProxyUrl ?? setting.cdnProxyUrl,
       emailNotifyEnabled: req.body.emailNotifyEnabled ?? setting.emailNotifyEnabled,
       notifyEmail: req.body.notifyEmail ?? setting.notifyEmail,
       smtpHost: req.body.smtpHost ?? setting.smtpHost,

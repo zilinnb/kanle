@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { FileText } from "lucide-react";
-import { toAbsoluteUrl } from "@/lib/upload";
+import { getImageUrl } from "@/lib/site-settings-store";
 import LazyImage from "@/components/LazyImage";
 import type { ArticleEmbedData } from "../editor/embed-utils";
 
@@ -22,7 +22,7 @@ export default function ArticleEmbedCard({ article, className }: ArticleEmbedCar
       <div className="relative h-[72px] w-[54px] shrink-0 overflow-hidden bg-black/5 dark:bg-white/5 md:h-[80px] md:w-[60px]">
         {article.cover ? (
           <LazyImage
-            src={toAbsoluteUrl(article.cover)}
+            src={getImageUrl(article.cover)}
             alt=""
             className="h-full w-full object-cover"
             onError={(e) => {

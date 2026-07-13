@@ -13,7 +13,7 @@ import {
   Check,
 } from "lucide-react";
 import { apiFetch } from "@/lib/api-fetch";
-import { toAbsoluteUrl } from "@/lib/upload";
+import { getImageUrl } from "@/lib/site-settings-store";
 
 export interface PickerMediaItem {
   id: string;
@@ -143,7 +143,7 @@ export default function MediaPicker({
         ) : (
           <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5">
             {items.map((item) => {
-              const fullUrl = toAbsoluteUrl(item.url);
+              const fullUrl = getImageUrl(item.url);
               const isSelected = selectedId === item.id;
               return (
                 <button

@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo, useRef } from "react";
 import { Film, Book, Music, Search, Star, X } from "lucide-react";
 import type { PostDouban } from "@/lib/mock-data";
 import { getApiUrl } from "@/lib/api-fetch";
-import { toAbsoluteUrl } from "@/lib/upload";
+import { getImageUrl } from "@/lib/site-settings-store";
 import { useExitAnimation } from "@/lib/use-exit-animation";
 
 interface DoubanPickerProps {
@@ -188,7 +188,7 @@ export default function DoubanPicker({ open, onClose, onSelect }: DoubanPickerPr
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={toAbsoluteUrl(item.cover)}
+                    src={getImageUrl(item.cover)}
                     alt=""
                     loading="lazy"
                     className="h-14 w-10 shrink-0 rounded object-cover bg-black/5 dark:bg-white/5"

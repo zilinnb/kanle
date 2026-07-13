@@ -1,5 +1,5 @@
 import type { PostImage } from "./mock-data";
-import { toAbsoluteUrl } from "./upload";
+import { getImageUrl } from "./site-settings-store";
 
 export function isLivePhoto(img: PostImage): boolean {
   return typeof img === "object" && !!img?.video;
@@ -13,17 +13,17 @@ export function getVideoSrc(img: PostImage): string | undefined {
   return typeof img === "string" ? undefined : img.video;
 }
 
-// 将 PostImage[] 中的相对路径转为绝对路径（用于显示）
+// 将 PostImage[] 中的相对路径转为绝对路径（用于显示，应用 CDN 代理）
 export function normalizeImages(
   images: PostImage[] | undefined | null
 ): PostImage[] {
   if (!images || !Array.isArray(images)) return [];
   return images.map((img) => {
-    if (typeof img === "string") return toAbsoluteUrl(img);
+    if (typeof img === "string") return getImageUrl(img);
     if (!img) return { src: "", video: undefined };
     return {
-      src: toAbsoluteUrl(img.src),
-      video: img.video ? toAbsoluteUrl(img.video) : undefined,
+      src: getImageUrl(img.src),
+      video: img.video ? getImageUrl(img.video) : undefined,
     };
   });
 }

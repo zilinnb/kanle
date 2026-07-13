@@ -5,7 +5,7 @@ import Image from "next/image";
 import { Play, Music2, Link as LinkIcon, ChevronRight, ChevronDown } from "lucide-react";
 import type { Post, PostImage } from "@/lib/mock-data";
 import { getImageSrc, normalizeImages } from "@/lib/post-image";
-import { toAbsoluteUrl, toHttps } from "@/lib/upload";
+import { getImageUrl } from "@/lib/site-settings-store";
 import ImageViewer from "@/components/ImageViewer";
 import VideoPlayerModal from "@/components/VideoPlayerModal";
 
@@ -26,7 +26,7 @@ interface TileInfo {
 
 function resolveCover(url: string | undefined | null): string {
   if (!url) return "";
-  return toHttps(toAbsoluteUrl(url));
+  return getImageUrl(url);
 }
 
 function buildTile(post: Post): TileInfo {

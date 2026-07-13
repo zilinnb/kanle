@@ -4,8 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { BookText } from "lucide-react";
 import { usePathname } from "next/navigation";
-import { useSiteSettings } from "@/lib/site-settings-store";
-import { toAbsoluteUrl } from "@/lib/upload";
+import { useSiteSettings, getImageUrl } from "@/lib/site-settings-store";
 import DoubanSidebar from "./DoubanSidebar";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
@@ -33,6 +32,9 @@ function formatDate(dateStr: string): string {
 export default function ArticleListSidebar() {
   const [articles, setArticles] = useState<ArticleListItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [hasDouban, setHasDouban] = useState(false);
   const [doubanLoaded, setDoubanLoaded] = useState(false);
   const sidebarScrollRef = useRef<HTMLDivElement>(null);
@@ -40,13 +42,34 @@ export default function ArticleListSidebar() {
   const currentId = pathname?.split("/").pop() || "";
   const defaultCover = useSiteSettings((s) => s.defaultCover);
 
+  const PAGE_SIZE = 5;
+
   useEffect(() => {
-    fetch(`${API_URL}/posts?type=article&page=1&limit=20`)
+    fetch(`${API_URL}/posts?type=article&page=1&limit=${PAGE_SIZE}`)
       .then((res) => (res.ok ? res.json() : { data: [] }))
-      .then((data) => setArticles(data.data || []))
+      .then((data) => {
+        setArticles(data.data || []);
+        setHasMore((data.data || []).length >= PAGE_SIZE);
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
+
+  const loadMore = () => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    const nextPage = page + 1;
+    fetch(`${API_URL}/posts?type=article&page=${nextPage}&limit=${PAGE_SIZE}`)
+      .then((res) => (res.ok ? res.json() : { data: [] }))
+      .then((data) => {
+        const newItems = data.data || [];
+        setArticles((prev) => [...prev, ...newItems]);
+        setPage(nextPage);
+        setHasMore(newItems.length >= PAGE_SIZE);
+      })
+      .catch(() => {})
+      .finally(() => setLoadingMore(false));
+  };
 
   useEffect(() => {
     if (typeof window === "undefined" || window.innerWidth < 1024) return;
@@ -118,7 +141,7 @@ export default function ArticleListSidebar() {
                           <div className="relative h-12 w-16 shrink-0 overflow-hidden rounded-md bg-wechat-bubble dark:bg-white/5">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
-                              src={toAbsoluteUrl(article.cover || defaultCover)}
+                              src={getImageUrl(article.cover || defaultCover)}
                               alt=""
                               className="h-full w-full object-cover"
                               loading="lazy"
@@ -151,6 +174,16 @@ export default function ArticleListSidebar() {
                   );
                 })}
               </ul>
+            )}
+            {!loading && hasMore && (
+              <button
+                type="button"
+                onClick={loadMore}
+                disabled={loadingMore}
+                className="mt-2 w-full rounded-lg py-2 text-center text-xs text-wechat-nickname transition-colors hover:bg-wechat-hover disabled:opacity-50 dark:hover:bg-white/5"
+              >
+                {loadingMore ? "加载中..." : "加载更多"}
+              </button>
             )}
           </div>
         )}

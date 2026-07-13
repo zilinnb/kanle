@@ -3,7 +3,7 @@
 import { NodeViewWrapper, type NodeViewProps } from "@tiptap/react";
 import { Film } from "lucide-react";
 import type { PostDouban } from "@/lib/mock-data";
-import { toAbsoluteUrl } from "@/lib/upload";
+import { getImageUrl } from "@/lib/site-settings-store";
 import { decodePayload } from "../embed-utils";
 
 export default function DoubanEmbedNodeView({
@@ -14,7 +14,7 @@ export default function DoubanEmbedNodeView({
   const item = decodePayload<PostDouban>(node.attrs.payload);
   if (!item) return null;
 
-  const cover = item.cover ? toAbsoluteUrl(item.cover) : "";
+  const cover = item.cover ? getImageUrl(item.cover) : "";
   const title = item.title || "豆瓣条目";
   const statusLabel = item.statusLabel || "";
 

@@ -2,8 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { Post, formatRelativeTime } from "@/lib/mock-data";
-import { toAbsoluteUrl } from "@/lib/upload";
-import { useSiteSettings } from "@/lib/site-settings-store";
+import { useSiteSettings, getImageUrl } from "@/lib/site-settings-store";
 
 interface ArticleFeedCardProps {
   post: Post;
@@ -13,7 +12,7 @@ export default function ArticleFeedCard({ post }: ArticleFeedCardProps) {
   const router = useRouter();
   const detailUrl = `/articles/${post.shortId || post.id}`;
   const defaultCover = useSiteSettings((s) => s.defaultCover);
-  const coverUrl = post.cover ? toAbsoluteUrl(post.cover) : (defaultCover ? toAbsoluteUrl(defaultCover) : "");
+  const coverUrl = post.cover ? getImageUrl(post.cover) : (defaultCover ? getImageUrl(defaultCover) : "");
   const excerpt = post.excerpt || post.content?.replace(/<[^>]+>/g, "").trim().slice(0, 100) || "";
 
   return (

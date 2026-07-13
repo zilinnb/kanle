@@ -5,10 +5,8 @@ import { Music, AlertCircle, Pause } from "lucide-react";
 import type { PostMusic } from "@/lib/mock-data";
 import { useMusicPlayer, resolvePostMusicUrl } from "@/lib/music-player-store";
 import { getGlobalAudio } from "@/lib/global-audio";
-import { toHttps, toAbsoluteUrl } from "@/lib/upload";
+import { getImageUrl } from "@/lib/site-settings-store";
 import LazyImage from "@/components/LazyImage";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
 
 interface MusicEmbedCardProps {
   music: PostMusic;
@@ -125,13 +123,7 @@ export default function MusicEmbedCard({ music, postId }: MusicEmbedCardProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const coverSrc = music.cover
-    ? toHttps(
-        typeof music.cover === "string" && music.cover.startsWith("http")
-          ? music.cover
-          : `${API_URL.replace("/api", "")}${toAbsoluteUrl(music.cover)}`
-      )
-    : "";
+  const coverSrc = music.cover ? getImageUrl(music.cover) : "";
 
   return (
     <div className="my-3 w-full">

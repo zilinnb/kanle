@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { Loader2, FileText, Search } from "lucide-react";
 import AdminModal from "@/components/admin/AdminModal";
 import { apiFetch } from "@/lib/api-fetch";
-import { toAbsoluteUrl } from "@/lib/upload";
+import { getImageUrl } from "@/lib/site-settings-store";
 import type { ArticleEmbedData } from "./embed-utils";
 
 interface ArticlePickerProps {
@@ -126,7 +126,7 @@ export default function ArticlePicker({
               {article.cover ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={toAbsoluteUrl(article.cover)}
+                  src={getImageUrl(article.cover)}
                   alt=""
                   className="h-12 w-16 shrink-0 rounded object-cover"
                 />

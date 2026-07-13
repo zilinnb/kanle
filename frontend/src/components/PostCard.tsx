@@ -8,12 +8,12 @@ import { Music, Pause, Pin, FileText } from "lucide-react";
 import { Post, formatRelativeTime, getPostSourceLabel } from "@/lib/mock-data";
 import { resolveAvatar } from "@/lib/avatar";
 import { normalizeImages } from "@/lib/post-image";
-import { toAbsoluteUrl, toHttps } from "@/lib/upload";
+import { toHttps } from "@/lib/upload";
 import { getCurrentUser } from "@/lib/auth";
 import { renderContent } from "@/lib/sanitize";
 import { useMusicPlayer, resolvePostMusicUrl } from "@/lib/music-player-store";
 import { useEditPost } from "@/lib/edit-post-store";
-import { useSiteSettings } from "@/lib/site-settings-store";
+import { useSiteSettings, getImageUrl } from "@/lib/site-settings-store";
 import { getGlobalAudio } from "@/lib/global-audio";
 import ImageGrid from "./ImageGrid";
 import VideoPlayer from "./VideoPlayer";
@@ -72,6 +72,7 @@ export default function PostCard({ post, index, onDelete }: PostCardProps) {
   const [clippable, setClippable] = useState(true);
   const [measured, setMeasured] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
+  const articleRef = useRef<HTMLElement>(null);
   const collapseLength = useSiteSettings((s) => s.postCollapseLength);
   const defaultCover = useSiteSettings((s) => s.defaultCover);
   const openEdit = useEditPost((s) => s.open);
@@ -195,6 +196,27 @@ export default function PostCard({ post, index, onDelete }: PostCardProps) {
     setShowComments((prev) => !prev);
   };
 
+  // 评论展开后，点击 PostCard 外部空白处收起评论（微信朋友圈风格）
+  useEffect(() => {
+    if (!showComments) return;
+    function onPointerDown(e: MouseEvent | TouchEvent) {
+      if (!articleRef.current) return;
+      if (!articleRef.current.contains(e.target as Node)) {
+        setShowComments(false);
+        setReplyTo(undefined);
+      }
+    }
+    const timer = setTimeout(() => {
+      document.addEventListener("mousedown", onPointerDown);
+      document.addEventListener("touchstart", onPointerDown, { passive: true });
+    }, 0);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("touchstart", onPointerDown);
+    };
+  }, [showComments]);
+
   // 点击动态音乐卡片：由全局 audio 接管播放，悬浮卡片由 store.activePostMusic 自动控制显示
   // iOS 要求 play() 必须在用户手势同步上下文中调用，所以这里同步设置 src 并 play
   const handleMusicClick = () => {
@@ -285,11 +307,12 @@ export default function PostCard({ post, index, onDelete }: PostCardProps) {
   const isAd = !!post.isAd;
   const displayName = isAd ? (post.adNickname || "广告") : post.author.nickname;
   const authorAvatar = isAd
-    ? toAbsoluteUrl(post.adAvatar || "")
+    ? getImageUrl(post.adAvatar || "")
     : resolveAvatar(post.author.avatar, post.author.email || "", 96);
 
   return (
     <article
+      ref={articleRef}
       id={`post-${post.id}`}
       className="flex gap-3 px-4 py-4 sm:px-5 md:px-6 animate-fade-in-up scroll-mt-16"
       style={{ animationDelay: `${index * 60}ms`, opacity: 0 }}
@@ -385,9 +408,9 @@ export default function PostCard({ post, index, onDelete }: PostCardProps) {
                     setContentExpanded(true);
                   }
                 }}
-                className="mt-1.5 text-[14px] text-[#b2b2b2] transition-opacity hover:opacity-70 active:opacity-50 dark:text-[#888]"
+                className="mt-1.5 text-[14px] text-[#576b95] transition-opacity hover:opacity-70 active:opacity-50 dark:text-[#7d94c4]"
               >
-                {isArticle ? "展开" : contentExpanded ? "收起" : "展开"}
+                {isArticle ? "全文" : contentExpanded ? "收起" : "全文"}
               </button>
             )}
           </div>
@@ -409,7 +432,7 @@ export default function PostCard({ post, index, onDelete }: PostCardProps) {
             <div className="relative h-[72px] w-[72px] shrink-0 md:h-[80px] md:w-[80px] overflow-hidden bg-black/5 dark:bg-white/5">
               {(post.cover || defaultCover) ? (
                 <LazyImage
-                  src={toHttps(toAbsoluteUrl(post.cover || defaultCover))}
+                  src={getImageUrl(post.cover || defaultCover)}
                   alt={post.title || "文章封面"}
                   className="h-full w-full object-cover"
                 />

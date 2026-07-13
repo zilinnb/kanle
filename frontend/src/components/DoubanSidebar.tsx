@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { Film, Book, Music, Star, ExternalLink } from "lucide-react";
 import { getApiUrl } from "@/lib/api-fetch";
-import { toAbsoluteUrl } from "@/lib/upload";
+import { getImageUrl } from "@/lib/site-settings-store";
 
 type DoubanStatus = "collect" | "do" | "wish";
 
@@ -61,7 +61,7 @@ const STATUS_STYLES: Record<DoubanStatus, string> = {
   wish: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400",
 };
 
-const PAGE_LIMIT = 10;
+const PAGE_LIMIT = 5;
 
 function formatDate(dateStr: string): string {
   if (!dateStr) return "";
@@ -316,7 +316,7 @@ export default function DoubanSidebar({
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={toAbsoluteUrl(item.cover)}
+                  src={getImageUrl(item.cover)}
                   alt={item.title}
                   loading="lazy"
                   onLoad={(e) => { (e.currentTarget as HTMLImageElement).style.opacity = "1"; }}

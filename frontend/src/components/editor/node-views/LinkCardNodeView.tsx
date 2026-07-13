@@ -2,7 +2,7 @@
 
 import { NodeViewWrapper, type NodeViewProps } from "@tiptap/react";
 import { Link2 } from "lucide-react";
-import { toAbsoluteUrl } from "@/lib/upload";
+import { getImageUrl } from "@/lib/site-settings-store";
 
 export default function LinkCardNodeView({
   node,
@@ -16,7 +16,7 @@ export default function LinkCardNodeView({
     image: string;
   };
 
-  const cover = image ? toAbsoluteUrl(image) : "";
+  const cover = image ? getImageUrl(image) : "";
   const displayTitle = title || href || "链接";
   const stopInteraction = (e: React.MouseEvent) => {
     e.preventDefault();

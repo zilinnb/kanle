@@ -7,7 +7,8 @@ import { Music, Pause, Play } from "lucide-react";
 import { Post, PostMusic, formatDetailTime, getPostSourceLabel } from "@/lib/mock-data";
 import { resolveAvatar } from "@/lib/avatar";
 import { normalizeImages } from "@/lib/post-image";
-import { toAbsoluteUrl, toHttps } from "@/lib/upload";
+import { toHttps } from "@/lib/upload";
+import { getImageUrl } from "@/lib/site-settings-store";
 import { renderContent } from "@/lib/sanitize";
 import { getCurrentUser, authFetchHeaders } from "@/lib/auth";
 import { useMusicPlayer, resolvePostMusicUrl } from "@/lib/music-player-store";
@@ -258,7 +259,7 @@ export default function PostDetail({ post }: PostDetailProps) {
 
   const displayName = post.isAd ? post.adNickname || "广告" : post.author.nickname;
   const authorAvatar = post.isAd
-    ? toAbsoluteUrl(post.adAvatar || "")
+    ? getImageUrl(post.adAvatar || "")
     : resolveAvatar(post.author.avatar, post.author.email || "", 96);
 
   const musicInfo = post.music ? formatMusicInfo(post.music) : null;

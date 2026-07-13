@@ -5,15 +5,13 @@ import { createPortal } from "react-dom";
 import { Music, Play, Pause, X } from "lucide-react";
 import { useMusicPlayer } from "@/lib/music-player-store";
 import { getGlobalAudio } from "@/lib/global-audio";
-import { toHttps, toAbsoluteUrl } from "@/lib/upload";
+import { getImageUrl } from "@/lib/site-settings-store";
 import LazyImage from "./LazyImage";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
 
 function resolveCover(cover: string): string {
-  if (!cover) return "";
-  if (cover.startsWith("http")) return toHttps(cover);
-  return toHttps(toAbsoluteUrl(cover));
+  return getImageUrl(cover);
 }
 
 /**
