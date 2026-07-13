@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState, useCallback } from "react";
+import { useMemo, useRef, useState, useCallback, useEffect } from "react";
 import type { MouseEvent as ReactMouseEvent } from "react";
 import {
   sanitizeHtml,
@@ -194,6 +194,31 @@ export default function ArticleEmbedContent({
     setViewerIndex(-1);
     setOriginRect(null);
   }, []);
+
+  // 图片渐显：为 dangerouslySetInnerHTML 渲染的 img 绑定 load 事件
+  // 已缓存（complete）的图片立即显示，未加载的从 opacity-0 渐显到 opacity-100
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const imgs = container.querySelectorAll<HTMLImageElement>(
+      ".article-html-segment img:not(.inline-emoji):not([src*='/emoji/'])"
+    );
+    const cleanups: (() => void)[] = [];
+    imgs.forEach((img) => {
+      if (img.complete && img.naturalWidth > 0) {
+        img.style.opacity = "1";
+        return;
+      }
+      img.style.opacity = "0";
+      img.style.transition = "opacity 500ms ease";
+      const onLoad = () => {
+        img.style.opacity = "1";
+      };
+      img.addEventListener("load", onLoad);
+      cleanups.push(() => img.removeEventListener("load", onLoad));
+    });
+    return () => cleanups.forEach((fn) => fn());
+  }, [segments]);
 
   /**
    * 事件委托：容器上的 click 事件。

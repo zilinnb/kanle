@@ -13,6 +13,7 @@ import {
   Link as LinkIcon,
   Image as ImageIcon,
   Code,
+  Braces,
   Quote,
   Undo2,
   Redo2,
@@ -427,8 +428,11 @@ export default function Toolbar({
       {/* 引用 */}
       {renderBtn({ key: "quote", title: "引用", icon: <Quote className="h-4 w-4" />, onClick: () => editor.chain().focus().setBlockquote().run(), active: editor.isActive("blockquote"), disabled: sourceMode })}
 
-      {/* 代码块 */}
-      {renderBtn({ key: "code", title: "代码块", icon: <Code className="h-4 w-4" />, onClick: () => editor.chain().focus().setCodeBlock().run(), active: editor.isActive("codeBlock"), disabled: sourceMode })}
+      {/* 行内代码 + 代码块 */}
+      <div className="flex items-center gap-0.5">
+        {renderBtn({ key: "inlineCode", title: "行内代码", icon: <Braces className="h-4 w-4" />, onClick: () => editor.chain().focus().toggleCode().run(), active: editor.isActive("code"), disabled: sourceMode })}
+        {renderBtn({ key: "code", title: "代码块", icon: <Code className="h-4 w-4" />, onClick: () => editor.chain().focus().setCodeBlock().run(), active: editor.isActive("codeBlock"), disabled: sourceMode })}
+      </div>
 
       {/* 分隔线 */}
       {renderBtn({ key: "hr", title: "分隔线", icon: <Minus className="h-4 w-4" />, onClick: () => editor.chain().focus().setHorizontalRule().run(), disabled: sourceMode })}

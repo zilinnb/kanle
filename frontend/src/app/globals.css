@@ -857,16 +857,17 @@ img.inline-emoji.emoji-error {
   word-break: normal;
 }
 
-/* ── macOS 风格代码块 ── */
+/* ── macOS 风格代码块（编辑器内）── */
 .macos-code-wrapper {
   margin: 1em 0;
 }
 .macos-code-container {
-  border-radius: 8px;
+  border-radius: 10px;
   overflow: hidden;
   border: 1px solid #e2e2e5;
   background: #f6f6f8;
   position: relative;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 .macos-code-container.is-selected {
   border-color: #3b82f6;
@@ -963,6 +964,7 @@ img.inline-emoji.emoji-error {
 .dark .macos-code-container {
   background: #1a1b26;
   border-color: #2a2b36;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 .dark .macos-code-header {
   background: #16171f;
@@ -993,14 +995,16 @@ img.inline-emoji.emoji-error {
 /* ── 文章详情页：增强 pre 元素（macOS 风格包装）── */
 .macos-enhanced-pre {
   margin: 1em 0;
-  border-radius: 8px;
+  border-radius: 10px;
   overflow: hidden;
   border: 1px solid #e2e2e5;
   background: #f6f6f8;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 .dark .macos-enhanced-pre {
   background: #1a1b26;
   border-color: #2a2b36;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 .macos-enhanced-header {
   display: flex;
@@ -1125,6 +1129,7 @@ img.inline-emoji.emoji-error {
 .article-content .article-html-segment img:not(.inline-emoji):not([src*="/emoji/"]) {
   cursor: zoom-in;
   -webkit-tap-highlight-color: transparent;
+  transition: opacity 500ms ease;
 }
 /* 内联表情在文章编辑器/详情页中保持行内尺寸（覆盖上面的 img 默认样式） */
 .article-editor-area img.inline-emoji,

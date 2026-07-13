@@ -1,15 +1,19 @@
 "use client";
 
+import { useState, useCallback } from "react";
 import { NodeViewWrapper, type NodeViewProps } from "@tiptap/react";
-import { FileText } from "lucide-react";
+import { FileText, Pencil } from "lucide-react";
 import { toAbsoluteUrl } from "@/lib/upload";
-import { decodePayload, type ArticleEmbedData } from "../embed-utils";
+import { decodePayload, encodePayload, type ArticleEmbedData } from "../embed-utils";
+import ArticlePicker from "../ArticlePicker";
 
 export default function ArticleEmbedNodeView({
   node,
   deleteNode,
+  updateAttributes,
   selected,
 }: NodeViewProps) {
+  const [showPicker, setShowPicker] = useState(false);
   const article = decodePayload<ArticleEmbedData>(node.attrs.payload);
   if (!article) return null;
 
@@ -21,6 +25,32 @@ export default function ArticleEmbedNodeView({
     e.preventDefault();
     e.stopPropagation();
   };
+
+  const handleEdit = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setShowPicker(true);
+    },
+    []
+  );
+
+  const handleDelete = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      deleteNode();
+    },
+    [deleteNode]
+  );
+
+  const handleSelect = useCallback(
+    (newArticle: ArticleEmbedData) => {
+      updateAttributes({ payload: encodePayload(newArticle) });
+      setShowPicker(false);
+    },
+    [updateAttributes]
+  );
 
   return (
     <NodeViewWrapper
@@ -42,19 +72,36 @@ export default function ArticleEmbedNodeView({
           <span className="embed-title">{title}</span>
           {excerpt && <span className="embed-subtitle">{excerpt}</span>}
         </span>
+        {/* 编辑按钮 */}
+        <span
+          className="embed-edit-btn"
+          contentEditable={false}
+          title="更换文章"
+          onMouseDown={stopInteraction}
+          onClick={handleEdit}
+        >
+          <Pencil className="h-3 w-3" />
+        </span>
+        {/* 删除按钮 */}
         <span
           className="embed-delete-btn"
           contentEditable={false}
           title="删除"
           onMouseDown={stopInteraction}
-          onClick={(e) => {
-            stopInteraction(e);
-            deleteNode();
-          }}
+          onClick={handleDelete}
         >
           ×
         </span>
       </div>
+
+      {/* 文章选择器（编辑模式） */}
+      {showPicker && (
+        <ArticlePicker
+          open={showPicker}
+          onClose={() => setShowPicker(false)}
+          onSelect={handleSelect}
+        />
+      )}
     </NodeViewWrapper>
   );
 }

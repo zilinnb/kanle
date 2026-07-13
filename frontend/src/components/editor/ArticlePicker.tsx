@@ -41,7 +41,7 @@ export default function ArticlePicker({
         throw new Error(err.message || "加载文章列表失败");
       }
       const data = await res.json();
-      setArticles(data.posts || []);
+      setArticles(data.data || data.posts || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : "加载失败");
     } finally {
