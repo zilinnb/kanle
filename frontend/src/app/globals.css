@@ -1111,6 +1111,134 @@ img.inline-emoji.emoji-error {
   font-size: inherit !important;
 }
 
+/* ── highlight.js 语法高亮：白天模式（GitHub 风格）── */
+.macos-enhanced-code .hljs-keyword,
+.macos-enhanced-code .hljs-selector-tag,
+.macos-enhanced-code .hljs-literal,
+.macos-enhanced-code .hljs-section,
+.macos-enhanced-code .hljs-link {
+  color: #d73a49;
+}
+.macos-enhanced-code .hljs-function .hljs-keyword {
+  color: #d73a49;
+}
+.macos-enhanced-code .hljs-string,
+.macos-enhanced-code .hljs-attr,
+.macos-enhanced-code .hljs-template-tag,
+.macos-enhanced-code .hljs-template-variable,
+.macos-enhanced-code .hljs-addition {
+  color: #032f62;
+}
+.macos-enhanced-code .hljs-comment,
+.macos-enhanced-code .hljs-quote {
+  color: #6a737d;
+  font-style: italic;
+}
+.macos-enhanced-code .hljs-number,
+.macos-enhanced-code .hljs-symbol,
+.macos-enhanced-code .hljs-bullet,
+.macos-enhanced-code .hljs-meta,
+.macos-enhanced-code .hljs-deletion {
+  color: #005cc5;
+}
+.macos-enhanced-code .hljs-title,
+.macos-enhanced-code .hljs-title.function_,
+.macos-enhanced-code .hljs-function .hljs-title {
+  color: #6f42c1;
+}
+.macos-enhanced-code .hljs-title.class_,
+.macos-enhanced-code .hljs-type {
+  color: #22863a;
+}
+.macos-enhanced-code .hljs-built_in,
+.macos-enhanced-code .hljs-builtin-name,
+.macos-enhanced-code .hljs-class .hljs-title,
+.macos-enhanced-code .hljs-params {
+  color: #005cc5;
+}
+.macos-enhanced-code .hljs-variable,
+.macos-enhanced-code .hljs-name,
+.macos-enhanced-code .hljs-selector-id,
+.macos-enhanced-code .hljs-selector-class {
+  color: #e36209;
+}
+.macos-enhanced-code .hljs-tag {
+  color: #22863a;
+}
+.macos-enhanced-code .hljs-attribute {
+  color: #005cc5;
+}
+.macos-enhanced-code .hljs-regexp {
+  color: #032f62;
+}
+.macos-enhanced-code .hljs-emphasis {
+  font-style: italic;
+}
+.macos-enhanced-code .hljs-strong {
+  font-weight: 700;
+}
+
+/* ── highlight.js 语法高亮：夜间模式（Tokyo Night 风格）── */
+.dark .macos-enhanced-code .hljs-keyword,
+.dark .macos-enhanced-code .hljs-selector-tag,
+.dark .macos-enhanced-code .hljs-literal,
+.dark .macos-enhanced-code .hljs-section,
+.dark .macos-enhanced-code .hljs-link {
+  color: #bb9af7;
+}
+.dark .macos-enhanced-code .hljs-function .hljs-keyword {
+  color: #bb9af7;
+}
+.dark .macos-enhanced-code .hljs-string,
+.dark .macos-enhanced-code .hljs-attr,
+.dark .macos-enhanced-code .hljs-template-tag,
+.dark .macos-enhanced-code .hljs-template-variable,
+.dark .macos-enhanced-code .hljs-addition {
+  color: #9ece6a;
+}
+.dark .macos-enhanced-code .hljs-comment,
+.dark .macos-enhanced-code .hljs-quote {
+  color: #565f89;
+  font-style: italic;
+}
+.dark .macos-enhanced-code .hljs-number,
+.dark .macos-enhanced-code .hljs-symbol,
+.dark .macos-enhanced-code .hljs-bullet,
+.dark .macos-enhanced-code .hljs-meta,
+.dark .macos-enhanced-code .hljs-deletion {
+  color: #ff9e64;
+}
+.dark .macos-enhanced-code .hljs-title,
+.dark .macos-enhanced-code .hljs-title.function_,
+.dark .macos-enhanced-code .hljs-function .hljs-title {
+  color: #7aa2f7;
+}
+.dark .macos-enhanced-code .hljs-title.class_,
+.dark .macos-enhanced-code .hljs-type {
+  color: #2ac3de;
+}
+.dark .macos-enhanced-code .hljs-built_in,
+.dark .macos-enhanced-code .hljs-builtin-name,
+.dark .macos-enhanced-code .hljs-class .hljs-title,
+.dark .macos-enhanced-code .hljs-params {
+  color: #2ac3de;
+}
+.dark .macos-enhanced-code .hljs-variable,
+.dark .macos-enhanced-code .hljs-name,
+.dark .macos-enhanced-code .hljs-selector-id,
+.dark .macos-enhanced-code .hljs-selector-class {
+  color: #e0af68;
+}
+.dark .macos-enhanced-code .hljs-tag {
+  color: #f7768e;
+}
+.dark .macos-enhanced-code .hljs-attribute {
+  color: #bb9af7;
+}
+.dark .macos-enhanced-code .hljs-regexp {
+  color: #b4f9f8;
+}
+
 /* 夜间模式：语法高亮 span 提亮 */
 .dark .article-content pre code span[style*="color"],
 .dark .article-editor-area pre code span[style*="color"],

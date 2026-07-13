@@ -2,6 +2,7 @@
 
 import { useMemo, useRef, useState, useCallback, useEffect } from "react";
 import type { MouseEvent as ReactMouseEvent } from "react";
+import hljs from "highlight.js/lib/common";
 import {
   sanitizeHtml,
   plainTextToHtml,
@@ -61,11 +62,28 @@ function renderHtmlSegment(html: string): string {
 }
 
 /**
+ * 用 highlight.js 对代码文本进行语法高亮，返回带 <span class="hljs-xxx"> 的 HTML。
+ * 高亮失败时返回转义后的纯文本，确保安全。
+ */
+function highlightCode(codeText: string, lang: string): string {
+  const escaped = codeText
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+  try {
+    const language = lang.toLowerCase().trim();
+    if (language && language !== "plaintext" && hljs.getLanguage(language)) {
+      return hljs.highlight(codeText, { language }).value;
+    }
+    return hljs.highlightAuto(codeText).value;
+  } catch {
+    return escaped;
+  }
+}
+
+/**
  * 将 HTML 中的 <pre><code> 代码块增强为 macOS 风格结构
- * （红黄绿圆点 + 语言标签 + 复制按钮 + 行号）。
- *
- * 使用正则替换而非 DOMParser，确保 SSR 和客户端产出完全一致，
- * 避免 hydration mismatch 导致 React 丢弃增强后的 HTML。
+ * （红黄绿圆点 + 语言标签 + 复制按钮 + 行号 + 语法高亮）。
  */
 function enhanceCodeBlocks(html: string): string {
   if (!html) return "";
@@ -80,25 +98,32 @@ function enhanceCodeBlocks(html: string): string {
       const lang = (dataLangMatch?.[1] || codeClassMatch?.[1] || "plaintext").trim();
       const langLabel = lang === "plaintext" ? "Text" : lang.charAt(0).toUpperCase() + lang.slice(1);
 
-      // 提取纯文本用于行号计算
+      // 提取 <code> 标签内的纯文本
       const codeMatch = inner.match(/<code[^>]*>([\s\S]*?)<\/code>/i);
       const codeInner = codeMatch?.[1] || inner;
-      const codeText = codeInner.replace(/<[^>]*>/g, "");
+      // 去除 HTML 标签获取纯文本，再解码 HTML 实体
+      const codeText = codeInner
+        .replace(/<[^>]*>/g, "")
+        .replace(/&lt;/g, "<")
+        .replace(/&gt;/g, ">")
+        .replace(/&amp;/g, "&")
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'");
+
+      // 用 highlight.js 进行语法高亮
+      const highlighted = highlightCode(codeText, lang);
+
+      // 计算行号
       const lineCount = codeText.split("\n").length;
-      // 最后一行如果以 \n 结尾，split 会产生空字符串，减去
       const actualLines = codeText.endsWith("\n") ? lineCount - 1 : lineCount;
       const lineNumbers = Array.from(
         { length: Math.max(1, actualLines) },
         (_, i) => i + 1
       ).join("\n");
 
-      // 合并 class 到 <pre>
-      const existingClassMatch = (preAttrs || "").match(/class="([^"]*)"/i);
-      const mergedClass = existingClassMatch
-        ? `${existingClassMatch[1]} macos-enhanced-code`
-        : "macos-enhanced-code";
-      const cleanedAttrs = (preAttrs || "").replace(/\s*class="[^"]*"/gi, "");
-      const preTag = `<pre class="${mergedClass}"${cleanedAttrs}>${inner}</pre>`;
+      // 构建 <pre><code> 标签，保留 hljs 类供 CSS 识别
+      const codeTag = `<code class="hljs language-${lang}">${highlighted}</code>`;
+      const preTag = `<pre class="macos-enhanced-code"${(preAttrs || "").replace(/\s*class="[^"]*"/gi, "").replace(/\s*data-language="[^"]*"/gi, "")}>${codeTag}</pre>`;
 
       return `<div class="macos-enhanced-pre"><div class="macos-enhanced-header"><div class="macos-traffic-lights"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span></div><span class="macos-enhanced-lang">${langLabel}</span><button class="macos-enhanced-copy" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span>复制</span></button></div><div class="macos-enhanced-body"><div class="macos-line-numbers">${lineNumbers}</div>${preTag}</div></div>`;
     }
