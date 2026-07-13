@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { FileText } from "lucide-react";
-import { getImageUrl } from "@/lib/site-settings-store";
+import { getImageUrl, useSiteSettings } from "@/lib/site-settings-store";
 import LazyImage from "@/components/LazyImage";
 import type { ArticleEmbedData } from "../editor/embed-utils";
 
@@ -12,6 +12,7 @@ interface ArticleEmbedCardProps {
 }
 
 export default function ArticleEmbedCard({ article, className }: ArticleEmbedCardProps) {
+  const defaultCover = useSiteSettings((s) => s.defaultCover);
   const url = `/articles/${article.shortId || article.id}`;
   return (
     <Link
@@ -20,9 +21,9 @@ export default function ArticleEmbedCard({ article, className }: ArticleEmbedCar
     >
       {/* 左侧封面 */}
       <div className="relative h-[72px] w-[54px] shrink-0 overflow-hidden bg-black/5 dark:bg-white/5 md:h-[80px] md:w-[60px]">
-        {article.cover ? (
+        {(article.cover || defaultCover) ? (
           <LazyImage
-            src={getImageUrl(article.cover)}
+            src={getImageUrl(article.cover || defaultCover)}
             alt=""
             className="h-full w-full object-cover"
             onError={(e) => {

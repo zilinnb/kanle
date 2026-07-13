@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { Loader2, FileText, Search } from "lucide-react";
 import AdminModal from "@/components/admin/AdminModal";
 import { apiFetch } from "@/lib/api-fetch";
-import { getImageUrl } from "@/lib/site-settings-store";
+import { getImageUrl, useSiteSettings } from "@/lib/site-settings-store";
 import type { ArticleEmbedData } from "./embed-utils";
 
 interface ArticlePickerProps {
@@ -30,6 +30,7 @@ export default function ArticlePicker({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
+  const defaultCover = useSiteSettings((s) => s.defaultCover);
 
   const fetchArticles = useCallback(async () => {
     setLoading(true);
@@ -123,10 +124,10 @@ export default function ArticlePicker({
               onClick={() => handleSelect(article)}
               className="flex w-full items-center gap-3 rounded-lg border border-adm-border bg-adm-card p-2.5 text-left transition-colors hover:bg-adm-card-hover"
             >
-              {article.cover ? (
+              {(article.cover || defaultCover) ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={getImageUrl(article.cover)}
+                  src={getImageUrl(article.cover || defaultCover)}
                   alt=""
                   className="h-12 w-16 shrink-0 rounded object-cover"
                 />

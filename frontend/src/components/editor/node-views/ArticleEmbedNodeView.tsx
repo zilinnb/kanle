@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react";
 import { NodeViewWrapper, type NodeViewProps } from "@tiptap/react";
 import { FileText, Pencil } from "lucide-react";
-import { getImageUrl } from "@/lib/site-settings-store";
+import { getImageUrl, useSiteSettings } from "@/lib/site-settings-store";
 import { decodePayload, encodePayload, type ArticleEmbedData } from "../embed-utils";
 import ArticlePicker from "../ArticlePicker";
 
@@ -14,10 +14,11 @@ export default function ArticleEmbedNodeView({
   selected,
 }: NodeViewProps) {
   const [showPicker, setShowPicker] = useState(false);
+  const defaultCover = useSiteSettings((s) => s.defaultCover);
   const article = decodePayload<ArticleEmbedData>(node.attrs.payload);
   if (!article) return null;
 
-  const cover = article.cover ? getImageUrl(article.cover) : "";
+  const cover = (article.cover || defaultCover) ? getImageUrl(article.cover || defaultCover) : "";
   const title = article.title || "文章";
   const excerpt = article.excerpt || "";
 
