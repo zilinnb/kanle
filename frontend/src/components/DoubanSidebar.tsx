@@ -324,6 +324,7 @@ export default function DoubanSidebar({
                   src={getImageUrl(item.cover)}
                   alt={item.title}
                   loading="lazy"
+                  referrerPolicy="no-referrer"
                   onLoad={(e) => { (e.currentTarget as HTMLImageElement).style.opacity = "1"; }}
                   className="h-12 w-9 shrink-0 rounded-md object-cover bg-wechat-bubble opacity-0 transition-opacity duration-500 dark:bg-white/5"
                 />

@@ -191,6 +191,7 @@ export default function DoubanPicker({ open, onClose, onSelect }: DoubanPickerPr
                     src={getImageUrl(item.cover)}
                     alt=""
                     loading="lazy"
+                    referrerPolicy="no-referrer"
                     className="h-14 w-10 shrink-0 rounded object-cover bg-black/5 dark:bg-white/5"
                   />
                   <div className="min-w-0 flex-1">
