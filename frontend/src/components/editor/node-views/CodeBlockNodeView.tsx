@@ -56,8 +56,13 @@ export default function CodeBlockNodeView({
   return (
     <NodeViewWrapper as="div" className="macos-code-wrapper">
       <div className={`macos-code-container ${selected ? "is-selected" : ""}`}>
-        {/* 标题栏 */}
+        {/* 标题栏：macOS 风格 */}
         <div className="macos-code-header" contentEditable={false}>
+          <div className="macos-traffic-lights">
+            <span className="macos-traffic-light macos-traffic-red" />
+            <span className="macos-traffic-light macos-traffic-yellow" />
+            <span className="macos-traffic-light macos-traffic-green" />
+          </div>
           <select
             className="macos-lang-select"
             value={language}
