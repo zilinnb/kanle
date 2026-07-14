@@ -5,6 +5,7 @@ import { useState, useCallback, useEffect, useRef, type MouseEvent as ReactMouse
 import ImageViewer from "./ImageViewer";
 import type { PostImage } from "@/lib/mock-data";
 import { isLivePhoto, getImageSrc, getVideoSrc } from "@/lib/post-image";
+import { isCdnUrl } from "@/lib/upload";
 import { Volume2, VolumeX } from "lucide-react";
 
 interface ImageGridProps {
@@ -23,6 +24,19 @@ function FadeImage({
   className?: string;
 }) {
   const [loaded, setLoaded] = useState(false);
+  // CDN 代理 URL 不经过 next/image（避免双重优化 + remotePatterns 白名单问题）
+  if (isCdnUrl(src)) {
+    return (
+      <img
+        src={src}
+        alt={alt}
+        decoding="async"
+        referrerPolicy="no-referrer"
+        onLoad={() => setLoaded(true)}
+        className={`${className} h-full w-full object-cover transition-opacity duration-500 ${loaded ? "opacity-100" : "opacity-0"}`}
+      />
+    );
+  }
   return (
     <Image
       src={src}

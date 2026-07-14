@@ -32,6 +32,26 @@ const nextConfig: NextConfig = {
         hostname: "kanle.net",
       },
       {
+        protocol: "https",
+        hostname: "gimg0.baidu.com",
+      },
+      {
+        protocol: "https",
+        hostname: "img1.doubanio.com",
+      },
+      {
+        protocol: "https",
+        hostname: "img2.doubanio.com",
+      },
+      {
+        protocol: "https",
+        hostname: "img3.doubanio.com",
+      },
+      {
+        protocol: "https",
+        hostname: "img9.doubanio.com",
+      },
+      {
         protocol: "http",
         hostname: "localhost",
         port: "4000",

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { User } from "@/lib/mock-data";
 import { resolveAvatar } from "@/lib/avatar";
 import { getImageUrl } from "@/lib/site-settings-store";
+import { isCdnUrl } from "@/lib/upload";
 
 interface CoverHeaderProps {
   user: User;
@@ -122,6 +123,7 @@ export default function CoverHeader({ user, avatarHref, coverUrls }: CoverHeader
                   : undefined
               }
               sizes="(max-width: 768px) 100vw, 600px"
+              unoptimized={isCdnUrl(src)}
             />
           ))}
 
@@ -149,7 +151,7 @@ export default function CoverHeader({ user, avatarHref, coverUrls }: CoverHeader
                     fill
                     className="object-cover"
                     sizes="88px"
-                    unoptimized={avatarSrc.endsWith(".svg")}
+                    unoptimized={avatarSrc.endsWith(".svg") || isCdnUrl(avatarSrc)}
                   />
                 </div>
               </Link>
@@ -165,7 +167,7 @@ export default function CoverHeader({ user, avatarHref, coverUrls }: CoverHeader
                     fill
                     className="object-cover"
                     sizes="88px"
-                    unoptimized={avatarSrc.endsWith(".svg")}
+                    unoptimized={avatarSrc.endsWith(".svg") || isCdnUrl(avatarSrc)}
                   />
                 </div>
               </>
