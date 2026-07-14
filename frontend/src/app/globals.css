@@ -640,8 +640,8 @@ body::-webkit-scrollbar {
 .rich-content a:hover {
   text-decoration: underline;
 }
-.rich-editor-area code,
-.rich-content code {
+.rich-editor-area code:not(.hljs),
+.rich-content code:not(.hljs) {
   background: var(--wechat-bubble);
   padding: 0.1em 0.3em;
   border-radius: 3px;
@@ -829,8 +829,9 @@ img.inline-emoji.emoji-error {
   text-decoration: underline;
 }
 /* ── 内联代码：红色文字（主流代码高亮风格）── */
-.article-editor-area code,
-.article-content code {
+/* 用 :not(.hljs) 排除 highlight.js 代码块，避免污染 pre>code */
+.article-editor-area code:not(.hljs),
+.article-content code:not(.hljs) {
   background: rgba(239, 68, 68, 0.08);
   color: #e83a3a;
   padding: 0.15em 0.35em;
@@ -839,10 +840,10 @@ img.inline-emoji.emoji-error {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   word-break: break-all;
 }
-.dark .article-editor-area code,
-.dark .article-content code,
-.dark .rich-editor-area code,
-.dark .rich-content code {
+.dark .article-editor-area code:not(.hljs),
+.dark .article-content code:not(.hljs),
+.dark .rich-editor-area code:not(.hljs),
+.dark .rich-content code:not(.hljs) {
   background: rgba(239, 68, 68, 0.15) !important;
   color: #ff6b6b !important;
 }

@@ -122,12 +122,11 @@ export default function DoubanSidebar({
   const [loading, setLoading] = useState(true); // 首屏/切换加载
   const [loadingMore, setLoadingMore] = useState(false); // 加载更多
 
-  const sentinelRef = useRef<HTMLDivElement>(null);
   const loadingMoreRef = useRef(false);
   // 记录当前 tab+status，用于 append 请求的竞态守卫
   const reqKeyRef = useRef<string>("");
 
-  // 加载更多（append）：由 IntersectionObserver 触发，用 reqKey 守卫竞态
+  // 加载更多（append）：手动点击触发，用 reqKey 守卫竞态
   const loadMore = useCallback(() => {
     if (loadingMoreRef.current || !hasMore || loading) return;
     const tab = activeTab;
@@ -197,19 +196,8 @@ export default function DoubanSidebar({
     return () => controller.abort();
   }, [activeTab, statusFilter, API_URL]);
 
-  // IntersectionObserver：滚动到底部自动加载
-  useEffect(() => {
-    const sentinel = sentinelRef.current;
-    if (!sentinel) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) loadMore();
-      },
-      { rootMargin: "50px" }
-    );
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, [loadMore]);
+  // 侧边栏空间有限，sentinel 总在视口内会立即触发自动加载，与手动"加载更多"冲突。
+  // 已有手动"加载更多"按钮，不需要 IntersectionObserver 无限滚动。
 
   const switchTab = (tab: Tab) => {
     if (tab === activeTab) return;
@@ -387,7 +375,6 @@ export default function DoubanSidebar({
           )}
         </div>
       )}
-      <div ref={sentinelRef} className="h-1" />
     </>
   );
 
