@@ -22,9 +22,12 @@ import {
   Library,
   Megaphone,
   Rss,
+  Zap,
+  XCircle,
+  Loader2,
 } from "lucide-react";
-import { uploadImage } from "@/lib/upload";
-import { getImageUrl } from "@/lib/site-settings-store";
+import { uploadImage, cdnUrl } from "@/lib/upload";
+import { getImageUrl, useSiteSettings } from "@/lib/site-settings-store";
 import { apiFetch, getToken } from "@/lib/api-fetch";
 import { SOCIAL_PLATFORMS, SocialIcon } from "@/components/SocialIcons";
 import MediaPicker from "@/components/MediaPicker";
@@ -320,6 +323,111 @@ function ImageField({
   );
 }
 
+/** CDN 代理测试按钮：用一张公开图片测试代理是否可用，显示预览结果 */
+function CdnTestButton({ cdnProxyUrl }: { cdnProxyUrl: string }) {
+  const [status, setStatus] = useState<"idle" | "testing" | "success" | "error">("idle");
+  const [errorMsg, setErrorMsg] = useState("");
+
+  const testImage = "https://www.baidu.com/img/flexible/logo/pc/result.png";
+
+  const handleTest = () => {
+    if (!cdnProxyUrl.trim()) {
+      setStatus("idle");
+      return;
+    }
+    setStatus("testing");
+    setErrorMsg("");
+
+    const proxiedUrl = cdnUrl(testImage, cdnProxyUrl.trim());
+    const img = document.createElement("img");
+    let finished = false;
+
+    const timeout = setTimeout(() => {
+      if (!finished) {
+        finished = true;
+        setStatus("error");
+        setErrorMsg("超时（10s），代理可能不可用");
+      }
+    }, 10000);
+
+    img.onload = () => {
+      if (finished) return;
+      finished = true;
+      clearTimeout(timeout);
+      if (img.naturalWidth > 1) {
+        setStatus("success");
+      } else {
+        setStatus("error");
+        setErrorMsg("返回了空白图片");
+      }
+    };
+
+    img.onerror = () => {
+      if (finished) return;
+      finished = true;
+      clearTimeout(timeout);
+      setStatus("error");
+      setErrorMsg("图片加载失败，请检查代理地址格式");
+    };
+
+    img.src = proxiedUrl;
+  };
+
+  if (!cdnProxyUrl.trim()) return null;
+
+  const proxiedUrl = cdnUrl(testImage, cdnProxyUrl.trim());
+
+  return (
+    <div className="mt-3 rounded-lg border border-adm-border bg-adm-input/50 p-3">
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={handleTest}
+          disabled={status === "testing"}
+          className="inline-flex items-center gap-1.5 rounded-lg bg-adm-primary px-3 py-1.5 text-xs font-medium text-adm-primary-text transition-opacity hover:opacity-80 disabled:opacity-50"
+        >
+          {status === "testing" ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <Zap className="h-3.5 w-3.5" />
+          )}
+          {status === "testing" ? "测试中..." : "测试代理"}
+        </button>
+        {status === "success" && (
+          <span className="inline-flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
+            <Check className="h-3.5 w-3.5" /> 代理可用
+          </span>
+        )}
+        {status === "error" && (
+          <span className="inline-flex items-center gap-1 text-xs text-red-500">
+            <XCircle className="h-3.5 w-3.5" /> {errorMsg}
+          </span>
+        )}
+      </div>
+      {status === "success" && (
+        <div className="mt-2 flex items-center gap-2">
+          <img
+            src={proxiedUrl}
+            alt="CDN test"
+            className="h-12 w-12 rounded border border-adm-border object-cover"
+          />
+          <span className="text-xs text-adm-text-tertiary">
+            通过 CDN 代理加载成功（{testImage}）
+          </span>
+        </div>
+      )}
+      <details className="mt-2">
+        <summary className="cursor-pointer text-xs text-adm-text-tertiary hover:text-adm-text-secondary">
+          查看代理 URL
+        </summary>
+        <code className="mt-1 block break-all rounded bg-adm-input px-2 py-1 text-[10px] text-adm-text-secondary">
+          {proxiedUrl}
+        </code>
+      </details>
+    </div>
+  );
+}
+
 export default function AdminSettings() {
   const router = useRouter();
   const [form, setForm] = useState<SiteSettings>(DEFAULTS);
@@ -343,6 +451,8 @@ export default function AdminSettings() {
       .finally(() => setLoading(false));
   }, [router, token]);
 
+  const refreshSettings = useSiteSettings((s) => s.refreshSettings);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!token) return;
@@ -360,6 +470,8 @@ export default function AdminSettings() {
     if (res.ok) {
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
+      // 立即刷新前端设置 store，使 CDN 代理等配置即时生效
+      refreshSettings();
     } else {
       const data = await res.json().catch(() => ({ message: "保存失败" }));
       alert(data.message || "保存失败");
@@ -596,8 +708,9 @@ export default function AdminSettings() {
             />
           </div>
           <p className="mt-1.5 text-xs text-adm-text-tertiary">
-            填写后前端所有图片将经过此代理加载（地址 + 原图URL）。留空则使用原图地址。例如百度图床代理格式：<code className="rounded bg-adm-input px-1 py-0.5 text-[11px]">https://gimg0.baidu.com/gimg/app=2001&n=0&g=0n&fmt=jpeg&src=</code>
+            填写后前端所有图片将经过此代理加载（地址 + 原图URL编码拼接）。留空则使用原图地址。支持格式：<code className="rounded bg-adm-input px-1 py-0.5 text-[11px]">https://gimg0.baidu.com/gimg/app=2001&n=0&g=0n&fmt=jpeg&src=</code>（百度图床）、<code className="rounded bg-adm-input px-1 py-0.5 text-[11px]">https://images.weserv.nl/?url=</code>（weserv）
           </p>
+          <CdnTestButton cdnProxyUrl={form.cdnProxyUrl} />
         </div>
 
         {/* Post display config */}

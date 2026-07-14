@@ -71,6 +71,17 @@ export default function ArticleListSidebar() {
       .finally(() => setLoadingMore(false));
   };
 
+  const collapse = () => {
+    setPage(1);
+    fetch(`${API_URL}/posts?type=article&page=1&limit=${PAGE_SIZE}`)
+      .then((res) => (res.ok ? res.json() : { data: [] }))
+      .then((data) => {
+        setArticles(data.data || []);
+        setHasMore((data.data || []).length >= PAGE_SIZE);
+      })
+      .catch(() => {});
+  };
+
   useEffect(() => {
     if (typeof window === "undefined" || window.innerWidth < 1024) return;
     const scrollRoot = document.getElementById("scroll-root");
@@ -175,15 +186,28 @@ export default function ArticleListSidebar() {
                 })}
               </ul>
             )}
-            {!loading && hasMore && (
-              <button
-                type="button"
-                onClick={loadMore}
-                disabled={loadingMore}
-                className="mt-2 w-full rounded-lg py-2 text-center text-xs text-wechat-nickname transition-colors hover:bg-wechat-hover disabled:opacity-50 dark:hover:bg-white/5"
-              >
-                {loadingMore ? "加载中..." : "加载更多"}
-              </button>
+            {!loading && (hasMore || page > 1) && (
+              <div className="mt-2 flex items-center gap-2">
+                {hasMore && (
+                  <button
+                    type="button"
+                    onClick={loadMore}
+                    disabled={loadingMore}
+                    className="flex-1 rounded-lg py-2 text-center text-xs text-wechat-nickname transition-colors hover:bg-wechat-hover disabled:opacity-50 dark:hover:bg-white/5"
+                  >
+                    {loadingMore ? "加载中..." : "加载更多"}
+                  </button>
+                )}
+                {page > 1 && (
+                  <button
+                    type="button"
+                    onClick={collapse}
+                    className={`rounded-lg py-2 text-center text-xs text-wechat-time transition-colors hover:bg-wechat-hover dark:hover:bg-white/5 ${hasMore ? "flex-1" : "w-full"}`}
+                  >
+                    收起
+                  </button>
+                )}
+              </div>
             )}
           </div>
         )}

@@ -1106,9 +1106,14 @@ img.inline-emoji.emoji-error {
 }
 .macos-enhanced-code code {
   background: transparent !important;
-  color: inherit !important;
   padding: 0 !important;
   font-size: inherit !important;
+  line-height: inherit !important;
+}
+/* 覆盖 .dark .article-content code { color: #ff6b6b !important; } 对代码块的误伤 */
+.dark .article-content pre.macos-enhanced-code code,
+.dark .article-content .macos-enhanced-code code {
+  color: inherit !important;
 }
 
 /* ── highlight.js 语法高亮：白天模式（GitHub 风格）── */
@@ -1117,21 +1122,21 @@ img.inline-emoji.emoji-error {
 .macos-enhanced-code .hljs-literal,
 .macos-enhanced-code .hljs-section,
 .macos-enhanced-code .hljs-link {
-  color: #d73a49;
+  color: #d73a49 !important;
 }
 .macos-enhanced-code .hljs-function .hljs-keyword {
-  color: #d73a49;
+  color: #d73a49 !important;
 }
 .macos-enhanced-code .hljs-string,
 .macos-enhanced-code .hljs-attr,
 .macos-enhanced-code .hljs-template-tag,
 .macos-enhanced-code .hljs-template-variable,
 .macos-enhanced-code .hljs-addition {
-  color: #032f62;
+  color: #032f62 !important;
 }
 .macos-enhanced-code .hljs-comment,
 .macos-enhanced-code .hljs-quote {
-  color: #6a737d;
+  color: #6a737d !important;
   font-style: italic;
 }
 .macos-enhanced-code .hljs-number,
@@ -1139,37 +1144,37 @@ img.inline-emoji.emoji-error {
 .macos-enhanced-code .hljs-bullet,
 .macos-enhanced-code .hljs-meta,
 .macos-enhanced-code .hljs-deletion {
-  color: #005cc5;
+  color: #005cc5 !important;
 }
 .macos-enhanced-code .hljs-title,
 .macos-enhanced-code .hljs-title.function_,
 .macos-enhanced-code .hljs-function .hljs-title {
-  color: #6f42c1;
+  color: #6f42c1 !important;
 }
 .macos-enhanced-code .hljs-title.class_,
 .macos-enhanced-code .hljs-type {
-  color: #22863a;
+  color: #22863a !important;
 }
 .macos-enhanced-code .hljs-built_in,
 .macos-enhanced-code .hljs-builtin-name,
 .macos-enhanced-code .hljs-class .hljs-title,
 .macos-enhanced-code .hljs-params {
-  color: #005cc5;
+  color: #005cc5 !important;
 }
 .macos-enhanced-code .hljs-variable,
 .macos-enhanced-code .hljs-name,
 .macos-enhanced-code .hljs-selector-id,
 .macos-enhanced-code .hljs-selector-class {
-  color: #e36209;
+  color: #e36209 !important;
 }
 .macos-enhanced-code .hljs-tag {
-  color: #22863a;
+  color: #22863a !important;
 }
 .macos-enhanced-code .hljs-attribute {
-  color: #005cc5;
+  color: #005cc5 !important;
 }
 .macos-enhanced-code .hljs-regexp {
-  color: #032f62;
+  color: #032f62 !important;
 }
 .macos-enhanced-code .hljs-emphasis {
   font-style: italic;
@@ -1184,21 +1189,21 @@ img.inline-emoji.emoji-error {
 .dark .macos-enhanced-code .hljs-literal,
 .dark .macos-enhanced-code .hljs-section,
 .dark .macos-enhanced-code .hljs-link {
-  color: #bb9af7;
+  color: #bb9af7 !important;
 }
 .dark .macos-enhanced-code .hljs-function .hljs-keyword {
-  color: #bb9af7;
+  color: #bb9af7 !important;
 }
 .dark .macos-enhanced-code .hljs-string,
 .dark .macos-enhanced-code .hljs-attr,
 .dark .macos-enhanced-code .hljs-template-tag,
 .dark .macos-enhanced-code .hljs-template-variable,
 .dark .macos-enhanced-code .hljs-addition {
-  color: #9ece6a;
+  color: #9ece6a !important;
 }
 .dark .macos-enhanced-code .hljs-comment,
 .dark .macos-enhanced-code .hljs-quote {
-  color: #565f89;
+  color: #565f89 !important;
   font-style: italic;
 }
 .dark .macos-enhanced-code .hljs-number,
@@ -1206,37 +1211,37 @@ img.inline-emoji.emoji-error {
 .dark .macos-enhanced-code .hljs-bullet,
 .dark .macos-enhanced-code .hljs-meta,
 .dark .macos-enhanced-code .hljs-deletion {
-  color: #ff9e64;
+  color: #ff9e64 !important;
 }
 .dark .macos-enhanced-code .hljs-title,
 .dark .macos-enhanced-code .hljs-title.function_,
 .dark .macos-enhanced-code .hljs-function .hljs-title {
-  color: #7aa2f7;
+  color: #7aa2f7 !important;
 }
 .dark .macos-enhanced-code .hljs-title.class_,
 .dark .macos-enhanced-code .hljs-type {
-  color: #2ac3de;
+  color: #2ac3de !important;
 }
 .dark .macos-enhanced-code .hljs-built_in,
 .dark .macos-enhanced-code .hljs-builtin-name,
 .dark .macos-enhanced-code .hljs-class .hljs-title,
 .dark .macos-enhanced-code .hljs-params {
-  color: #2ac3de;
+  color: #2ac3de !important;
 }
 .dark .macos-enhanced-code .hljs-variable,
 .dark .macos-enhanced-code .hljs-name,
 .dark .macos-enhanced-code .hljs-selector-id,
 .dark .macos-enhanced-code .hljs-selector-class {
-  color: #e0af68;
+  color: #e0af68 !important;
 }
 .dark .macos-enhanced-code .hljs-tag {
-  color: #f7768e;
+  color: #f7768e !important;
 }
 .dark .macos-enhanced-code .hljs-attribute {
-  color: #bb9af7;
+  color: #bb9af7 !important;
 }
 .dark .macos-enhanced-code .hljs-regexp {
-  color: #b4f9f8;
+  color: #b4f9f8 !important;
 }
 
 /* 夜间模式：语法高亮 span 提亮 */

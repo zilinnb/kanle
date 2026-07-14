@@ -217,6 +217,23 @@ export default function DoubanSidebar({
     setStatusFilter("all");
   };
 
+  const collapse = () => {
+    setLoading(true);
+    fetch(`${API_URL}/douban?type=${activeTab}&status=${statusFilter}&page=1&limit=${PAGE_LIMIT}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((d: PaginatedDouban | null) => {
+        if (!d) return;
+        setTypeCounts(d.typeCounts);
+        setStatusCounts(d.statusCounts);
+        setSyncedAt(d.syncedAt);
+        setHasMore(d.pagination.hasMore);
+        setPage(d.pagination.page);
+        setItems(d.data);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  };
+
   const totalCount = typeCounts ? typeCounts.movie + typeCounts.book + typeCounts.music : 0;
   const isEmpty = !loading && totalCount === 0;
 
@@ -346,6 +363,29 @@ export default function DoubanSidebar({
           ))}
           {loadingMore && <DoubanSkeleton count={3} />}
         </ul>
+      )}
+      {!loading && (hasMore || page > 1) && (
+        <div className="mt-1 flex items-center gap-2">
+          {hasMore && (
+            <button
+              type="button"
+              onClick={loadMore}
+              disabled={loadingMore}
+              className="flex-1 rounded-lg py-2 text-center text-xs text-wechat-nickname transition-colors hover:bg-wechat-hover disabled:opacity-50 dark:hover:bg-white/5"
+            >
+              {loadingMore ? "加载中..." : "加载更多"}
+            </button>
+          )}
+          {page > 1 && (
+            <button
+              type="button"
+              onClick={collapse}
+              className={`rounded-lg py-2 text-center text-xs text-wechat-time transition-colors hover:bg-wechat-hover dark:hover:bg-white/5 ${hasMore ? "flex-1" : "w-full"}`}
+            >
+              收起
+            </button>
+          )}
+        </div>
       )}
       <div ref={sentinelRef} className="h-1" />
     </>

@@ -152,6 +152,17 @@ export default function Sidebar({ owner }: SidebarProps) {
     }
   }, [friendsPage, friendsHasMore]);
 
+  const collapseFriends = useCallback(() => {
+    setFriendsPage(1);
+    fetch(`${API_URL}/friends?page=1&limit=5`)
+      .then((res) => (res.ok ? res.json() : { data: [], pagination: { hasMore: false } }))
+      .then((data: { data: FriendLink[]; pagination?: { hasMore: boolean } }) => {
+        setFriendLinks(data.data || []);
+        setFriendsHasMore(data.pagination?.hasMore || false);
+      })
+      .catch(() => {});
+  }, []);
+
   useEffect(() => {
     fetch(`${API_URL}/settings`)
       .then((res) => (res.ok ? res.json() : null))
@@ -492,15 +503,26 @@ export default function Sidebar({ owner }: SidebarProps) {
                       </div>
                     </li>
                   ))}
-                {friendsHasMore && !friendsLoadingMore && (
-                  <li>
-                    <button
-                      type="button"
-                      onClick={loadMoreFriends}
-                      className="w-full rounded-lg py-2 text-center text-xs text-wechat-nickname transition-colors hover:bg-wechat-hover dark:hover:bg-white/5"
-                    >
-                      加载更多
-                    </button>
+                {(friendsHasMore || friendsPage > 1) && !friendsLoadingMore && (
+                  <li className="mt-1 flex items-center gap-2">
+                    {friendsHasMore && (
+                      <button
+                        type="button"
+                        onClick={loadMoreFriends}
+                        className="flex-1 rounded-lg py-2 text-center text-xs text-wechat-nickname transition-colors hover:bg-wechat-hover dark:hover:bg-white/5"
+                      >
+                        加载更多
+                      </button>
+                    )}
+                    {friendsPage > 1 && (
+                      <button
+                        type="button"
+                        onClick={collapseFriends}
+                        className={`rounded-lg py-2 text-center text-xs text-wechat-time transition-colors hover:bg-wechat-hover dark:hover:bg-white/5 ${friendsHasMore ? "flex-1" : "w-full"}`}
+                      >
+                        收起
+                      </button>
+                    )}
                   </li>
                 )}
               </ul>

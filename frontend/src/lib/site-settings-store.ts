@@ -32,6 +32,8 @@ interface SiteSettingsState {
   cdnProxyUrl: string;
   loaded: boolean;
   fetchSettings: () => Promise<void>;
+  /** 强制重新拉取设置（忽略 loaded 缓存），用于管理员保存后立即生效 */
+  refreshSettings: () => Promise<void>;
 }
 
 const DEFAULT_SITE_NAME = "朋友圈博客";
@@ -128,6 +130,10 @@ export const useSiteSettings = create<SiteSettingsState>((set, get) => ({
     } catch {
       set({ loaded: true });
     }
+  },
+  refreshSettings: async () => {
+    set({ loaded: false });
+    await get().fetchSettings();
   },
 }));
 

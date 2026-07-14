@@ -168,6 +168,20 @@ export default function AdminNotifications({ variant = "mobile" }: AdminNotifica
     }
   };
 
+  const collapse = () => {
+    if (!user?.token) return;
+    setPage(1);
+    fetch(`${API_URL}/notifications?page=1&limit=5`, {
+      headers: { Authorization: `Bearer ${user.token}` },
+    })
+      .then((res) => (res.ok ? res.json() : { data: [], pagination: { hasMore: false } }))
+      .then((data) => {
+        setItems(Array.isArray(data.data) ? data.data : []);
+        setHasMore(data.pagination?.hasMore || false);
+      })
+      .catch(() => {});
+  };
+
   // IntersectionObserver：滚动到底部自动加载更多
   useEffect(() => {
     if (!sentinelRef.current) return;
@@ -384,8 +398,29 @@ export default function AdminNotifications({ variant = "mobile" }: AdminNotifica
             );
           })}
           {loadingMore && <li><NotificationSkeleton variant="sidebar" /></li>}
-          <div ref={sentinelRef} className="h-1" />
         </ul>
+        {(hasMore || page > 1) && !loadingMore && (
+          <div className="mt-1 flex items-center gap-2">
+            {hasMore && (
+              <button
+                type="button"
+                onClick={loadMore}
+                className="flex-1 rounded-lg py-2 text-center text-xs text-wechat-nickname transition-colors hover:bg-wechat-hover dark:hover:bg-white/5"
+              >
+                加载更多
+              </button>
+            )}
+            {page > 1 && (
+              <button
+                type="button"
+                onClick={collapse}
+                className={`rounded-lg py-2 text-center text-xs text-wechat-time transition-colors hover:bg-wechat-hover dark:hover:bg-white/5 ${hasMore ? "flex-1" : "w-full"}`}
+              >
+                收起
+              </button>
+            )}
+          </div>
+        )}
       </div>
     );
   }
