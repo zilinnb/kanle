@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useMemo } from "react";
 import { Play } from "lucide-react";
 import type { PostVideo } from "@/lib/mock-data";
 import { toAbsoluteUrl } from "@/lib/upload";
+import { useAutoplayOnVisible } from "@/lib/use-autoplay-on-visible";
 import VideoPlayerModal from "./VideoPlayerModal";
 import CustomVideoPlayer from "./CustomVideoPlayer";
 
@@ -18,20 +19,6 @@ const PLATFORM_LABELS: Record<string, string> = {
   upload: "上传",
   url: "直链",
 };
-
-/** 增强 B 站 iframe src：添加 high_quality=1（完整控件）、autoplay=0（不自动播放）、danmaku=0（关弹幕） */
-function enhanceBilibiliSrc(rawSrc: string): string {
-  const safeSrc = rawSrc.startsWith("//") ? `https:${rawSrc}` : rawSrc;
-  try {
-    const url = new URL(safeSrc);
-    if (!url.searchParams.has("high_quality")) url.searchParams.set("high_quality", "1");
-    if (!url.searchParams.has("danmaku")) url.searchParams.set("danmaku", "0");
-    if (!url.searchParams.has("autoplay")) url.searchParams.set("autoplay", "0");
-    return url.toString();
-  } catch {
-    return safeSrc;
-  }
-}
 
 /** 格式化点赞数 */
 function formatLike(n?: number): string | null {
@@ -122,75 +109,26 @@ export default function VideoPlayer({ video, postId }: VideoPlayerProps) {
     window.dispatchEvent(new CustomEvent("post-published"));
   }, []);
 
-  // ── B站嵌入：iframe ──
+  // ── B站嵌入：iframe（进入视口自动播放，离开暂停）──
   if (video.embedCode) {
     const srcMatch = video.embedCode.match(/src=["']([^"']+)["']/i);
     const src = srcMatch?.[1] || "";
-    const enhancedSrc = enhanceBilibiliSrc(src);
-    const isBilibili = /bilibili\.com|player\.bilibili/i.test(enhancedSrc);
+    const isBilibili = /bilibili\.com|player\.bilibili/i.test(src);
     if (!isBilibili) return null;
 
-    return (
-      <div className="mt-2 max-w-[340px] md:max-w-[500px]">
-        <div
-          className="relative w-full overflow-hidden rounded-lg bg-black"
-          style={{ paddingBottom: "56.25%" }}
-        >
-          <iframe
-            src={enhancedSrc}
-            frameBorder="0"
-            className="absolute inset-0 h-full w-full"
-            allow="fullscreen; encrypted-media; picture-in-picture"
-          />
-        </div>
-        {(video.title || video.author) && (
-          <div className="mt-1.5 flex items-center gap-1.5 text-[12px] text-wechat-time">
-            <span className="rounded bg-wechat-bubble px-1 py-0.5 text-[10px] dark:bg-white/10">
-              B站
-            </span>
-            {video.title && <span className="truncate text-wechat-text">{video.title}</span>}
-            {video.author && <span className="shrink-0">· {video.author}</span>}
-          </div>
-        )}
-      </div>
-    );
+    return <BilibiliEmbed rawSrc={src} video={video} />;
   }
 
-  // ── 解析视频：封面缩略图 + 播放按钮 → 点击打开弹窗 ──
+  // ── 解析视频：尝试内联自动播放，URL 失效则回退到封面+弹窗 ──
   if (videoData.source === "parse") {
-    const cover = videoData.cover ? toAbsoluteUrl(videoData.cover) : undefined;
     return (
       <>
-        <div className="mt-2 max-w-[300px] md:max-w-[360px]">
-          <button
-            type="button"
-            onClick={() => setModalOpen(true)}
-            className="relative block w-full overflow-hidden rounded-lg bg-black select-none"
-            style={{ WebkitTouchCallout: "none" }}
-          >
-            {cover ? (
-              <img
-                src={cover}
-                alt={videoData.title || "视频封面"}
-                className="w-full object-cover"
-                style={{ aspectRatio: "16 / 9" }}
-              />
-            ) : (
-              <div
-                className="flex items-center justify-center bg-black/80"
-                style={{ aspectRatio: "16 / 9" }}
-              >
-                <Play className="h-8 w-8 text-white/50 md:h-10 md:w-10" />
-              </div>
-            )}
-            <div className="absolute inset-0 flex items-center justify-center bg-black/10 transition-colors hover:bg-black/20">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-black/50 backdrop-blur-sm ring-1 ring-white/20 md:h-14 md:w-14">
-                <Play className="h-5 w-5 fill-white text-white ml-0.5 md:h-6 md:w-6" />
-              </div>
-            </div>
-          </button>
-          <VideoInfoBar video={videoData} />
-        </div>
+        <ParsedInlineVideo
+          video={videoData}
+          postId={postId}
+          onOpenModal={() => setModalOpen(true)}
+          onRefreshed={handleRefreshed}
+        />
         {modalOpen && (
           <VideoPlayerModal
             video={videoData}
@@ -211,13 +149,131 @@ export default function VideoPlayer({ video, postId }: VideoPlayerProps) {
 function InlineVideo({ video }: { video: PostVideo }) {
   const directUrl = toAbsoluteUrl(video.url || "");
   const cover = video.cover ? toAbsoluteUrl(video.cover) : undefined;
+  const containerRef = useRef<HTMLDivElement>(null);
+  useAutoplayOnVisible(containerRef);
 
   return (
-    <div className="mt-2 max-w-[300px]">
+    <div ref={containerRef} className="mt-2 max-w-[300px]">
       <CustomVideoPlayer
         src={directUrl}
         poster={cover}
         autoPlay={false}
+        className="rounded-lg"
+      />
+      <VideoInfoBar video={video} />
+    </div>
+  );
+}
+
+/** B 站嵌入：进入视口时加载带 autoplay=1 的 iframe，离开时暂停（重新加载 autoplay=0） */
+function BilibiliEmbed({ rawSrc, video }: { rawSrc: string; video: PostVideo }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const { visible } = useAutoplayOnVisible(containerRef, { threshold: 0.5 });
+
+  // 进入视口：autoplay=1 + muted=1；离开视口：autoplay=0
+  const src = useMemo(() => {
+    const base = rawSrc.startsWith("//") ? `https:${rawSrc}` : rawSrc;
+    try {
+      const url = new URL(base);
+      url.searchParams.set("high_quality", "1");
+      url.searchParams.set("danmaku", "0");
+      url.searchParams.set("autoplay", visible ? "1" : "0");
+      url.searchParams.set("muted", visible ? "1" : "0");
+      return url.toString();
+    } catch {
+      return base;
+    }
+  }, [rawSrc, visible]);
+
+  return (
+    <div ref={containerRef} className="mt-2 max-w-[340px] md:max-w-[500px]">
+      <div
+        className="relative w-full overflow-hidden rounded-lg bg-black"
+        style={{ paddingBottom: "56.25%" }}
+      >
+        {visible && (
+          <iframe
+            src={src}
+            frameBorder="0"
+            className="absolute inset-0 h-full w-full"
+            allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+          />
+        )}
+      </div>
+      {(video.title || video.author) && (
+        <div className="mt-1.5 flex items-center gap-1.5 text-[12px] text-wechat-time">
+          <span className="rounded bg-wechat-bubble px-1 py-0.5 text-[10px] dark:bg-white/10">
+            B站
+          </span>
+          {video.title && <span className="truncate text-wechat-text">{video.title}</span>}
+          {video.author && <span className="shrink-0">· {video.author}</span>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * 解析视频：进入视口时用已有 URL 尝试内联自动播放（静音）。
+ * 如果 URL 过期加载失败，自动回退到封面缩略图 + 播放按钮，点击打开弹窗重新解析。
+ */
+interface ParsedInlineVideoProps {
+  video: PostVideo;
+  postId?: string;
+  onOpenModal: () => void;
+  onRefreshed: (fresh: PostVideo) => void;
+}
+
+function ParsedInlineVideo({ video, postId, onOpenModal, onRefreshed }: ParsedInlineVideoProps) {
+  const directUrl = toAbsoluteUrl(video.url || "");
+  const cover = video.cover ? toAbsoluteUrl(video.cover) : undefined;
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [fallbackToThumbnail, setFallbackToThumbnail] = useState(false);
+  useAutoplayOnVisible(containerRef);
+
+  // URL 失效：回退到封面缩略图 + 播放按钮
+  if (fallbackToThumbnail || !directUrl) {
+    return (
+      <div ref={containerRef} className="mt-2 max-w-[300px] md:max-w-[360px]">
+        <button
+          type="button"
+          onClick={onOpenModal}
+          className="relative block w-full overflow-hidden rounded-lg bg-black select-none"
+          style={{ WebkitTouchCallout: "none" }}
+        >
+          {cover ? (
+            <img
+              src={cover}
+              alt={video.title || "视频封面"}
+              className="w-full object-cover"
+              style={{ aspectRatio: "16 / 9" }}
+            />
+          ) : (
+            <div
+              className="flex items-center justify-center bg-black/80"
+              style={{ aspectRatio: "16 / 9" }}
+            >
+              <Play className="h-8 w-8 text-white/50 md:h-10 md:w-10" />
+            </div>
+          )}
+          <div className="absolute inset-0 flex items-center justify-center bg-black/10 transition-colors hover:bg-black/20">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-black/50 backdrop-blur-sm ring-1 ring-white/20 md:h-14 md:w-14">
+              <Play className="h-5 w-5 fill-white text-white ml-0.5 md:h-6 md:w-6" />
+            </div>
+          </div>
+        </button>
+        <VideoInfoBar video={video} />
+      </div>
+    );
+  }
+
+  return (
+    <div ref={containerRef} className="mt-2 max-w-[300px] md:max-w-[360px]">
+      <CustomVideoPlayer
+        src={directUrl}
+        poster={cover}
+        autoPlay={false}
+        onError={() => setFallbackToThumbnail(true)}
         className="rounded-lg"
       />
       <VideoInfoBar video={video} />
