@@ -646,7 +646,7 @@ body::-webkit-scrollbar {
   padding: 0.1em 0.3em;
   border-radius: 3px;
   font-size: 0.9em;
-  font-family: 'Fira Code', Consolas, ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: 'JetBrains Mono', 'Fira Code', Consolas, ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
 }
 .rich-editor-area pre,
 .rich-content pre {
@@ -655,7 +655,9 @@ body::-webkit-scrollbar {
   border-radius: 6px;
   overflow-x: auto;
   margin: 0.5em 0;
-  font-family: 'Fira Code', Consolas, ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: 'JetBrains Mono', 'Fira Code', Consolas, ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
+  font-size: 14px;
+  line-height: 1.5;
 }
 .rich-editor-area pre code,
 .rich-content pre code {
@@ -838,7 +840,7 @@ img.inline-emoji.emoji-error {
   padding: 0.15em 0.35em;
   border-radius: 3px;
   font-size: 0.875em;
-  font-family: 'Fira Code', Consolas, ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: 'JetBrains Mono', 'Fira Code', Consolas, ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
   word-break: break-all;
 }
 .dark .article-editor-area code:not(.hljs),
@@ -848,43 +850,63 @@ img.inline-emoji.emoji-error {
   background: rgba(239, 68, 68, 0.15) !important;
   color: #ff6b6b !important;
 }
-/* pre 内的 code 不受内联红色影响 — 用 !important 彻底覆盖 */
+/* pre 内的 code 不受内联红色影响 — 用 !important + 更高特异度彻底覆盖 */
+/* 关键：code.hljs 和 code[class] 选择器增加特异度，确保压过 code:not(.hljs) */
 .article-editor-area pre code,
 .article-content pre code,
 .rich-editor-area pre code,
-.rich-content pre code {
+.rich-content pre code,
+.article-editor-area pre code.hljs,
+.article-content pre code.hljs,
+.article-editor-area pre code[class],
+.article-content pre code[class] {
   background: transparent !important;
   color: inherit !important;
   padding: 0 !important;
   font-size: 0.875em !important;
-  line-height: 1.6 !important;
+  line-height: 1.5 !important;
   word-break: normal !important;
   border-radius: 0 !important;
 }
+/* 夜间模式：pre code 覆盖（特异度必须高于 code:not(.hljs)） */
 .dark .article-editor-area pre code,
 .dark .article-content pre code,
 .dark .rich-editor-area pre code,
-.dark .rich-content pre code {
+.dark .rich-content pre code,
+.dark .article-editor-area pre code.hljs,
+.dark .article-content pre code.hljs,
+.dark .rich-editor-area pre code.hljs,
+.dark .rich-content pre code.hljs,
+.dark .article-editor-area pre code[class],
+.dark .article-content pre code[class],
+.dark .rich-editor-area pre code[class],
+.dark .rich-content pre code[class],
+.dark .macos-enhanced-code code,
+.dark .macos-enhanced-code code.hljs,
+.dark .macos-code-content code,
+.dark .macos-code-content code.hljs {
   background: transparent !important;
   color: inherit !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
 }
 
-/* ── 代码块：扁平化风格（参考 hoothin code-highlighter）── */
-/* 统一字体：Fira Code 带连字，Consolas 回退 */
+/* ── 代码块：扁平化风格（1:1 参考 hoothin code-highlighter）── */
+/* 字体：JetBrains Mono 优先，Fira Code 回退 */
 .macos-code-wrapper {
   margin: 1em 0;
 }
 .macos-code-container {
-  border-radius: 6px;
+  border-radius: 8px;
   overflow: hidden;
-  border: 1px solid #e0e0e3;
-  background: #fafafa;
+  border: 1px solid #e1e4e8;
+  background: #f6f8fa;
   position: relative;
   box-shadow: none;
 }
 .macos-code-container.is-selected {
   border-color: #3b82f6;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.12);
 }
 /* 标题栏：极简，无红绿灯 */
 .macos-code-header {
@@ -892,8 +914,8 @@ img.inline-emoji.emoji-error {
   align-items: center;
   gap: 8px;
   padding: 6px 12px;
-  background: #f5f5f7;
-  border-bottom: 1px solid #e8e8eb;
+  background: #f0f1f3;
+  border-bottom: 1px solid #e1e4e8;
   user-select: none;
 }
 .macos-lang-select {
@@ -903,7 +925,7 @@ img.inline-emoji.emoji-error {
   border: none;
   outline: none;
   cursor: pointer;
-  font-family: inherit;
+  font-family: 'JetBrains Mono', 'Fira Code', Consolas, ui-monospace, monospace;
   padding: 2px 4px;
   border-radius: 4px;
   transition: background 0.15s;
@@ -943,13 +965,13 @@ img.inline-emoji.emoji-error {
 }
 .macos-code-content {
   margin: 0 !important;
-  padding: 14px 16px !important;
-  background: #fafafa !important;
+  padding: 12px 14px !important;
+  background: #f6f8fa !important;
   border-radius: 0 !important;
   overflow-x: auto;
-  font-family: 'Fira Code', Consolas, ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 13px;
-  line-height: 1.7;
+  font-family: 'JetBrains Mono', 'Fira Code', Consolas, ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
+  font-size: 14px;
+  line-height: 1.5;
   color: #383a42;
   -webkit-font-smoothing: antialiased;
   font-variant-ligatures: contextual;
@@ -961,15 +983,15 @@ img.inline-emoji.emoji-error {
   font-size: inherit !important;
 }
 
-/* ── 夜间模式：代码块 ── */
+/* ── 夜间模式：代码块（hoothin Dracula/Monokai 风格）── */
 .dark .macos-code-container {
-  background: #1e2127;
-  border-color: #2c2f36;
+  background: #0d1117;
+  border-color: #1f2428;
   box-shadow: none;
 }
 .dark .macos-code-header {
-  background: #1a1d23;
-  border-bottom-color: #2c2f36;
+  background: #161b22;
+  border-bottom-color: #1f2428;
 }
 .dark .macos-lang-select {
   color: #6b7280;
@@ -978,7 +1000,7 @@ img.inline-emoji.emoji-error {
   background: rgba(255, 255, 255, 0.06);
 }
 .dark .macos-lang-select option {
-  background: #1e2127;
+  background: #0d1117;
   color: #d4d4d4;
 }
 .dark .macos-copy-btn {
@@ -989,22 +1011,22 @@ img.inline-emoji.emoji-error {
   color: #d4d4d4;
 }
 .dark .macos-code-content {
-  background: #1e2127 !important;
-  color: #abb2bf !important;
+  background: #0d1117 !important;
+  color: #f8f8f2 !important;
 }
 
-/* ── 文章详情页：增强 pre 元素（扁平化风格）── */
+/* ── 文章详情页：增强 pre 元素（扁平化风格，1:1 hoothin）── */
 .macos-enhanced-pre {
   margin: 1em 0;
-  border-radius: 6px;
+  border-radius: 8px;
   overflow: hidden;
-  border: 1px solid #e0e0e3;
-  background: #fafafa;
+  border: 1px solid #e1e4e8;
+  background: #f6f8fa;
   box-shadow: none;
 }
 .dark .macos-enhanced-pre {
-  background: #1e2127;
-  border-color: #2c2f36;
+  background: #0d1117;
+  border-color: #1f2428;
   box-shadow: none;
 }
 .macos-enhanced-header {
@@ -1012,18 +1034,18 @@ img.inline-emoji.emoji-error {
   align-items: center;
   gap: 8px;
   padding: 6px 12px;
-  background: #f5f5f7;
-  border-bottom: 1px solid #e8e8eb;
+  background: #f0f1f3;
+  border-bottom: 1px solid #e1e4e8;
   user-select: none;
 }
 .dark .macos-enhanced-header {
-  background: #1a1d23;
-  border-bottom-color: #2c2f36;
+  background: #161b22;
+  border-bottom-color: #1f2428;
 }
 .macos-enhanced-lang {
   font-size: 12px;
   color: #888;
-  font-family: 'Fira Code', Consolas, ui-monospace, monospace;
+  font-family: 'JetBrains Mono', 'Fira Code', Consolas, ui-monospace, monospace;
 }
 .dark .macos-enhanced-lang {
   color: #6b7280;
@@ -1060,38 +1082,38 @@ img.inline-emoji.emoji-error {
 }
 .macos-line-numbers {
   flex-shrink: 0;
-  padding: 14px 8px 14px 12px;
+  padding: 12px 8px 12px 12px;
   text-align: right;
-  background: #f5f5f7;
-  color: #c5c5c5;
-  font-family: 'Fira Code', Consolas, ui-monospace, monospace;
-  font-size: 13px;
-  line-height: 1.7;
+  background: #f0f1f3;
+  color: #b0b0b0;
+  font-family: 'JetBrains Mono', 'Fira Code', Consolas, ui-monospace, monospace;
+  font-size: 14px;
+  line-height: 1.5;
   user-select: none;
   min-width: 2.5em;
   white-space: pre;
 }
 .dark .macos-line-numbers {
-  background: #1a1d23;
+  background: #161b22;
   color: #4b5260;
 }
 .macos-enhanced-code {
   flex: 1;
   margin: 0 !important;
-  padding: 14px 16px !important;
-  background: #fafafa !important;
+  padding: 12px 14px !important;
+  background: #f6f8fa !important;
   border-radius: 0 !important;
   overflow-x: auto;
-  font-family: 'Fira Code', Consolas, ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 13px;
-  line-height: 1.7;
+  font-family: 'JetBrains Mono', 'Fira Code', Consolas, ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
+  font-size: 14px;
+  line-height: 1.5;
   color: #383a42;
   -webkit-font-smoothing: antialiased;
   font-variant-ligatures: contextual;
 }
 .dark .macos-enhanced-code {
-  background: #1e2127 !important;
-  color: #abb2bf !important;
+  background: #0d1117 !important;
+  color: #f8f8f2 !important;
 }
 .macos-enhanced-code code {
   background: transparent !important;
@@ -1100,35 +1122,57 @@ img.inline-emoji.emoji-error {
   line-height: inherit !important;
   color: inherit !important;
 }
-/* 彻底覆盖内联代码样式对 pre code 的污染 */
+/* 彻底覆盖内联代码样式对 pre code 的污染（高特异度） */
 .dark .article-content pre code,
+.dark .article-content pre code.hljs,
 .dark .article-editor-area pre code,
+.dark .article-editor-area pre code.hljs,
+.dark .rich-editor-area pre code,
+.dark .rich-editor-area pre code.hljs,
+.dark .rich-content pre code,
+.dark .rich-content pre code.hljs,
 .dark .macos-enhanced-code code,
-.dark .macos-code-content code {
+.dark .macos-enhanced-code code.hljs,
+.dark .macos-code-content code,
+.dark .macos-code-content code.hljs {
   background: transparent !important;
   color: inherit !important;
 }
 
 /* ── highlight.js 语法高亮：白天模式（GitHub 风格）── */
+/* 同时覆盖文章详情(.macos-enhanced-code)和编辑器(.macos-code-content) */
 .macos-enhanced-code .hljs-keyword,
 .macos-enhanced-code .hljs-selector-tag,
 .macos-enhanced-code .hljs-literal,
 .macos-enhanced-code .hljs-section,
-.macos-enhanced-code .hljs-link {
+.macos-enhanced-code .hljs-link,
+.macos-code-content .hljs-keyword,
+.macos-code-content .hljs-selector-tag,
+.macos-code-content .hljs-literal,
+.macos-code-content .hljs-section,
+.macos-code-content .hljs-link {
   color: #d73a49 !important;
 }
-.macos-enhanced-code .hljs-function .hljs-keyword {
+.macos-enhanced-code .hljs-function .hljs-keyword,
+.macos-code-content .hljs-function .hljs-keyword {
   color: #d73a49 !important;
 }
 .macos-enhanced-code .hljs-string,
 .macos-enhanced-code .hljs-attr,
 .macos-enhanced-code .hljs-template-tag,
 .macos-enhanced-code .hljs-template-variable,
-.macos-enhanced-code .hljs-addition {
+.macos-enhanced-code .hljs-addition,
+.macos-code-content .hljs-string,
+.macos-code-content .hljs-attr,
+.macos-code-content .hljs-template-tag,
+.macos-code-content .hljs-template-variable,
+.macos-code-content .hljs-addition {
   color: #032f62 !important;
 }
 .macos-enhanced-code .hljs-comment,
-.macos-enhanced-code .hljs-quote {
+.macos-enhanced-code .hljs-quote,
+.macos-code-content .hljs-comment,
+.macos-code-content .hljs-quote {
   color: #6a737d !important;
   font-style: italic;
 }
@@ -1136,113 +1180,170 @@ img.inline-emoji.emoji-error {
 .macos-enhanced-code .hljs-symbol,
 .macos-enhanced-code .hljs-bullet,
 .macos-enhanced-code .hljs-meta,
-.macos-enhanced-code .hljs-deletion {
+.macos-enhanced-code .hljs-deletion,
+.macos-code-content .hljs-number,
+.macos-code-content .hljs-symbol,
+.macos-code-content .hljs-bullet,
+.macos-code-content .hljs-meta,
+.macos-code-content .hljs-deletion {
   color: #005cc5 !important;
 }
 .macos-enhanced-code .hljs-title,
 .macos-enhanced-code .hljs-title.function_,
-.macos-enhanced-code .hljs-function .hljs-title {
+.macos-enhanced-code .hljs-function .hljs-title,
+.macos-code-content .hljs-title,
+.macos-code-content .hljs-title.function_,
+.macos-code-content .hljs-function .hljs-title {
   color: #6f42c1 !important;
 }
 .macos-enhanced-code .hljs-title.class_,
-.macos-enhanced-code .hljs-type {
+.macos-enhanced-code .hljs-type,
+.macos-code-content .hljs-title.class_,
+.macos-code-content .hljs-type {
   color: #22863a !important;
 }
 .macos-enhanced-code .hljs-built_in,
 .macos-enhanced-code .hljs-builtin-name,
 .macos-enhanced-code .hljs-class .hljs-title,
-.macos-enhanced-code .hljs-params {
+.macos-enhanced-code .hljs-params,
+.macos-code-content .hljs-built_in,
+.macos-code-content .hljs-builtin-name,
+.macos-code-content .hljs-class .hljs-title,
+.macos-code-content .hljs-params {
   color: #005cc5 !important;
 }
 .macos-enhanced-code .hljs-variable,
 .macos-enhanced-code .hljs-name,
 .macos-enhanced-code .hljs-selector-id,
-.macos-enhanced-code .hljs-selector-class {
+.macos-enhanced-code .hljs-selector-class,
+.macos-code-content .hljs-variable,
+.macos-code-content .hljs-name,
+.macos-code-content .hljs-selector-id,
+.macos-code-content .hljs-selector-class {
   color: #e36209 !important;
 }
-.macos-enhanced-code .hljs-tag {
+.macos-enhanced-code .hljs-tag,
+.macos-code-content .hljs-tag {
   color: #22863a !important;
 }
-.macos-enhanced-code .hljs-attribute {
+.macos-enhanced-code .hljs-attribute,
+.macos-code-content .hljs-attribute {
   color: #005cc5 !important;
 }
-.macos-enhanced-code .hljs-regexp {
+.macos-enhanced-code .hljs-regexp,
+.macos-code-content .hljs-regexp {
   color: #032f62 !important;
 }
-.macos-enhanced-code .hljs-emphasis {
+.macos-enhanced-code .hljs-emphasis,
+.macos-code-content .hljs-emphasis {
   font-style: italic;
 }
-.macos-enhanced-code .hljs-strong {
+.macos-enhanced-code .hljs-strong,
+.macos-code-content .hljs-strong {
   font-weight: 700;
 }
 
-/* ── highlight.js 语法高亮：夜间模式（Tokyo Night 风格）── */
+/* ── highlight.js 语法高亮：夜间模式（hoothin Monokai/Dracula 风格）── */
 .dark .macos-enhanced-code .hljs-keyword,
 .dark .macos-enhanced-code .hljs-selector-tag,
 .dark .macos-enhanced-code .hljs-literal,
 .dark .macos-enhanced-code .hljs-section,
-.dark .macos-enhanced-code .hljs-link {
-  color: #bb9af7 !important;
+.dark .macos-enhanced-code .hljs-link,
+.dark .macos-code-content .hljs-keyword,
+.dark .macos-code-content .hljs-selector-tag,
+.dark .macos-code-content .hljs-literal,
+.dark .macos-code-content .hljs-section,
+.dark .macos-code-content .hljs-link {
+  color: #66d9ef !important;
 }
-.dark .macos-enhanced-code .hljs-function .hljs-keyword {
-  color: #bb9af7 !important;
+.dark .macos-enhanced-code .hljs-function .hljs-keyword,
+.dark .macos-code-content .hljs-function .hljs-keyword {
+  color: #66d9ef !important;
 }
 .dark .macos-enhanced-code .hljs-string,
 .dark .macos-enhanced-code .hljs-attr,
 .dark .macos-enhanced-code .hljs-template-tag,
 .dark .macos-enhanced-code .hljs-template-variable,
-.dark .macos-enhanced-code .hljs-addition {
-  color: #9ece6a !important;
+.dark .macos-enhanced-code .hljs-addition,
+.dark .macos-code-content .hljs-string,
+.dark .macos-code-content .hljs-attr,
+.dark .macos-code-content .hljs-template-tag,
+.dark .macos-code-content .hljs-template-variable,
+.dark .macos-code-content .hljs-addition {
+  color: #e6db74 !important;
 }
 .dark .macos-enhanced-code .hljs-comment,
-.dark .macos-enhanced-code .hljs-quote {
-  color: #565f89 !important;
+.dark .macos-enhanced-code .hljs-quote,
+.dark .macos-code-content .hljs-comment,
+.dark .macos-code-content .hljs-quote {
+  color: #6272a4 !important;
   font-style: italic;
 }
 .dark .macos-enhanced-code .hljs-number,
 .dark .macos-enhanced-code .hljs-symbol,
 .dark .macos-enhanced-code .hljs-bullet,
 .dark .macos-enhanced-code .hljs-meta,
-.dark .macos-enhanced-code .hljs-deletion {
-  color: #ff9e64 !important;
+.dark .macos-enhanced-code .hljs-deletion,
+.dark .macos-code-content .hljs-number,
+.dark .macos-code-content .hljs-symbol,
+.dark .macos-code-content .hljs-bullet,
+.dark .macos-code-content .hljs-meta,
+.dark .macos-code-content .hljs-deletion {
+  color: #ae81ff !important;
 }
 .dark .macos-enhanced-code .hljs-title,
 .dark .macos-enhanced-code .hljs-title.function_,
-.dark .macos-enhanced-code .hljs-function .hljs-title {
-  color: #7aa2f7 !important;
+.dark .macos-enhanced-code .hljs-function .hljs-title,
+.dark .macos-code-content .hljs-title,
+.dark .macos-code-content .hljs-title.function_,
+.dark .macos-code-content .hljs-function .hljs-title {
+  color: #50fa7b !important;
 }
 .dark .macos-enhanced-code .hljs-title.class_,
-.dark .macos-enhanced-code .hljs-type {
-  color: #2ac3de !important;
+.dark .macos-enhanced-code .hljs-type,
+.dark .macos-code-content .hljs-title.class_,
+.dark .macos-code-content .hljs-type {
+  color: #66d9ef !important;
 }
 .dark .macos-enhanced-code .hljs-built_in,
 .dark .macos-enhanced-code .hljs-builtin-name,
 .dark .macos-enhanced-code .hljs-class .hljs-title,
-.dark .macos-enhanced-code .hljs-params {
-  color: #2ac3de !important;
+.dark .macos-enhanced-code .hljs-params,
+.dark .macos-code-content .hljs-built_in,
+.dark .macos-code-content .hljs-builtin-name,
+.dark .macos-code-content .hljs-class .hljs-title,
+.dark .macos-code-content .hljs-params {
+  color: #66d9ef !important;
 }
 .dark .macos-enhanced-code .hljs-variable,
 .dark .macos-enhanced-code .hljs-name,
 .dark .macos-enhanced-code .hljs-selector-id,
-.dark .macos-enhanced-code .hljs-selector-class {
-  color: #e0af68 !important;
+.dark .macos-enhanced-code .hljs-selector-class,
+.dark .macos-code-content .hljs-variable,
+.dark .macos-code-content .hljs-name,
+.dark .macos-code-content .hljs-selector-id,
+.dark .macos-code-content .hljs-selector-class {
+  color: #fd971f !important;
 }
-.dark .macos-enhanced-code .hljs-tag {
-  color: #f7768e !important;
+.dark .macos-enhanced-code .hljs-tag,
+.dark .macos-code-content .hljs-tag {
+  color: #f92672 !important;
 }
-.dark .macos-enhanced-code .hljs-attribute {
-  color: #bb9af7 !important;
+.dark .macos-enhanced-code .hljs-attribute,
+.dark .macos-code-content .hljs-attribute {
+  color: #fd971f !important;
 }
-.dark .macos-enhanced-code .hljs-regexp {
-  color: #b4f9f8 !important;
+.dark .macos-enhanced-code .hljs-regexp,
+.dark .macos-code-content .hljs-regexp {
+  color: #ff79c6 !important;
 }
 
-/* 夜间模式：语法高亮 span 提亮 */
+/* 夜间模式：语法高亮 span 提亮 — 移除 filter，用精确颜色代替 */
 .dark .article-content pre code span[style*="color"],
 .dark .article-editor-area pre code span[style*="color"],
 .dark .macos-enhanced-code span[style*="color"],
 .dark .macos-code-content span[style*="color"] {
-  filter: brightness(1.5);
+  filter: none;
 }
 .article-editor-area img,
 .article-content img {

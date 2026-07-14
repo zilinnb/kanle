@@ -91,6 +91,22 @@ async function bootstrap() {
     await sequelize.sync();
     console.log("Models synchronized.");
 
+    // Migration: ensure cdnProxyUrl column exists (added after initial table creation)
+    // sequelize.sync() only creates missing tables, not missing columns on existing tables
+    try {
+      const [results] = await sequelize.query(
+        "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'SiteSettings' AND COLUMN_NAME = 'cdnProxyUrl'"
+      );
+      if (Array.isArray(results) && results.length === 0) {
+        await sequelize.query(
+          "ALTER TABLE `SiteSettings` ADD COLUMN `cdnProxyUrl` VARCHAR(500) NOT NULL DEFAULT ''"
+        );
+        console.log("Migration: cdnProxyUrl column added to SiteSettings.");
+      }
+    } catch (e) {
+      console.warn("Migration check for cdnProxyUrl skipped:", (e as Error).message);
+    }
+
     // 启动时清理已过期的黑名单记录
     try {
       const { blacklistService } = await import("./services/blacklist-service");

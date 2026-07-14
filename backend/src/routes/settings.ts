@@ -179,6 +179,9 @@ router.put(
       adOnArchives: setting.adOnArchives,
       rssEnabled: setting.rssEnabled,
       rssIncludeMoments: setting.rssIncludeMoments,
+      doubanId: setting.doubanId,
+      musicAutoplay: setting.musicAutoplay,
+      cdnProxyUrl: setting.cdnProxyUrl,
     });
   }
 );
