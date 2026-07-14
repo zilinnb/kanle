@@ -7,10 +7,12 @@ import { useEffect } from "react";
  *
  * 问题：桌面端用 #scroll-root 容器滚动（md:fixed md:overflow-y-auto），
  * 浏览器原生 scrollRestoration 只恢复 window，不恢复容器内部滚动。
+ * 另一个问题：从文章详情页返回首页/归档时，#scroll-root 的滚动位置
+ * 会保留文章页的位置，导致首页也跑到了下面。
  *
  * 方案：
  * - 滚动时（防抖）把位置写入 sessionStorage
- * - 页面加载后恢复到保存的位置
+ * - 页面加载后先立即重置滚动到顶部（清除上一页遗留），再恢复保存的位置
  *
  * @param storageKey sessionStorage 中存储滚动位置的 key，不同页面用不同 key
  * @param waitForFadeIn 是否等待 #profile-content 不再 opacity-0 后再恢复（profile 页面用）
@@ -68,6 +70,15 @@ export default function ProfileScrollRestoration({
         }
       } catch {}
     };
+
+    // 关键：先立即重置滚动到顶部，清除上一个页面（如文章详情）遗留的滚动位置
+    // 然后再异步恢复保存的位置，避免文章页的滚动位置泄漏到首页
+    const el = getScrollEl();
+    if (el instanceof Window) {
+      window.scrollTo(0, 0);
+    } else {
+      el.scrollTop = 0;
+    }
 
     if (waitForFadeIn) {
       // 轮询等待 ProfileFadeIn 完成（#profile-content 不再 opacity-0）

@@ -119,7 +119,7 @@ export default async function ProfilePage() {
       <FloatingActions />
       <DesktopFooter />
       <EditPostModal />
-      <ProfileScrollRestoration />
+      <ProfileScrollRestoration storageKey="archives-scroll-y" waitForFadeIn={false} />
     </div>
   );
 }

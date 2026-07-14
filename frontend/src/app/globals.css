@@ -646,7 +646,7 @@ body::-webkit-scrollbar {
   padding: 0.1em 0.3em;
   border-radius: 3px;
   font-size: 0.9em;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: 'Fira Code', Consolas, ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 .rich-editor-area pre,
 .rich-content pre {
@@ -655,6 +655,7 @@ body::-webkit-scrollbar {
   border-radius: 6px;
   overflow-x: auto;
   margin: 0.5em 0;
+  font-family: 'Fira Code', Consolas, ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 .rich-editor-area pre code,
 .rich-content pre code {
@@ -837,7 +838,7 @@ img.inline-emoji.emoji-error {
   padding: 0.15em 0.35em;
   border-radius: 3px;
   font-size: 0.875em;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: 'Fira Code', Consolas, ui-monospace, SFMono-Regular, Menlo, monospace;
   word-break: break-all;
 }
 .dark .article-editor-area code:not(.hljs),
@@ -847,61 +848,57 @@ img.inline-emoji.emoji-error {
   background: rgba(239, 68, 68, 0.15) !important;
   color: #ff6b6b !important;
 }
-/* pre 内的 code 不受内联红色影响 */
+/* pre 内的 code 不受内联红色影响 — 用 !important 彻底覆盖 */
 .article-editor-area pre code,
-.article-content pre code {
-  background: transparent;
-  color: inherit;
-  padding: 0;
-  font-size: 0.875em;
-  line-height: 1.6;
-  word-break: normal;
+.article-content pre code,
+.rich-editor-area pre code,
+.rich-content pre code {
+  background: transparent !important;
+  color: inherit !important;
+  padding: 0 !important;
+  font-size: 0.875em !important;
+  line-height: 1.6 !important;
+  word-break: normal !important;
+  border-radius: 0 !important;
+}
+.dark .article-editor-area pre code,
+.dark .article-content pre code,
+.dark .rich-editor-area pre code,
+.dark .rich-content pre code {
+  background: transparent !important;
+  color: inherit !important;
 }
 
-/* ── macOS 风格代码块（编辑器内）── */
+/* ── 代码块：扁平化风格（参考 hoothin code-highlighter）── */
+/* 统一字体：Fira Code 带连字，Consolas 回退 */
 .macos-code-wrapper {
   margin: 1em 0;
 }
 .macos-code-container {
-  border-radius: 8px;
+  border-radius: 6px;
   overflow: hidden;
-  border: 1px solid #e8e8eb;
-  background: #f6f6f8;
+  border: 1px solid #e0e0e3;
+  background: #fafafa;
   position: relative;
   box-shadow: none;
 }
 .macos-code-container.is-selected {
   border-color: #3b82f6;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
 }
-/* 标题栏 */
+/* 标题栏：极简，无红绿灯 */
 .macos-code-header {
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 6px 12px;
-  background: #f0f0f2;
+  background: #f5f5f7;
   border-bottom: 1px solid #e8e8eb;
   user-select: none;
 }
-.macos-traffic-lights {
-  display: flex;
-  gap: 6px;
-  flex-shrink: 0;
-}
-.macos-traffic-lights .dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  display: inline-block;
-  opacity: 0.7;
-}
-.macos-traffic-lights .dot.red { background: #ff5f57; }
-.macos-traffic-lights .dot.yellow { background: #febc2e; }
-.macos-traffic-lights .dot.green { background: #28c840; }
 .macos-lang-select {
   font-size: 12px;
-  color: #666;
+  color: #888;
   background: transparent;
   border: none;
   outline: none;
@@ -914,7 +911,7 @@ img.inline-emoji.emoji-error {
   appearance: none;
 }
 .macos-lang-select:hover {
-  background: rgba(0, 0, 0, 0.06);
+  background: rgba(0, 0, 0, 0.05);
 }
 .macos-lang-select option {
   background: #fff;
@@ -926,7 +923,7 @@ img.inline-emoji.emoji-error {
   align-items: center;
   gap: 4px;
   font-size: 12px;
-  color: #888;
+  color: #999;
   background: transparent;
   border: none;
   cursor: pointer;
@@ -936,7 +933,7 @@ img.inline-emoji.emoji-error {
   font-family: inherit;
 }
 .macos-copy-btn:hover {
-  background: rgba(0, 0, 0, 0.06);
+  background: rgba(0, 0, 0, 0.05);
   color: #555;
 }
 /* 代码区域 */
@@ -946,14 +943,16 @@ img.inline-emoji.emoji-error {
 }
 .macos-code-content {
   margin: 0 !important;
-  padding: 12px 16px !important;
-  background: #f6f6f8 !important;
+  padding: 14px 16px !important;
+  background: #fafafa !important;
   border-radius: 0 !important;
   overflow-x: auto;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: 'Fira Code', Consolas, ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 13px;
-  line-height: 1.6;
-  color: #1e1e1e;
+  line-height: 1.7;
+  color: #383a42;
+  -webkit-font-smoothing: antialiased;
+  font-variant-ligatures: contextual;
 }
 .macos-code-content code {
   background: transparent !important;
@@ -964,48 +963,48 @@ img.inline-emoji.emoji-error {
 
 /* ── 夜间模式：代码块 ── */
 .dark .macos-code-container {
-  background: #1a1b26;
-  border-color: #2a2b36;
+  background: #1e2127;
+  border-color: #2c2f36;
   box-shadow: none;
 }
 .dark .macos-code-header {
-  background: #14151c;
-  border-bottom-color: #2a2b36;
+  background: #1a1d23;
+  border-bottom-color: #2c2f36;
 }
 .dark .macos-lang-select {
-  color: #9ca3af;
+  color: #6b7280;
 }
 .dark .macos-lang-select:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.06);
 }
 .dark .macos-lang-select option {
-  background: #1a1b26;
+  background: #1e2127;
   color: #d4d4d4;
 }
 .dark .macos-copy-btn {
-  color: #9ca3af;
+  color: #6b7280;
 }
 .dark .macos-copy-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.06);
   color: #d4d4d4;
 }
 .dark .macos-code-content {
-  background: #1a1b26 !important;
-  color: #c0caf5 !important;
+  background: #1e2127 !important;
+  color: #abb2bf !important;
 }
 
 /* ── 文章详情页：增强 pre 元素（扁平化风格）── */
 .macos-enhanced-pre {
   margin: 1em 0;
-  border-radius: 8px;
+  border-radius: 6px;
   overflow: hidden;
-  border: 1px solid #e8e8eb;
-  background: #f6f6f8;
+  border: 1px solid #e0e0e3;
+  background: #fafafa;
   box-shadow: none;
 }
 .dark .macos-enhanced-pre {
-  background: #1a1b26;
-  border-color: #2a2b36;
+  background: #1e2127;
+  border-color: #2c2f36;
   box-shadow: none;
 }
 .macos-enhanced-header {
@@ -1013,36 +1012,21 @@ img.inline-emoji.emoji-error {
   align-items: center;
   gap: 8px;
   padding: 6px 12px;
-  background: #f0f0f2;
+  background: #f5f5f7;
   border-bottom: 1px solid #e8e8eb;
   user-select: none;
 }
 .dark .macos-enhanced-header {
-  background: #14151c;
-  border-bottom-color: #2a2b36;
+  background: #1a1d23;
+  border-bottom-color: #2c2f36;
 }
-.macos-enhanced-header .macos-traffic-lights {
-  display: flex;
-  gap: 6px;
-  flex-shrink: 0;
-}
-.macos-enhanced-header .macos-traffic-lights .dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  display: inline-block;
-  opacity: 0.7;
-}
-.macos-enhanced-header .macos-traffic-lights .dot.red { background: #ff5f57; }
-.macos-enhanced-header .macos-traffic-lights .dot.yellow { background: #febc2e; }
-.macos-enhanced-header .macos-traffic-lights .dot.green { background: #28c840; }
 .macos-enhanced-lang {
   font-size: 12px;
-  color: #666;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: #888;
+  font-family: 'Fira Code', Consolas, ui-monospace, monospace;
 }
 .dark .macos-enhanced-lang {
-  color: #9ca3af;
+  color: #6b7280;
 }
 .macos-enhanced-copy {
   margin-left: auto;
@@ -1050,7 +1034,7 @@ img.inline-emoji.emoji-error {
   align-items: center;
   gap: 4px;
   font-size: 12px;
-  color: #888;
+  color: #999;
   background: transparent;
   border: none;
   cursor: pointer;
@@ -1060,14 +1044,14 @@ img.inline-emoji.emoji-error {
   font-family: inherit;
 }
 .macos-enhanced-copy:hover {
-  background: rgba(0, 0, 0, 0.06);
+  background: rgba(0, 0, 0, 0.05);
   color: #555;
 }
 .dark .macos-enhanced-copy {
-  color: #9ca3af;
+  color: #6b7280;
 }
 .dark .macos-enhanced-copy:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.06);
   color: #d4d4d4;
 }
 .macos-enhanced-body {
@@ -1076,46 +1060,52 @@ img.inline-emoji.emoji-error {
 }
 .macos-line-numbers {
   flex-shrink: 0;
-  padding: 12px 8px 12px 16px;
+  padding: 14px 8px 14px 12px;
   text-align: right;
-  background: #eeeef0;
-  color: #bbb;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  background: #f5f5f7;
+  color: #c5c5c5;
+  font-family: 'Fira Code', Consolas, ui-monospace, monospace;
   font-size: 13px;
-  line-height: 1.6;
+  line-height: 1.7;
   user-select: none;
   min-width: 2.5em;
   white-space: pre;
 }
 .dark .macos-line-numbers {
-  background: #14151c;
-  color: #4a4b57;
+  background: #1a1d23;
+  color: #4b5260;
 }
 .macos-enhanced-code {
   flex: 1;
   margin: 0 !important;
-  padding: 12px 16px !important;
-  background: #f6f6f8 !important;
+  padding: 14px 16px !important;
+  background: #fafafa !important;
   border-radius: 0 !important;
   overflow-x: auto;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: 'Fira Code', Consolas, ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 13px;
-  line-height: 1.6;
-  color: #1e1e1e;
+  line-height: 1.7;
+  color: #383a42;
+  -webkit-font-smoothing: antialiased;
+  font-variant-ligatures: contextual;
 }
 .dark .macos-enhanced-code {
-  background: #1a1b26 !important;
-  color: #c0caf5 !important;
+  background: #1e2127 !important;
+  color: #abb2bf !important;
 }
 .macos-enhanced-code code {
   background: transparent !important;
   padding: 0 !important;
   font-size: inherit !important;
   line-height: inherit !important;
+  color: inherit !important;
 }
-/* 覆盖 .dark .article-content code { color: #ff6b6b !important; } 对代码块的误伤 */
-.dark .article-content pre.macos-enhanced-code code,
-.dark .article-content .macos-enhanced-code code {
+/* 彻底覆盖内联代码样式对 pre code 的污染 */
+.dark .article-content pre code,
+.dark .article-editor-area pre code,
+.dark .macos-enhanced-code code,
+.dark .macos-code-content code {
+  background: transparent !important;
   color: inherit !important;
 }
 

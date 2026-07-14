@@ -125,7 +125,7 @@ function enhanceCodeBlocks(html: string): string {
       const codeTag = `<code class="hljs language-${lang}">${highlighted}</code>`;
       const preTag = `<pre class="macos-enhanced-code"${(preAttrs || "").replace(/\s*class="[^"]*"/gi, "").replace(/\s*data-language="[^"]*"/gi, "")}>${codeTag}</pre>`;
 
-      return `<div class="macos-enhanced-pre"><div class="macos-enhanced-header"><div class="macos-traffic-lights"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span></div><span class="macos-enhanced-lang">${langLabel}</span><button class="macos-enhanced-copy" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span>复制</span></button></div><div class="macos-enhanced-body"><div class="macos-line-numbers">${lineNumbers}</div>${preTag}</div></div>`;
+      return `<div class="macos-enhanced-pre"><div class="macos-enhanced-header"><span class="macos-enhanced-lang">${langLabel}</span><button class="macos-enhanced-copy" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span>复制</span></button></div><div class="macos-enhanced-body"><div class="macos-line-numbers">${lineNumbers}</div>${preTag}</div></div>`;
     }
   );
 }
