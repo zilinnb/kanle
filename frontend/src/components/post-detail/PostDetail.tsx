@@ -7,7 +7,6 @@ import { Music, Pause, Play } from "lucide-react";
 import { Post, PostMusic, formatDetailTime, getPostSourceLabel } from "@/lib/mock-data";
 import { resolveAvatar } from "@/lib/avatar";
 import { normalizeImages } from "@/lib/post-image";
-import { toHttps } from "@/lib/upload";
 import { getImageUrl } from "@/lib/site-settings-store";
 import { renderContent } from "@/lib/sanitize";
 import { getCurrentUser, authFetchHeaders } from "@/lib/auth";
@@ -318,11 +317,7 @@ export default function PostDetail({ post }: PostDetailProps) {
             <div className="relative h-[72px] w-[72px] shrink-0 md:h-[80px] md:w-[80px] overflow-hidden bg-black/5 dark:bg-white/5">
               {post.music.cover ? (
                 <LazyImage
-                  src={toHttps(
-                    typeof post.music.cover === "string" && post.music.cover.startsWith("http")
-                      ? post.music.cover
-                      : `${API_URL.replace("/api", "")}${post.music.cover}`
-                  )}
+                  src={getImageUrl(post.music.cover)}
                   alt=""
                   className="h-full w-full object-cover"
                 />
@@ -363,7 +358,7 @@ export default function PostDetail({ post }: PostDetailProps) {
             <div className="flex h-[72px] w-[72px] shrink-0 md:h-[80px] md:w-[80px] items-center justify-center overflow-hidden bg-black/[0.02] dark:bg-white/[0.02]">
               {post.linkCard.image && (
                 <LazyImage
-                  src={post.linkCard.image}
+                  src={getImageUrl(post.linkCard.image)}
                   alt=""
                   className="h-full w-full object-contain p-1.5"
                 />

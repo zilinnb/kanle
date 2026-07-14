@@ -8,7 +8,6 @@ import { Music, Pause, Pin, FileText } from "lucide-react";
 import { Post, formatRelativeTime, getPostSourceLabel } from "@/lib/mock-data";
 import { resolveAvatar } from "@/lib/avatar";
 import { normalizeImages } from "@/lib/post-image";
-import { toHttps } from "@/lib/upload";
 import { getCurrentUser } from "@/lib/auth";
 import { renderContent } from "@/lib/sanitize";
 import { useMusicPlayer, resolvePostMusicUrl } from "@/lib/music-player-store";
@@ -468,7 +467,7 @@ export default function PostCard({ post, index, onDelete }: PostCardProps) {
             <div className="flex h-[72px] w-[72px] shrink-0 md:h-[80px] md:w-[80px] items-center justify-center overflow-hidden bg-black/[0.02] dark:bg-white/[0.02]">
               {post.linkCard.image && (
                 <LazyImage
-                  src={post.linkCard.image}
+                  src={getImageUrl(post.linkCard.image)}
                   alt=""
                   className="h-full w-full object-contain p-1.5"
                   onError={(e) => {
@@ -503,7 +502,7 @@ export default function PostCard({ post, index, onDelete }: PostCardProps) {
             <div className="relative h-[72px] w-[72px] shrink-0 md:h-[80px] md:w-[80px] overflow-hidden bg-black/5 dark:bg-white/5">
               {post.music.cover ? (
                 <LazyImage
-                  src={toHttps(typeof post.music.cover === "string" && post.music.cover.startsWith("http") ? post.music.cover : `${API_URL.replace("/api", "")}${post.music.cover}`)}
+                  src={getImageUrl(post.music.cover)}
                   alt=""
                   className="h-full w-full object-cover"
                 />

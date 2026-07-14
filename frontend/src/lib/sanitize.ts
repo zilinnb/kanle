@@ -2,6 +2,7 @@
 // 用于富文本编辑器输出内容与后端返回内容的渲染前过滤，防止 XSS。
 
 import { replaceEmojiShortcodes, normalizeInlineEmoji } from "./emoji";
+import { getImageUrl } from "./site-settings-store";
 
 const ALLOWED_TAGS = new Set([
   "p", "br", "strong", "b", "em", "i", "u", "s", "strike", "sub", "sup",
@@ -158,12 +159,30 @@ export function looksLikeHtml(text: string): boolean {
 }
 
 /**
+ * 将 HTML 中所有 <img> 标签的 src 属性经过 CDN 代理。
+ * 处理相对路径（如 /uploads/xxx.jpg）和绝对路径（如 https://kanle.net/uploads/xxx.jpg）。
+ * data URI 和已被代理的 URL 保持不变。
+ */
+function applyCdnToImgSrc(html: string): string {
+  if (!html || html.indexOf("<img") === -1) return html;
+  return html.replace(
+    /<img([^>]*?)\ssrc=(["'])([^"']+)\2([^>]*)>/gi,
+    (_match, before: string, _quote: string, src: string, after: string) => {
+      const proxied = getImageUrl(src);
+      return `<img${before} src="${proxied}"${after}>`;
+    }
+  );
+}
+
+/**
  * 渲染入口：自动判断纯文本或 HTML，返回安全的 HTML 字符串供 dangerouslySetInnerHTML 使用。
+ * 对 HTML 中的 <img> src 应用 CDN 代理（如配置了 cdnProxyUrl）。
  */
 export function renderContent(content: string): string {
   if (!content) return "";
   const html = looksLikeHtml(content)
     ? sanitizeHtml(content)
     : plainTextToHtml(content);
-  return normalizeInlineEmoji(replaceEmojiShortcodes(html));
+  const withEmoji = normalizeInlineEmoji(replaceEmojiShortcodes(html));
+  return applyCdnToImgSrc(withEmoji);
 }

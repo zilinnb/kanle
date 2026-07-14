@@ -281,7 +281,7 @@ export default function ImageGroupNodeView({
           {images.map((img, i) => (
             <div key={i} className="image-group-item group relative">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={img.src} alt={img.alt} className="image-grid-item" />
+              <img src={getImageUrl(img.src)} alt={img.alt} className="image-grid-item" />
               {showToolbar && (
                 <div className="absolute right-1 top-1 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                   <button

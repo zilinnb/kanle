@@ -58,7 +58,24 @@ function renderHtmlSegment(html: string): string {
   if (!html) return "";
   const processed = looksLikeHtml(html) ? sanitizeHtml(html) : plainTextToHtml(html);
   const withEmoji = normalizeInlineEmoji(replaceEmojiShortcodes(processed));
-  return enhanceCodeBlocks(withEmoji);
+  const withCdnImages = applyCdnToImgSrc(withEmoji);
+  return enhanceCodeBlocks(withCdnImages);
+}
+
+/**
+ * 将 HTML 中所有 <img> 标签的 src 属性经过 CDN 代理。
+ * 处理相对路径（如 /uploads/xxx.jpg）和绝对路径（如 https://kanle.net/uploads/xxx.jpg）。
+ * data URI 和已被代理的 URL 保持不变。
+ */
+function applyCdnToImgSrc(html: string): string {
+  if (!html || html.indexOf("<img") === -1) return html;
+  return html.replace(
+    /<img([^>]*?)\ssrc=(["'])([^"']+)\2([^>]*)>/gi,
+    (match, before: string, _quote: string, src: string, after: string) => {
+      const proxied = getImageUrl(src);
+      return `<img${before} src="${proxied}"${after}>`;
+    }
+  );
 }
 
 /**
