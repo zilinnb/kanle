@@ -863,25 +863,25 @@ img.inline-emoji.emoji-error {
   margin: 1em 0;
 }
 .macos-code-container {
-  border-radius: 10px;
+  border-radius: 8px;
   overflow: hidden;
-  border: 1px solid #e2e2e5;
+  border: 1px solid #e8e8eb;
   background: #f6f6f8;
   position: relative;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  box-shadow: none;
 }
 .macos-code-container.is-selected {
   border-color: #3b82f6;
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
 }
-/* macOS 标题栏 */
+/* 标题栏 */
 .macos-code-header {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 12px;
-  background: #e8e8ec;
-  border-bottom: 1px solid #d8d8dc;
+  padding: 6px 12px;
+  background: #f0f0f2;
+  border-bottom: 1px solid #e8e8eb;
   user-select: none;
 }
 .macos-traffic-lights {
@@ -890,10 +890,11 @@ img.inline-emoji.emoji-error {
   flex-shrink: 0;
 }
 .macos-traffic-lights .dot {
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   display: inline-block;
+  opacity: 0.7;
 }
 .macos-traffic-lights .dot.red { background: #ff5f57; }
 .macos-traffic-lights .dot.yellow { background: #febc2e; }
@@ -961,14 +962,14 @@ img.inline-emoji.emoji-error {
   font-size: inherit !important;
 }
 
-/* ── 夜间模式：macOS 代码块 ── */
+/* ── 夜间模式：代码块 ── */
 .dark .macos-code-container {
   background: #1a1b26;
   border-color: #2a2b36;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: none;
 }
 .dark .macos-code-header {
-  background: #16171f;
+  background: #14151c;
   border-bottom-color: #2a2b36;
 }
 .dark .macos-lang-select {
@@ -993,31 +994,31 @@ img.inline-emoji.emoji-error {
   color: #c0caf5 !important;
 }
 
-/* ── 文章详情页：增强 pre 元素（macOS 风格包装）── */
+/* ── 文章详情页：增强 pre 元素（扁平化风格）── */
 .macos-enhanced-pre {
   margin: 1em 0;
-  border-radius: 10px;
+  border-radius: 8px;
   overflow: hidden;
-  border: 1px solid #e2e2e5;
+  border: 1px solid #e8e8eb;
   background: #f6f6f8;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  box-shadow: none;
 }
 .dark .macos-enhanced-pre {
   background: #1a1b26;
   border-color: #2a2b36;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: none;
 }
 .macos-enhanced-header {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 12px;
-  background: #e8e8ec;
-  border-bottom: 1px solid #d8d8dc;
+  padding: 6px 12px;
+  background: #f0f0f2;
+  border-bottom: 1px solid #e8e8eb;
   user-select: none;
 }
 .dark .macos-enhanced-header {
-  background: #16171f;
+  background: #14151c;
   border-bottom-color: #2a2b36;
 }
 .macos-enhanced-header .macos-traffic-lights {
@@ -1026,10 +1027,11 @@ img.inline-emoji.emoji-error {
   flex-shrink: 0;
 }
 .macos-enhanced-header .macos-traffic-lights .dot {
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   display: inline-block;
+  opacity: 0.7;
 }
 .macos-enhanced-header .macos-traffic-lights .dot.red { background: #ff5f57; }
 .macos-enhanced-header .macos-traffic-lights .dot.yellow { background: #febc2e; }
