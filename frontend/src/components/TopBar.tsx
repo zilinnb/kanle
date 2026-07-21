@@ -998,15 +998,15 @@ export function LoginModal({
   return createPortal(
     <div
       data-modal="overlay"
-      className={`fixed inset-0 z-[100] flex items-start justify-center bg-black/40 backdrop-blur-sm md:items-center md:p-4 ${closing ? "animate-overlay-out" : "animate-overlay-in"}`}
+      className={`fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 ${closing ? "animate-overlay-out" : "animate-overlay-in"}`}
       onClick={handleClose}
     >
       <div
-        className={`flex h-[100dvh] w-full flex-col bg-wechat-white pt-[env(safe-area-inset-top)] dark:bg-[#1f1f24] md:h-auto md:max-w-[360px] md:rounded-3xl md:pt-0 md:shadow-2xl md:ring-1 md:ring-black/5 md:dark:ring-white/10 ${closing ? "animate-sheet-to-top md:animate-modal-out" : "animate-sheet-from-top md:animate-modal-in"}`}
+        className={`w-full max-w-[340px] overflow-hidden rounded-2xl bg-wechat-white shadow-2xl ring-1 ring-black/5 dark:bg-[#1f1f24] dark:ring-white/10 ${closing ? "animate-modal-out" : "animate-modal-in"}`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* 顶部标题栏：标题居中 + 关闭按钮右上角 */}
-        <div className="relative flex shrink-0 items-center justify-center px-4 py-3 md:border-b md:border-wechat-border md:px-5 md:py-3.5 md:dark:border-white/10">
+        <div className="relative flex shrink-0 items-center justify-center border-b border-wechat-border px-4 py-3.5 dark:border-white/10">
           <h3 className="text-base font-semibold text-wechat-text">登录</h3>
           <button
             onClick={handleClose}
@@ -1017,24 +1017,24 @@ export function LoginModal({
           </button>
         </div>
 
-        {/* 内容区域 — 全屏居中 */}
-        <div className="flex flex-1 flex-col justify-center px-6 pb-[env(safe-area-inset-bottom)] md:px-7 md:py-7">
+        {/* 内容区域 */}
+        <div className="px-6 py-6">
           {/* 网站头像 + 名称 */}
-          <div className="mb-8 flex flex-col items-center md:mb-6">
+          <div className="mb-6 flex flex-col items-center">
             {resolvedIcon && (
               <img
                 src={resolvedIcon}
                 alt={siteName || "logo"}
-                className="h-16 w-16 rounded-2xl object-cover shadow-sm md:h-14 md:w-14"
+                className="h-14 w-14 rounded-2xl object-cover shadow-sm"
               />
             )}
             {siteName && (
-              <p className="mt-3 text-sm text-wechat-time">{siteName}</p>
+              <p className="mt-2.5 text-sm text-wechat-time">{siteName}</p>
             )}
           </div>
 
           {/* 表单 — 评论框风格：灰色容器 + 透明输入区 */}
-          <div className="w-full max-w-[320px] self-center">
+          <div className="w-full">
             <div className="overflow-hidden rounded-xl bg-wechat-bubble dark:bg-white/5">
               {/* 用户名或邮箱 */}
               <div className="relative border-b border-wechat-divider dark:border-white/5">
@@ -1044,8 +1044,7 @@ export function LoginModal({
                   onChange={(e) => setAccount(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && canSubmit && handleSubmit()}
                   placeholder="用户名或邮箱"
-                  className="w-full bg-transparent px-4 py-3.5 text-[15px] text-wechat-text outline-none placeholder:text-wechat-time"
-                  autoFocus
+                  className="w-full bg-transparent px-4 py-3 text-[15px] text-wechat-text outline-none placeholder:text-wechat-time"
                 />
               </div>
               {/* 密码 */}
@@ -1056,7 +1055,7 @@ export function LoginModal({
                   onChange={(e) => setPassword(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && canSubmit && handleSubmit()}
                   placeholder="密码"
-                  className="w-full bg-transparent px-4 py-3.5 pr-10 text-[15px] text-wechat-text outline-none placeholder:text-wechat-time"
+                  className="w-full bg-transparent px-4 py-3 pr-10 text-[15px] text-wechat-text outline-none placeholder:text-wechat-time"
                 />
                 <button
                   type="button"
@@ -1081,7 +1080,7 @@ export function LoginModal({
                 type="button"
                 onClick={handleSubmit}
                 disabled={loading}
-                className="animate-content-fade-in mt-5 w-full rounded-xl bg-[#07c160] py-3.5 text-[15px] font-medium text-white transition-all hover:bg-[#06ad56] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+                className="animate-content-fade-in mt-4 w-full rounded-xl bg-[#07c160] py-3 text-[15px] font-medium text-white transition-all hover:bg-[#06ad56] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {loading ? "登录中..." : "登录"}
               </button>
