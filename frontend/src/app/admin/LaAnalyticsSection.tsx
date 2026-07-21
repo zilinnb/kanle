@@ -288,7 +288,8 @@ export default function LaAnalyticsSection() {
   // 未配置或仍在检查中：不渲染任何内容
   if (configured === null || configured === false) return null;
 
-  const trendList = data ? extractTrend(data.trend) : [];
+  // 51.la 趋势数据按日期降序返回（最新在前），反转为升序（旧→新）使折线图从左到右
+  const trendList = data ? extractTrend(data.trend).slice().reverse() : [];
   const srcList = data ? extractList(data.src) : [];
   const interviewList = data ? extractList(data.interview) : [];
   const entryList = data ? extractList(data.entry) : [];
