@@ -2,12 +2,16 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
 const BASE_URL = API_URL.replace(/\/api$/, "");
 /** 站点公网域名（用于 CDN 代理时拼接 src 参数） */
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "";
+/** Whether BASE_URL points to a local dev server */
+const IS_LOCAL_BASE = BASE_URL.startsWith("http://localhost") || BASE_URL.startsWith("http://127.0.0.1");
 
 export function toAbsoluteUrl(url: string) {
   if (!url || typeof url !== "string") return "";
   if (url.startsWith("http")) return url;
-  // Uploaded images and API routes are served by the backend
-  if (url.startsWith("/uploads/") || url.startsWith("/api/")) return `${BASE_URL}${url}`;
+  // Keep relative paths as-is — Next.js rewrites proxy /uploads and /api to backend.
+  // Avoid converting to http://localhost:4000 in production builds, which causes
+  // Next.js Image optimizer "resolved to private ip" errors.
+  if (url.startsWith("/uploads/") || url.startsWith("/api/")) return url;
   return url;
 }
 
@@ -41,9 +45,8 @@ function toFullAbsoluteUrl(url: string): string {
   if (!url || typeof url !== "string") return "";
   if (url.startsWith("http")) return url;
   if (url.startsWith("data:")) return url;
-  // 有 BASE_URL（开发环境）优先用 BASE_URL
-  if (BASE_URL) return `${BASE_URL}${url.startsWith("/") ? "" : "/"}${url}`;
-  // 生产环境 BASE_URL 为空，用 NEXT_PUBLIC_SITE_URL
+  // When BASE_URL is a local dev server, use SITE_URL (public domain) for CDN proxy
+  if (!IS_LOCAL_BASE && BASE_URL) return `${BASE_URL}${url.startsWith("/") ? "" : "/"}${url}`;
   if (SITE_URL) {
     const base = SITE_URL.replace(/\/$/, "");
     return `${base}${url.startsWith("/") ? "" : "/"}${url}`;
