@@ -3,14 +3,20 @@
 import { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Play, Pause, Music2, Link as LinkIcon, FileText } from "lucide-react";
+import { Play, Pause, Music2, Link as LinkIcon, FileText, Star, Film } from "lucide-react";
 import type { Post, PostMusic, PostImage } from "@/lib/mock-data";
 import { getImageSrc } from "@/lib/post-image";
 import { renderContent } from "@/lib/sanitize";
 import { useMusicPlayer } from "@/lib/music-player-store";
 import { useSiteSettings, getImageUrl } from "@/lib/site-settings-store";
 
-type TileKind = "image" | "video" | "music" | "link" | "text" | "article";
+type TileKind = "image" | "video" | "music" | "link" | "text" | "article" | "douban";
+
+const STATUS_STYLES: Record<string, string> = {
+  collect: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400",
+  do: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400",
+  wish: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400",
+};
 
 interface ProfilePostCardProps {
   post: Post;
@@ -37,6 +43,9 @@ function buildCover(post: Post, defaultCover: string): { kind: TileKind; cover: 
   }
   if (post.music) {
     return { kind: "music", cover: resolveCover(post.music.cover), text: post.music.name || contentText };
+  }
+  if (post.douban) {
+    return { kind: "douban", cover: resolveCover(post.douban.cover), text: post.douban.title || contentText };
   }
   if (post.linkCard) {
     return { kind: "link", cover: resolveCover(post.linkCard.image), text: post.linkCard.title || contentText };
@@ -148,6 +157,10 @@ function DefaultCover({ kind }: { kind: Exclude<TileKind, "image" | "video" | "t
       className: "from-amber-50 to-orange-100 dark:from-amber-900/20 dark:to-orange-900/20",
       icon: <FileText className="h-4 w-4 text-amber-500/80" />,
     },
+    douban: {
+      className: "from-emerald-50 to-teal-100 dark:from-emerald-900/20 dark:to-teal-900/20",
+      icon: <Film className="h-4 w-4 text-emerald-500/80" />,
+    },
   };
   const config = configs[kind];
   return (
@@ -197,6 +210,11 @@ export default function ProfilePostCard({ post }: ProfilePostCardProps) {
   // 音乐卡片
   if (kind === "music" && post.music) {
     return <ProfileMusicCard post={post} cover={cover} goDetail={goDetail} />;
+  }
+
+  // 豆瓣卡片
+  if (kind === "douban" && post.douban) {
+    return <ProfileDoubanCard post={post} cover={cover} goDetail={goDetail} />;
   }
 
   // 链接卡片
@@ -449,6 +467,76 @@ function ProfileArticleCard({ post, cover, goDetail }: { post: Post; cover: stri
               {excerpt}
             </p>
           )}
+        </div>
+      </div>
+    </article>
+  );
+}
+
+/**
+ * 豆瓣卡片 — 归档精简版影单卡片
+ * 左侧竖版海报 + 右侧标题/评分星星/状态标签
+ * 点击整卡跳转详情页（不在归档页打开豆瓣链接）
+ */
+function ProfileDoubanCard({ post, cover, goDetail }: { post: Post; cover: string; goDetail: () => void }) {
+  const douban = post.douban;
+  const hasContent = !!(post.content && post.content.trim());
+
+  return (
+    <article
+      onClick={goDetail}
+      className="cursor-pointer px-4 py-1.5 sm:px-5 md:px-6"
+    >
+      <div className="max-w-[280px] rounded-md bg-wechat-bubble px-2.5 py-2 transition-opacity active:opacity-80 dark:bg-wechat-bubble">
+        {/* 文本内容（如有）显示在灰色卡片内部上方 */}
+        {hasContent && (
+          <div
+            className="rich-content mb-2 text-[14px] leading-[20px] text-wechat-text"
+            dangerouslySetInnerHTML={{ __html: renderContent(post.content) }}
+          />
+        )}
+
+        {/* 豆瓣行：左侧竖版海报 + 右侧标题/评分/状态 */}
+        <div className="flex w-full items-start gap-2.5 text-left">
+          {/* 竖版海报 */}
+          <div className="relative h-16 w-12 shrink-0 overflow-hidden rounded bg-black/5 dark:bg-white/5">
+            {cover ? (
+              <Image
+                src={cover}
+                alt={douban?.title || ""}
+                fill
+                className="h-full w-full object-cover"
+                sizes="48px"
+                unoptimized
+              />
+            ) : (
+              <DefaultCover kind="douban" />
+            )}
+          </div>
+
+          {/* 标题 + 评分星星 + 状态标签 */}
+          <div className="min-w-0 flex-1 pt-0.5">
+            <p className="line-clamp-2 text-[13px] font-medium leading-[18px] text-wechat-text">
+              {douban?.title || "未知影条"}
+            </p>
+            <div className="mt-1 flex flex-wrap items-center gap-1">
+              {douban && douban.rating > 0 && (
+                <div className="flex items-center gap-0.5">
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <Star
+                      key={n}
+                      className={`h-2.5 w-2.5 ${n <= douban.rating ? "fill-amber-400 text-amber-400" : "text-gray-300 dark:text-gray-600"}`}
+                    />
+                  ))}
+                </div>
+              )}
+              {douban?.statusLabel && (
+                <span className={`rounded px-1 py-0.5 text-[10px] font-medium leading-tight ${STATUS_STYLES[douban.status] || "bg-gray-100 text-gray-600 dark:bg-white/10 dark:text-gray-400"}`}>
+                  {douban.statusLabel}
+                </span>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </article>
