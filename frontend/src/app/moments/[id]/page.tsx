@@ -48,6 +48,10 @@ function getPostTitle(post: Post): string {
   if (post.linkCard) {
     return post.linkCard.siteName || post.linkCard.title || "分享的网站";
   }
+  // 豆瓣：显示影条标题
+  if (post.douban) {
+    return post.douban.title || "豆瓣动态";
+  }
   // 视频：显示视频标题
   if (post.video) {
     return post.video.title || "视频动态";

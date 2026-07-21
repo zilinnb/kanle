@@ -20,6 +20,7 @@ import InteractionBubble from "@/components/InteractionBubble";
 import ActionMenu from "@/components/ActionMenu";
 import CommentSection from "@/components/CommentSection";
 import LazyImage from "@/components/LazyImage";
+import DoubanEmbedCard from "@/components/article/DoubanEmbedCard";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
 
@@ -376,6 +377,11 @@ export default function PostDetail({ post }: PostDetailProps) {
               )}
             </div>
           </a>
+        )}
+
+        {/* Douban card */}
+        {post.douban && (
+          <DoubanEmbedCard item={post.douban} variant="feed" />
         )}
 
         {/* Location */}
