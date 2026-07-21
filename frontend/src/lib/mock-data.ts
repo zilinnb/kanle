@@ -460,6 +460,7 @@ export const MUSIC_PLUGIN_LABELS: Record<string, string> = {
 /** 根据动态的媒体内容返回"来自XXX"的平台标签 */
 export function getPostSourceLabel(post: Post): string | null {
   if (post.type === "article") return "文章";
+  if (post.douban) return "豆瓣";
   if (post.video) {
     const p = post.video.platform;
     if (p && VIDEO_PLATFORM_LABELS[p]) return VIDEO_PLATFORM_LABELS[p];

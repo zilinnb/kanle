@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import PostCard from "@/components/PostCard";
-import { PostCardSkeleton } from "@/components/Skeleton";
 import { useSiteSettings } from "@/lib/site-settings-store";
 import { authFetchHeaders } from "@/lib/auth";
 
@@ -167,24 +166,11 @@ export default function PostList({ initialPosts, initialHasMore, initialPage }: 
       (entries) => {
         if (entries[0].isIntersecting) loadMore();
       },
-      { root, rootMargin: "300px" }
+      { root, rootMargin: "100px" }
     );
     observer.observe(sentinel);
     return () => observer.disconnect();
   }, [loadMore]);
-
-  // 加载更多时锁定滚动容器，避免用户继续往下滑动导致卡顿
-  useEffect(() => {
-    if (!loadingMore) return;
-    const isDesktop = window.matchMedia("(min-width: 768px)").matches;
-    const scrollRoot = document.getElementById("scroll-root");
-    const target = isDesktop && scrollRoot ? scrollRoot : document.documentElement;
-    const prev = target.style.overflow;
-    target.style.overflow = "hidden";
-    return () => {
-      target.style.overflow = prev;
-    };
-  }, [loadingMore]);
 
   if (posts.length === 0) {
     return (
@@ -215,11 +201,14 @@ export default function PostList({ initialPosts, initialHasMore, initialPage }: 
         {displayList.map((post, index) => (
           <PostCard key={post.id} post={post} index={index} />
         ))}
-        {loadingMore &&
-          Array.from({ length: 2 }).map((_, i) => (
-            <PostCardSkeleton key={`sk-${i}`} />
-          ))}
       </section>
+
+      {/* 加载中指示器 — 紧凑文字，不占大量空间 */}
+      {loadingMore && (
+        <div className="flex items-center justify-center py-4 text-[13px] text-wechat-time">
+          加载中...
+        </div>
+      )}
 
       {/* Sentinel for IntersectionObserver */}
       <div ref={sentinelRef} className="h-1" />

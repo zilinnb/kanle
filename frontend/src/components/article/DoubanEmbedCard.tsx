@@ -33,16 +33,16 @@ export default function DoubanEmbedCard({ item, className, variant = "article" }
   const desc = descParts.join(" · ") || item.intro || "";
 
   if (variant === "feed") {
-    // 首页动态样式：影单风格放大版（与左侧影单列表项结构一致，尺寸放大）
+    // 首页动态样式：影单风格，与链接卡片/音乐卡片尺寸一致
     return (
       <a
         href={item.link}
         target="_blank"
         rel="noopener noreferrer"
-        className={`mt-2 flex w-full max-w-[360px] items-start gap-3 rounded-[8px] bg-[#f2f2f2] p-2.5 transition-colors hover:bg-[#eaeaea] active:bg-[#e0e0e0] dark:bg-[#2a2a30] dark:hover:bg-[#33333a] dark:active:bg-[#3a3a42] ${className || ""}`}
+        className={`mt-2 flex w-full max-w-[240px] items-stretch overflow-hidden rounded-[8px] bg-[#f2f2f2] transition-colors hover:bg-[#eaeaea] active:bg-[#e0e0e0] dark:bg-[#2a2a30] dark:hover:bg-[#33333a] dark:active:bg-[#3a3a42] md:max-w-[280px] ${className || ""}`}
       >
         {/* 左侧竖版海报 */}
-        <div className="flex h-[90px] w-[64px] shrink-0 items-center justify-center overflow-hidden rounded-md bg-black/[0.02] dark:bg-white/[0.02]">
+        <div className="flex h-[72px] w-[48px] shrink-0 items-center justify-center overflow-hidden bg-black/[0.02] dark:bg-white/[0.02] md:h-[80px] md:w-[54px]">
           {item.cover ? (
             <LazyImage
               src={getImageUrl(item.cover)}
@@ -53,33 +53,33 @@ export default function DoubanEmbedCard({ item, className, variant = "article" }
               }}
             />
           ) : (
-            <Film className="h-7 w-7 text-black/30 dark:text-white/30" />
+            <Film className="h-5 w-5 text-black/30 dark:text-white/30 md:h-6 md:w-6" />
           )}
         </div>
         {/* 右侧内容 */}
-        <div className="flex min-w-0 flex-1 flex-col justify-center gap-1">
-          <p className="line-clamp-2 text-[15px] font-medium leading-snug text-black/[0.87] dark:text-white/90">
+        <div className="flex min-w-0 flex-1 flex-col justify-center bg-white/35 px-3 dark:bg-white/[0.04]">
+          <p className="line-clamp-1 text-[14px] font-medium leading-[20px] text-black/[0.87] dark:text-white/90 md:text-[15px] md:leading-[21px]">
             {item.title}
           </p>
-          <div className="flex flex-wrap items-center gap-1.5">
+          <div className="mt-1 flex flex-wrap items-center gap-1">
             {item.rating > 0 && (
               <div className="flex items-center gap-0.5">
                 {[1, 2, 3, 4, 5].map((n) => (
                   <Star
                     key={n}
-                    className={`h-3.5 w-3.5 ${n <= item.rating ? "fill-amber-400 text-amber-400" : "text-gray-300 dark:text-gray-600"}`}
+                    className={`h-3 w-3 ${n <= item.rating ? "fill-amber-400 text-amber-400" : "text-gray-300 dark:text-gray-600"}`}
                   />
                 ))}
               </div>
             )}
             {item.statusLabel && (
-              <span className={`rounded px-1.5 py-0.5 text-[11px] font-medium ${STATUS_STYLES[item.status] || "bg-gray-100 text-gray-600 dark:bg-white/10 dark:text-gray-400"}`}>
+              <span className={`rounded px-1 py-0.5 text-[10px] font-medium leading-tight ${STATUS_STYLES[item.status] || "bg-gray-100 text-gray-600 dark:bg-white/10 dark:text-gray-400"}`}>
                 {item.statusLabel}
               </span>
             )}
           </div>
           {item.intro && (
-            <p className="line-clamp-1 text-[12px] text-black/50 dark:text-white/50">
+            <p className="mt-0.5 line-clamp-1 text-[12px] leading-[15px] text-black/50 dark:text-white/50 md:text-[13px] md:leading-[16px]">
               {item.intro}
             </p>
           )}

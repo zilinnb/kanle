@@ -397,6 +397,10 @@ export default function AdminNotifications({ variant = "mobile" }: AdminNotifica
               </li>
             );
           })}
+          {loadingMore && (
+            <li className="py-2 text-center text-[11px] text-wechat-time">加载中...</li>
+          )}
+          {hasMore && <div ref={sentinelRef} className="h-1" />}
         </ul>
       </div>
     );

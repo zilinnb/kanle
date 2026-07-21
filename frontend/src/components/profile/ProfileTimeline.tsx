@@ -2,9 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { PostCardSkeleton } from "@/components/Skeleton";
-import { useSiteSettings } from "@/lib/site-settings-store";
 import { groupByTime } from "@/lib/time-group";
+import { useSiteSettings } from "@/lib/site-settings-store";
 import { authFetchHeaders } from "@/lib/auth";
 import type { Post } from "@/lib/mock-data";
 import ProfilePinnedStrip from "./ProfilePinnedStrip";
@@ -178,7 +177,7 @@ export default function ProfileTimeline({
       (entries) => {
         if (entries[0].isIntersecting) loadMore();
       },
-      { root, rootMargin: "300px" }
+      { root, rootMargin: "100px" }
     );
     observer.observe(sentinel);
     return () => observer.disconnect();
@@ -257,15 +256,11 @@ export default function ProfileTimeline({
             })}
           </div>
         ))}
-        {loadingMore &&
-          Array.from({ length: 2 }).map((_, i) => (
-            <div key={`sk-${i}`} className="flex">
-              <div className="w-[68px] shrink-0 pl-4 sm:pl-5 md:pl-6" />
-              <div className="min-w-0 flex-1">
-                <PostCardSkeleton />
-              </div>
-            </div>
-          ))}
+        {loadingMore && (
+          <div className="flex items-center justify-center py-4 text-[13px] text-wechat-time">
+            加载中...
+          </div>
+        )}
       </div>
 
       {/* Sentinel for IntersectionObserver */}
