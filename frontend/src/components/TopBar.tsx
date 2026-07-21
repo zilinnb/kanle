@@ -2082,7 +2082,7 @@ export function PublishModal({
               <Film className="h-5 w-5 shrink-0 text-wechat-time" />
               <div className="flex min-w-0 flex-1 items-center gap-2">
                 <div className="min-w-0 flex-1">
-                  <DoubanEmbedCard item={douban} className="mt-0 max-w-none" />
+                  <DoubanEmbedCard item={douban} className="mt-0 max-w-none" variant="feed" />
                 </div>
                 <button
                   onClick={() => setDouban(null)}

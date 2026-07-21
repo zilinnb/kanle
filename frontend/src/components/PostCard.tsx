@@ -542,9 +542,9 @@ export default function PostCard({ post, index, onDelete }: PostCardProps) {
           </div>
         )}
 
-        {/* Douban card — 豆瓣影单卡片，与链接卡片/音乐卡片同层级 */}
+        {/* Douban card — 豆瓣影单卡片，与链接卡片/音乐卡片同层级、同样式 */}
         {!isArticle && post.douban && (
-          <DoubanEmbedCard item={post.douban} />
+          <DoubanEmbedCard item={post.douban} variant="feed" />
         )}
 
         {/* Location — 显示在时间上方，格式：城市 · 地点名 */}
