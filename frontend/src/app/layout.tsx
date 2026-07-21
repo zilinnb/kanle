@@ -101,12 +101,14 @@ export default async function RootLayout({
   // 获取站点设置中的自定义字体链接；留空则使用内嵌 HarmonyOS Sans 字体（globals.css 中的 @font-face）
   let fontUrl = "";
   let rssEnabled = true;
+  let analyticsCode = "";
   try {
     const settingsRes = await fetch(`${API_URL}/settings`, { next: { revalidate: 60 } });
     if (settingsRes.ok) {
       const settings = await settingsRes.json();
       if (settings.fontUrl) fontUrl = settings.fontUrl;
       if (typeof settings.rssEnabled === "boolean") rssEnabled = settings.rssEnabled;
+      if (settings.analyticsCode) analyticsCode = settings.analyticsCode;
     }
   } catch {
     // use default embedded font
@@ -130,6 +132,9 @@ export default async function RootLayout({
         )}
       </head>
       <body className="min-h-full bg-white text-wechat-text dark:bg-wechat-bg">
+        {analyticsCode && (
+          <div dangerouslySetInnerHTML={{ __html: analyticsCode }} />
+        )}
         <div id="initial-loading-bar" />
         <script dangerouslySetInnerHTML={{ __html: `(function(){var r=sessionStorage.getItem('__chunkReload');if(r){try{var t=parseInt(r);if(Date.now()-t<60000){sessionStorage.removeItem('__chunkReload');return}}catch(e){}}window.addEventListener('error',function(e){var m=e&&e.message||'';var t=e&&e.target&&e.target.tagName;if((m.indexOf('ChunkLoadError')>=0||m.indexOf('Loading chunk')>=0||m.indexOf('Loading CSS chunk')>=0)&&(e.target&&(e.target.src||e.target.href))){sessionStorage.setItem('__chunkReload',Date.now().toString());window.location.reload()}});window.addEventListener('unhandledrejection',function(e){var m=e&&e.reason&&(e.reason.message||e.reason)||'';if(m.indexOf('ChunkLoadError')>=0||m.indexOf('Loading chunk')>=0){sessionStorage.setItem('__chunkReload',Date.now().toString());window.location.reload()}})})();` }} />
         <LoadingBar />

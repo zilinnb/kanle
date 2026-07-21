@@ -25,6 +25,7 @@ import {
   Zap,
   XCircle,
   Loader2,
+  BarChart3,
 } from "lucide-react";
 import { uploadImage, cdnUrl } from "@/lib/upload";
 import { getImageUrl, useSiteSettings } from "@/lib/site-settings-store";
@@ -58,6 +59,7 @@ interface SiteSettings {
   rssIncludeMoments: boolean;
   doubanId: string;
   cdnProxyUrl: string;
+  analyticsCode: string;
 }
 
 const DEFAULTS: SiteSettings = {
@@ -84,6 +86,7 @@ const DEFAULTS: SiteSettings = {
   rssIncludeMoments: true,
   doubanId: "",
   cdnProxyUrl: "",
+  analyticsCode: "",
 };
 
 interface SocialLink {
@@ -855,6 +858,28 @@ export default function AdminSettings() {
           </label>
           <p className="text-xs text-adm-text-tertiary">
             关闭后 RSS 只输出文章，不包含朋友圈动态
+          </p>
+        </div>
+
+        {/* Analytics code section */}
+        <div className="mb-6 mt-8 flex items-center gap-2 border-b border-adm-border pb-3">
+          <BarChart3 className="h-4 w-4 text-adm-text-tertiary" />
+          <h3 className="text-sm font-semibold text-adm-text">网站统计</h3>
+        </div>
+
+        <div className="mb-6">
+          <label className="mb-1.5 block text-xs font-medium text-adm-text-secondary">
+            统计代码（51.la / 百度统计等）
+          </label>
+          <textarea
+            value={form.analyticsCode}
+            onChange={(e) => setForm({ ...form, analyticsCode: e.target.value })}
+            rows={6}
+            className="w-full rounded-xl border border-adm-border bg-adm-input px-3 py-2.5 font-mono text-xs text-adm-text transition-colors focus:border-adm-text-secondary focus:bg-adm-input-focus focus:outline-none focus:ring-1 focus:ring-adm-text-secondary"
+            placeholder='<script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>&#10;<script>LA.init({id:"xxx",ck:"xxx"})</script>'
+          />
+          <p className="mt-1.5 text-xs text-adm-text-tertiary">
+            将统计平台的代码粘贴到此，会自动注入到页面中。支持 51.la、百度统计、Google Analytics 等
           </p>
         </div>
 

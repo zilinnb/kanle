@@ -95,18 +95,40 @@ async function bootstrap() {
 
     // Migration: ensure cdnProxyUrl column exists (added after initial table creation)
     // sequelize.sync() only creates missing tables, not missing columns on existing tables
+    // Note: actual table name is `site_settings` (lowercase, defined in SiteSetting.ts tableName)
     try {
       const [results] = await sequelize.query(
-        "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'SiteSettings' AND COLUMN_NAME = 'cdnProxyUrl'"
+        "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'site_settings' AND COLUMN_NAME = 'cdnProxyUrl'"
       );
       if (Array.isArray(results) && results.length === 0) {
         await sequelize.query(
-          "ALTER TABLE `SiteSettings` ADD COLUMN `cdnProxyUrl` VARCHAR(500) NOT NULL DEFAULT ''"
+          "ALTER TABLE `site_settings` ADD COLUMN `cdnProxyUrl` VARCHAR(500) NOT NULL DEFAULT ''"
         );
-        console.log("Migration: cdnProxyUrl column added to SiteSettings.");
+        console.log("Migration: cdnProxyUrl column added to site_settings.");
       }
     } catch (e) {
       console.warn("Migration check for cdnProxyUrl skipped:", (e as Error).message);
+    }
+
+    // Migration: ensure analyticsCode column exists
+    // MySQL does not allow DEFAULT on TEXT/BLOB columns, so add without DEFAULT.
+    // Sequelize model still supplies defaultValue("") at the ORM layer for inserts.
+    try {
+      const [results] = await sequelize.query(
+        "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'site_settings' AND COLUMN_NAME = 'analyticsCode'"
+      );
+      if (Array.isArray(results) && results.length === 0) {
+        await sequelize.query(
+          "ALTER TABLE `site_settings` ADD COLUMN `analyticsCode` TEXT NULL"
+        );
+        console.log("Migration: analyticsCode column added to site_settings.");
+      }
+      // Backfill NULL rows with empty string so NOT NULL model constraint holds
+      await sequelize.query(
+        "UPDATE `site_settings` SET `analyticsCode` = '' WHERE `analyticsCode` IS NULL"
+      );
+    } catch (e) {
+      console.warn("Migration check for analyticsCode skipped:", (e as Error).message);
     }
 
     // 启动时清理已过期的黑名单记录

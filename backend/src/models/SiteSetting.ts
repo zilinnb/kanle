@@ -55,11 +55,13 @@ interface SiteSettingAttributes {
   musicAutoplay: boolean;
   /** 图片 CDN 代理地址（为空则用原图）。格式：https://cdn.example.com/src= （直接拼接原图地址） */
   cdnProxyUrl: string;
+  /** 网站统计代码（如 51.la、百度统计等），注入到 </head> 之前 */
+  analyticsCode: string;
 }
 
 interface SiteSettingCreationAttributes extends Optional<
   SiteSettingAttributes,
-  "id" | "siteName" | "description" | "keywords" | "domain" | "beian" | "faviconUrl" | "ogImage" | "musicUrl" | "musicId" | "musicSource" | "playlistId" | "backgroundImages" | "darkModeEnabled" | "darkModeStartTime" | "darkModeEndTime" | "emailNotifyEnabled" | "notifyEmail" | "smtpHost" | "smtpPort" | "smtpSecure" | "smtpUser" | "smtpPass" | "smtpFrom" | "emailTemplate" | "upyunEnabled" | "upyunBucket" | "upyunOperator" | "upyunPassword" | "upyunDomain" | "upyunPath" | "amapJsKey" | "amapSecurityJsCode" | "amapKey" | "beianUrl" | "socialLinks" | "postCollapseLength" | "fontUrl" | "adOnArchives" | "commentAntiSpamEnabled" | "rssEnabled" | "rssIncludeMoments" | "doubanId" | "bannedWords" | "musicAutoplay" | "cdnProxyUrl"
+  "id" | "siteName" | "description" | "keywords" | "domain" | "beian" | "faviconUrl" | "ogImage" | "musicUrl" | "musicId" | "musicSource" | "playlistId" | "backgroundImages" | "darkModeEnabled" | "darkModeStartTime" | "darkModeEndTime" | "emailNotifyEnabled" | "notifyEmail" | "smtpHost" | "smtpPort" | "smtpSecure" | "smtpUser" | "smtpPass" | "smtpFrom" | "emailTemplate" | "upyunEnabled" | "upyunBucket" | "upyunOperator" | "upyunPassword" | "upyunDomain" | "upyunPath" | "amapJsKey" | "amapSecurityJsCode" | "amapKey" | "beianUrl" | "socialLinks" | "postCollapseLength" | "fontUrl" | "adOnArchives" | "commentAntiSpamEnabled" | "rssEnabled" | "rssIncludeMoments" | "doubanId" | "bannedWords" | "musicAutoplay" | "cdnProxyUrl" | "analyticsCode"
 > {}
 
 class SiteSetting
@@ -112,6 +114,7 @@ class SiteSetting
   declare bannedWords: string | null;
   declare musicAutoplay: boolean;
   declare cdnProxyUrl: string;
+  declare analyticsCode: string;
   declare readonly createdAt: Date;
   declare readonly updatedAt: Date;
 }
@@ -349,6 +352,13 @@ SiteSetting.init(
       type: DataTypes.STRING(500),
       allowNull: false,
       defaultValue: "",
+      field: "cdnProxyUrl",
+    },
+    analyticsCode: {
+      type: DataTypes.TEXT,
+      allowNull: false,
+      defaultValue: "",
+      field: "analyticsCode",
     },
   },
   {
