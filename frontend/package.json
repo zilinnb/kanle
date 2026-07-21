@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "postbuild": "node -e \"const fs=require('fs');const p=require('path');const base=p.join('.next','standalone','.next');if(!fs.existsSync(base)){console.log('[postbuild] standalone dir not found, skipping copy');process.exit(0)}fs.cpSync(p.join('.next','static'),p.join(base,'static'),{recursive:true});console.log('[postbuild] copied .next/static -> standalone/.next/static');if(fs.existsSync('public')){fs.cpSync('public',p.join('.next','standalone','public'),{recursive:true});console.log('[postbuild] copied public -> standalone/public')}\",
+    "postbuild": "node scripts/copy-standalone-static.js",
     "start": "next start",
     "lint": "eslint"
   },

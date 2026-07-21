@@ -45,7 +45,7 @@ import { useMusicPlayer } from "@/lib/music-player-store";
 import { Post, MUSIC_PLUGIN_LABELS, type PostLocation, type PostImage, type PostVideo, type PostDouban } from "@/lib/mock-data";
 import { isLivePhoto, getImageSrc } from "@/lib/post-image";
 import { uploadImage, toHttps } from "@/lib/upload";
-import { getImageUrl } from "@/lib/site-settings-store";
+import { getImageUrl, useSiteSettings } from "@/lib/site-settings-store";
 import { useExitAnimation } from "@/lib/use-exit-animation";
 import RichTextEditor from "./RichTextEditor";
 import LazyImage from "./LazyImage";
@@ -983,6 +983,10 @@ export function LoginModal({
     }
   };
 
+  const faviconUrl = useSiteSettings((s) => s.faviconUrl);
+  const siteName = useSiteSettings((s) => s.siteName);
+  const resolvedIcon = faviconUrl ? getImageUrl(faviconUrl) : "";
+
   if (typeof document === "undefined") return null;
   return createPortal(
     <div
@@ -994,21 +998,12 @@ export function LoginModal({
         className={`flex h-[100dvh] w-full flex-col bg-wechat-white pt-[env(safe-area-inset-top)] dark:bg-[#1f1f24] md:h-auto md:max-w-[360px] md:rounded-3xl md:pt-0 md:shadow-2xl md:ring-1 md:ring-black/5 md:dark:ring-white/10 ${closing ? "animate-sheet-to-top md:animate-modal-out" : "animate-sheet-from-top md:animate-modal-in"}`}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* 顶部标题栏：移动端左关闭 + 居中标题；桌面端标题 + 右关闭 */}
-        <div className="flex shrink-0 items-center justify-between px-4 py-3 md:border-b md:border-wechat-border md:px-5 md:py-3.5 md:dark:border-white/10">
+        {/* 顶部标题栏：标题居中 + 关闭按钮右上角 */}
+        <div className="relative flex shrink-0 items-center justify-center px-4 py-3 md:border-b md:border-wechat-border md:px-5 md:py-3.5 md:dark:border-white/10">
+          <h3 className="text-base font-semibold text-wechat-text">登录</h3>
           <button
             onClick={handleClose}
-            className="flex h-9 w-9 items-center justify-center rounded-full text-wechat-text transition-colors hover:bg-wechat-hover md:hidden"
-            aria-label="关闭"
-          >
-            <X className="h-5 w-5" />
-          </button>
-          <h3 className="text-base font-semibold text-wechat-text md:absolute md:left-1/2 md:-translate-x-1/2">
-            登录
-          </h3>
-          <button
-            onClick={handleClose}
-            className="hidden h-9 w-9 items-center justify-center rounded-full text-wechat-time transition-colors hover:bg-wechat-hover hover:text-wechat-text md:flex"
+            className="absolute right-3 flex h-8 w-8 items-center justify-center rounded-full text-wechat-time transition-colors hover:bg-wechat-hover hover:text-wechat-text"
             aria-label="关闭"
           >
             <X className="h-5 w-5" />
@@ -1017,69 +1012,64 @@ export function LoginModal({
 
         {/* 内容区域 — 全屏居中 */}
         <div className="flex flex-1 flex-col justify-center px-6 pb-[env(safe-area-inset-bottom)] md:px-7 md:py-7">
-          {/* 品牌区域 */}
-          <div className="mb-7 flex flex-col items-center md:mb-6">
-            <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-wechat-nickname via-gray-700 to-black shadow-lg shadow-black/15 dark:from-white dark:via-gray-200 dark:to-gray-400 dark:shadow-white/10">
-              <UserRound className="h-8 w-8 text-white dark:text-black" />
-            </div>
-            <h2 className="text-[17px] font-semibold tracking-tight text-wechat-text">
-              欢迎回来
-            </h2>
-            <p className="mt-1 text-xs text-wechat-time">登录以发表动态与评论</p>
-          </div>
-
-          {/* 表单 */}
-          <div className="w-full max-w-[320px] space-y-3 self-center">
-            {/* 用户名或邮箱 */}
-            <div className="relative">
-              <UserRound className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-wechat-time" />
-              <input
-                type="text"
-                value={account}
-                onChange={(e) => setAccount(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
-                placeholder="用户名或邮箱"
-                className="w-full rounded-xl border border-wechat-border bg-wechat-bubble py-3.5 pl-11 pr-3 text-sm text-wechat-text transition-all placeholder:text-wechat-time focus:border-wechat-nickname focus:bg-wechat-white focus:outline-none focus:ring-4 focus:ring-wechat-nickname/10 dark:border-white/10 dark:bg-white/5 dark:focus:bg-white/10"
+          {/* 网站头像 */}
+          {resolvedIcon && (
+            <div className="mb-6 flex justify-center md:mb-5">
+              <img
+                src={resolvedIcon}
+                alt={siteName || "logo"}
+                className="h-14 w-14 rounded-2xl object-cover"
               />
             </div>
+          )}
 
-            {/* Password */}
-            <div className="relative">
-              <Lock className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-wechat-time" />
-              <input
-                type={showPwd ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
-                placeholder="密码"
-                className="w-full rounded-xl border border-wechat-border bg-wechat-bubble py-3.5 pl-11 pr-11 text-sm text-wechat-text transition-all placeholder:text-wechat-time focus:border-wechat-nickname focus:bg-wechat-white focus:outline-none focus:ring-4 focus:ring-wechat-nickname/10 dark:border-white/10 dark:bg-white/5 dark:focus:bg-white/10"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPwd((p) => !p)}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-wechat-time transition-colors hover:text-wechat-text"
-              >
-                {showPwd ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
-                )}
-              </button>
-            </div>
-
-            {/* 错误提示 — 带背景的胶囊，淡入 */}
-            {error && (
-              <div className="animate-content-fade-in flex items-center gap-1.5 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-500 dark:bg-red-500/10 dark:text-red-400">
-                <span className="h-1 w-1 shrink-0 rounded-full bg-red-500 dark:bg-red-400" />
-                {error}
+          {/* 表单 — 评论框风格：白色容器 + 透明输入区 */}
+          <div className="w-full max-w-[320px] self-center">
+            <div className="overflow-hidden rounded-lg bg-wechat-bubble dark:bg-white/5">
+              {/* 用户名或邮箱 */}
+              <div className="relative border-b border-wechat-divider dark:border-white/5">
+                <input
+                  type="text"
+                  value={account}
+                  onChange={(e) => setAccount(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+                  placeholder="用户名或邮箱"
+                  className="w-full bg-transparent px-4 py-3 text-[15px] text-wechat-text outline-none placeholder:text-wechat-time"
+                />
               </div>
+              {/* 密码 */}
+              <div className="relative">
+                <input
+                  type={showPwd ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+                  placeholder="密码"
+                  className="w-full bg-transparent px-4 py-3 pr-10 text-[15px] text-wechat-text outline-none placeholder:text-wechat-time"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPwd((p) => !p)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-wechat-time transition-colors hover:text-wechat-text"
+                >
+                  {showPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+
+            {/* 错误提示 */}
+            {error && (
+              <p className="animate-content-fade-in mt-3 px-1 text-xs text-red-500 dark:text-red-400">
+                {error}
+              </p>
             )}
 
+            {/* 登录按钮 */}
             <button
               type="button"
               onClick={handleSubmit}
               disabled={loading}
-              className="w-full rounded-xl bg-black py-3.5 text-sm font-medium text-white transition-all hover:opacity-90 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-black"
+              className="mt-4 w-full rounded-lg bg-[#07c160] py-3 text-[15px] font-medium text-white transition-all hover:bg-[#06ad56] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {loading ? "登录中..." : "登录"}
             </button>

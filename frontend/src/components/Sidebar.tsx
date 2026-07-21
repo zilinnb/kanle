@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { BookUser, Camera, ExternalLink, Eye, EyeOff, LayoutDashboard, Link2, Lock, LogOut, MoreVertical, UserRound } from "lucide-react";
+import { BookUser, Camera, ExternalLink, Eye, EyeOff, LayoutDashboard, Link2, Lock, LogOut, MoreVertical, Rss, UserRound } from "lucide-react";
 import { User as UserType } from "@/lib/mock-data";
 import { cravatarUrl } from "@/lib/avatar";
 import { getImageUrl } from "@/lib/site-settings-store";
@@ -18,6 +18,16 @@ interface FriendLink {
   desc: string;
   email: string;
   avatar: string;
+}
+
+interface RssArticleItem {
+  id: string;
+  title: string;
+  link: string;
+  desc: string;
+  thumbnail: string;
+  pubDate: string;
+  source?: { id: string; name: string; avatar: string; url: string };
 }
 
 /** 解析友链头像：avatar 优先（邮箱→Cravatar，链接/上传→原值），为空回退 email */
@@ -56,6 +66,15 @@ export default function Sidebar({ owner }: SidebarProps) {
   const [friendsLoadingMore, setFriendsLoadingMore] = useState(false);
   const friendsLoadingRef = useRef(false);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
+
+  // 友圈（RSS）文章
+  const [rssArticles, setRssArticles] = useState<RssArticleItem[]>([]);
+  const [rssLoaded, setRssLoaded] = useState(false);
+  const [rssPage, setRssPage] = useState(1);
+  const [rssHasMore, setRssHasMore] = useState(false);
+  const [rssLoadingMore, setRssLoadingMore] = useState(false);
+  const rssLoadingRef = useRef(false);
+  const [sidebarTab, setSidebarTab] = useState<"friends" | "rss">("friends");
   const [loggedIn, setLoggedIn] = useState<LoggedInUser | null>(null);
   const [showLogin, setShowLogin] = useState(false);
   const [showPublish, setShowPublish] = useState(false);
@@ -130,6 +149,51 @@ export default function Sidebar({ owner }: SidebarProps) {
       .catch(() => {})
       .finally(() => setFriendsLoaded(true));
   }, []);
+
+  // 友圈 RSS 文章首次加载（切换到 rss tab 时触发）
+  const loadRssFirst = useCallback(async () => {
+    if (rssLoaded) return;
+    try {
+      const res = await fetch(`${API_URL}/rss/articles?page=1&limit=10`);
+      const data = await res.json();
+      if (Array.isArray(data.data)) {
+        setRssArticles(data.data);
+        setRssHasMore(data.pagination?.hasMore || false);
+        setRssPage(1);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setRssLoaded(true);
+    }
+  }, [rssLoaded]);
+
+  // 友圈分页：加载更多
+  const loadMoreRss = useCallback(async () => {
+    if (rssLoadingRef.current || !rssHasMore) return;
+    rssLoadingRef.current = true;
+    setRssLoadingMore(true);
+    const nextPage = rssPage + 1;
+    try {
+      const res = await fetch(`${API_URL}/rss/articles?page=${nextPage}&limit=10`);
+      const data = await res.json();
+      if (Array.isArray(data.data)) {
+        setRssArticles((prev) => [...prev, ...data.data]);
+        setRssHasMore(data.pagination?.hasMore || false);
+        setRssPage(nextPage);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setRssLoadingMore(false);
+      rssLoadingRef.current = false;
+    }
+  }, [rssPage, rssHasMore]);
+
+  // 切换到友圈 tab 时加载 RSS
+  useEffect(() => {
+    if (sidebarTab === "rss") loadRssFirst();
+  }, [sidebarTab, loadRssFirst]);
 
   const loadMoreFriends = useCallback(async () => {
     if (friendsLoadingRef.current || !friendsHasMore) return;
@@ -434,98 +498,217 @@ export default function Sidebar({ owner }: SidebarProps) {
         {/* Notifications card — 仅登录博主可见 */}
         {loggedIn && <AdminNotifications variant="sidebar" />}
 
-        {/* Friend links card — 仅在有友链时显示 */}
+        {/* Friend links / RSS card — 仅在有友链时显示 */}
         {(!friendsLoaded || friendLinks.length > 0) && (
           <div className="rounded-2xl bg-wechat-white p-4 shadow-[0_8px_40px_-12px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.4)]">
-            <h3 className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-wechat-text">
-              <BookUser className="h-4 w-4 text-wechat-nickname" />
-              友情链接
-            </h3>
-            {!friendsLoaded ? (
-              <div className="space-y-2">
-                {[...Array(3)].map((_, i) => (
-                  <div key={i} className="flex items-center gap-2.5 px-2 py-1.5">
-                    <div className="h-7 w-7 shrink-0 animate-pulse rounded-[5px] bg-wechat-bubble dark:bg-white/5" />
-                    <div className="flex-1 space-y-1.5">
-                      <div className="h-3 w-1/2 animate-pulse rounded bg-wechat-bubble dark:bg-white/5" />
-                      <div className="h-2.5 w-3/4 animate-pulse rounded bg-wechat-bubble dark:bg-white/5" />
-                    </div>
+            {/* 友链/友圈 切换 tab */}
+            <div className="mb-3 flex gap-1">
+              <button
+                onClick={() => setSidebarTab("friends")}
+                className={`flex-1 rounded-md px-2 py-1 text-[11px] font-medium transition-colors ${
+                  sidebarTab === "friends"
+                    ? "bg-wechat-text text-wechat-white dark:bg-white dark:text-black"
+                    : "bg-wechat-bubble text-wechat-time hover:text-wechat-text dark:bg-white/5"
+                }`}
+              >
+                友链
+              </button>
+              <button
+                onClick={() => setSidebarTab("rss")}
+                className={`flex-1 rounded-md px-2 py-1 text-[11px] font-medium transition-colors ${
+                  sidebarTab === "rss"
+                    ? "bg-wechat-text text-wechat-white dark:bg-white dark:text-black"
+                    : "bg-wechat-bubble text-wechat-time hover:text-wechat-text dark:bg-white/5"
+                }`}
+              >
+                友圈
+              </button>
+            </div>
+
+            {/* 友链列表 */}
+            {sidebarTab === "friends" && (
+              <>
+                {!friendsLoaded ? (
+                  <div className="space-y-2">
+                    {[...Array(3)].map((_, i) => (
+                      <div key={i} className="flex items-center gap-2.5 px-2 py-1.5">
+                        <div className="h-7 w-7 shrink-0 animate-pulse rounded-[5px] bg-wechat-bubble dark:bg-white/5" />
+                        <div className="flex-1 space-y-1.5">
+                          <div className="h-3 w-1/2 animate-pulse rounded bg-wechat-bubble dark:bg-white/5" />
+                          <div className="h-2.5 w-3/4 animate-pulse rounded bg-wechat-bubble dark:bg-white/5" />
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            ) : (
-              <ul className="space-y-1">
-                {friendLinks.map((link) => (
-                  <li key={link.id}>
-                    <a
-                      href={link.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="group flex items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors hover:bg-wechat-hover"
-                    >
-                      <div className="relative h-7 w-7 shrink-0 overflow-hidden rounded-[5px] bg-wechat-bubble">
-                        {resolveFriendAvatar(link, 56) ? (
-                          <Image
-                            src={resolveFriendAvatar(link, 56)}
-                            alt={link.name}
-                            fill
-                            className="object-cover"
-                            sizes="28px"
-                            unoptimized
-                          />
-                        ) : (
-                          <div className="flex h-full w-full items-center justify-center">
-                            <BookUser className="h-3.5 w-3.5 text-wechat-time" />
+                ) : (
+                  <ul className="space-y-1">
+                    {friendLinks.map((link) => (
+                      <li key={link.id}>
+                        <a
+                          href={link.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="group flex items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors hover:bg-wechat-hover"
+                        >
+                          <div className="relative h-7 w-7 shrink-0 overflow-hidden rounded-[5px] bg-wechat-bubble">
+                            {resolveFriendAvatar(link, 56) ? (
+                              <Image
+                                src={resolveFriendAvatar(link, 56)}
+                                alt={link.name}
+                                fill
+                                className="object-cover"
+                                sizes="28px"
+                                unoptimized
+                              />
+                            ) : (
+                              <div className="flex h-full w-full items-center justify-center">
+                                <BookUser className="h-3.5 w-3.5 text-wechat-time" />
+                              </div>
+                            )}
                           </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-[13px] font-medium text-wechat-nickname">
+                              {link.name}
+                            </p>
+                            {link.desc && (
+                              <p className="truncate text-xs text-wechat-time">
+                                {link.desc}
+                              </p>
+                            )}
+                          </div>
+                          <ExternalLink className="ml-1 h-3 w-3 shrink-0 text-wechat-time transition-colors group-hover:text-wechat-text" />
+                        </a>
+                      </li>
+                    ))}
+                    {friendsLoadingMore &&
+                      [...Array(2)].map((_, i) => (
+                        <li key={`fsk-${i}`} className="flex items-center gap-2.5 px-2 py-1.5">
+                          <div className="h-7 w-7 shrink-0 animate-pulse rounded-[5px] bg-wechat-bubble dark:bg-white/5" />
+                          <div className="flex-1 space-y-1.5">
+                            <div className="h-3 w-1/2 animate-pulse rounded bg-wechat-bubble dark:bg-white/5" />
+                            <div className="h-2.5 w-3/4 animate-pulse rounded bg-wechat-bubble dark:bg-white/5" />
+                          </div>
+                        </li>
+                      ))}
+                    {(friendsHasMore || friendsPage > 1) && !friendsLoadingMore && (
+                      <li className="mt-1 flex items-center gap-2">
+                        {friendsHasMore && (
+                          <button
+                            type="button"
+                            onClick={loadMoreFriends}
+                            className="flex-1 rounded-lg py-2 text-center text-xs text-wechat-nickname transition-colors hover:bg-wechat-hover dark:hover:bg-white/5"
+                          >
+                            加载更多
+                          </button>
                         )}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-[13px] font-medium text-wechat-nickname">
-                          {link.name}
-                        </p>
-                        {link.desc && (
-                          <p className="truncate text-xs text-wechat-time">
-                            {link.desc}
-                          </p>
+                        {friendsPage > 1 && (
+                          <button
+                            type="button"
+                            onClick={collapseFriends}
+                            className={`rounded-lg py-2 text-center text-xs text-wechat-time transition-colors hover:bg-wechat-hover dark:hover:bg-white/5 ${friendsHasMore ? "flex-1" : "w-full"}`}
+                          >
+                            收起
+                          </button>
                         )}
-                      </div>
-                      <ExternalLink className="ml-1 h-3 w-3 shrink-0 text-wechat-time transition-colors group-hover:text-wechat-text" />
-                    </a>
-                  </li>
-                ))}
-                {friendsLoadingMore &&
-                  [...Array(2)].map((_, i) => (
-                    <li key={`fsk-${i}`} className="flex items-center gap-2.5 px-2 py-1.5">
-                      <div className="h-7 w-7 shrink-0 animate-pulse rounded-[5px] bg-wechat-bubble dark:bg-white/5" />
-                      <div className="flex-1 space-y-1.5">
-                        <div className="h-3 w-1/2 animate-pulse rounded bg-wechat-bubble dark:bg-white/5" />
-                        <div className="h-2.5 w-3/4 animate-pulse rounded bg-wechat-bubble dark:bg-white/5" />
-                      </div>
-                    </li>
-                  ))}
-                {(friendsHasMore || friendsPage > 1) && !friendsLoadingMore && (
-                  <li className="mt-1 flex items-center gap-2">
-                    {friendsHasMore && (
-                      <button
-                        type="button"
-                        onClick={loadMoreFriends}
-                        className="flex-1 rounded-lg py-2 text-center text-xs text-wechat-nickname transition-colors hover:bg-wechat-hover dark:hover:bg-white/5"
-                      >
-                        加载更多
-                      </button>
+                      </li>
                     )}
-                    {friendsPage > 1 && (
-                      <button
-                        type="button"
-                        onClick={collapseFriends}
-                        className={`rounded-lg py-2 text-center text-xs text-wechat-time transition-colors hover:bg-wechat-hover dark:hover:bg-white/5 ${friendsHasMore ? "flex-1" : "w-full"}`}
-                      >
-                        收起
-                      </button>
-                    )}
-                  </li>
+                  </ul>
                 )}
-              </ul>
+              </>
+            )}
+
+            {/* 友圈（RSS）文章列表 */}
+            {sidebarTab === "rss" && (
+              <>
+                {!rssLoaded ? (
+                  <div className="space-y-2">
+                    {[...Array(3)].map((_, i) => (
+                      <div key={i} className="flex items-start gap-2.5 px-2 py-1.5">
+                        <div className="h-7 w-7 shrink-0 animate-pulse rounded-[5px] bg-wechat-bubble dark:bg-white/5" />
+                        <div className="flex-1 space-y-1.5">
+                          <div className="h-3 w-2/3 animate-pulse rounded bg-wechat-bubble dark:bg-white/5" />
+                          <div className="h-2.5 w-1/2 animate-pulse rounded bg-wechat-bubble dark:bg-white/5" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : rssArticles.length === 0 ? (
+                  <div className="py-4 text-center text-xs text-wechat-time">暂无友圈文章</div>
+                ) : (
+                  <ul className="space-y-1">
+                    {rssArticles.map((article) => (
+                      <li key={article.id}>
+                        <a
+                          href={article.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="group flex items-start gap-2.5 rounded-lg px-2 py-1.5 transition-colors hover:bg-wechat-hover"
+                        >
+                          <div className="relative h-7 w-7 shrink-0 overflow-hidden rounded-[5px] bg-wechat-bubble">
+                            {article.thumbnail ? (
+                              <Image
+                                src={article.thumbnail}
+                                alt={article.title}
+                                fill
+                                className="object-cover"
+                                sizes="28px"
+                                unoptimized
+                              />
+                            ) : article.source?.avatar ? (
+                              <Image
+                                src={article.source.avatar}
+                                alt={article.source.name}
+                                fill
+                                className="object-cover"
+                                sizes="28px"
+                                unoptimized
+                              />
+                            ) : (
+                              <div className="flex h-full w-full items-center justify-center">
+                                <Rss className="h-3.5 w-3.5 text-wechat-time" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="line-clamp-2 text-[13px] font-medium leading-snug text-wechat-nickname">
+                              {article.title}
+                            </p>
+                            <div className="mt-0.5 flex items-center gap-1 text-[10px] text-wechat-time">
+                              {article.source?.name && <span className="truncate">{article.source.name}</span>}
+                              {article.source?.name && article.pubDate && <span>·</span>}
+                              {article.pubDate && (
+                                <span>{new Date(article.pubDate).toLocaleDateString("zh-CN", { month: "long", day: "numeric" })}</span>
+                              )}
+                            </div>
+                          </div>
+                          <ExternalLink className="mt-0.5 ml-1 h-3 w-3 shrink-0 text-wechat-time transition-colors group-hover:text-wechat-text" />
+                        </a>
+                      </li>
+                    ))}
+                    {rssLoadingMore &&
+                      [...Array(2)].map((_, i) => (
+                        <li key={`rsk-${i}`} className="flex items-start gap-2.5 px-2 py-1.5">
+                          <div className="h-7 w-7 shrink-0 animate-pulse rounded-[5px] bg-wechat-bubble dark:bg-white/5" />
+                          <div className="flex-1 space-y-1.5">
+                            <div className="h-3 w-2/3 animate-pulse rounded bg-wechat-bubble dark:bg-white/5" />
+                            <div className="h-2.5 w-1/2 animate-pulse rounded bg-wechat-bubble dark:bg-white/5" />
+                          </div>
+                        </li>
+                      ))}
+                    {rssHasMore && !rssLoadingMore && (
+                      <li className="mt-1">
+                        <button
+                          type="button"
+                          onClick={loadMoreRss}
+                          className="w-full rounded-lg py-2 text-center text-xs text-wechat-nickname transition-colors hover:bg-wechat-hover dark:hover:bg-white/5"
+                        >
+                          加载更多
+                        </button>
+                      </li>
+                    )}
+                  </ul>
+                )}
+              </>
             )}
           </div>
         )}
