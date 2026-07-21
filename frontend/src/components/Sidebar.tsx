@@ -44,6 +44,16 @@ function resolveFriendAvatar(link: { avatar?: string; email?: string }, size = 9
   return "";
 }
 
+/** 解析 RSS 订阅源头像：邮箱→Cravatar，链接/上传→绝对 URL，为空返回空 */
+function resolveRssSourceAvatar(source: { avatar?: string }, size = 96): string {
+  const avatar = (source.avatar || "").trim();
+  if (!avatar) return "";
+  if (!avatar.startsWith("http") && avatar.includes("@")) {
+    return cravatarUrl(avatar, size);
+  }
+  return getImageUrl(avatar);
+}
+
 interface SiteSettings {
   siteName: string;
   description: string;
@@ -645,28 +655,18 @@ export default function Sidebar({ owner }: SidebarProps) {
                           className="group flex items-start gap-2.5 rounded-lg px-2 py-1.5 transition-colors hover:bg-wechat-hover"
                         >
                           <div className="relative h-7 w-7 shrink-0 overflow-hidden rounded-[5px] bg-wechat-bubble">
-                            {article.thumbnail ? (
-                              <Image
-                                src={article.thumbnail}
+                            {/* 默认头像（底层），加载失败时自动显示 */}
+                            <div className="flex h-full w-full items-center justify-center">
+                              <Rss className="h-3.5 w-3.5 text-wechat-time" />
+                            </div>
+                            {/* 实际头像（上层），加载失败时隐藏 */}
+                            {(article.thumbnail || (article.source && resolveRssSourceAvatar(article.source, 56))) && (
+                              <img
+                                src={article.thumbnail || resolveRssSourceAvatar(article.source!, 56)}
                                 alt={article.title}
-                                fill
-                                className="object-cover"
-                                sizes="28px"
-                                unoptimized
+                                className="absolute inset-0 h-full w-full object-cover"
+                                onError={(e) => { e.currentTarget.style.display = "none"; }}
                               />
-                            ) : article.source?.avatar ? (
-                              <Image
-                                src={article.source.avatar}
-                                alt={article.source.name}
-                                fill
-                                className="object-cover"
-                                sizes="28px"
-                                unoptimized
-                              />
-                            ) : (
-                              <div className="flex h-full w-full items-center justify-center">
-                                <Rss className="h-3.5 w-3.5 text-wechat-time" />
-                              </div>
                             )}
                           </div>
                           <div className="min-w-0 flex-1">

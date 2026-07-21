@@ -17,6 +17,7 @@ import {
   ImagePlus,
   Upload,
   Link2,
+  Mail,
   Check,
   Eraser,
   RefreshCw,
@@ -353,7 +354,7 @@ export default function AdminRss() {
                   value={form.avatar}
                   onChange={(e) => setForm({ ...form, avatar: e.target.value })}
                   className="w-full rounded-xl border border-adm-border bg-adm-input px-3 py-2.5 text-sm text-adm-text transition-colors focus:border-adm-text-secondary focus:bg-adm-input-focus focus:outline-none focus:ring-1 focus:ring-adm-text-secondary"
-                  placeholder="https:// 图片链接（选填）"
+                  placeholder="邮箱（自动获取 Cravatar）或 https:// 图片链接"
                 />
                 {/* 实时识别类型提示 */}
                 <div className="mt-1.5 flex items-center justify-between">
@@ -363,7 +364,7 @@ export default function AdminRss() {
                       if (!v) {
                         return (
                           <span className="text-adm-text-tertiary">
-                            可上传图片或填写图片链接
+                            三种方式：上传 / 邮箱 / 图片链接
                           </span>
                         );
                       }
@@ -405,13 +406,16 @@ export default function AdminRss() {
                     </button>
                   )}
                 </div>
-                {/* 两种方式快捷说明 */}
+                {/* 三种方式快捷说明 */}
                 <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-adm-text-tertiary">
                   <span className="flex items-center gap-1">
-                    <Upload className="h-2.5 w-2.5" />点击头像或"上传"按钮
+                    <Upload className="h-2.5 w-2.5" />点击头像上传
                   </span>
                   <span className="flex items-center gap-1">
-                    <Link2 className="h-2.5 w-2.5" />填图片直链使用该图片
+                    <Mail className="h-2.5 w-2.5" />邮箱自动获取 Cravatar
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Link2 className="h-2.5 w-2.5" />图片直链
                   </span>
                 </div>
               </div>
@@ -468,19 +472,18 @@ export default function AdminRss() {
             >
               <GripVertical className="h-4 w-4 shrink-0 text-adm-text-tertiary" />
               <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-lg bg-adm-input">
-                {resolveSourceAvatar(source, 72) ? (
-                  <Image
+                {/* 默认头像（底层） */}
+                <div className="flex h-full w-full items-center justify-center">
+                  <Rss className="h-4 w-4 text-adm-text-tertiary" />
+                </div>
+                {/* 实际头像（上层），加载失败时隐藏 */}
+                {resolveSourceAvatar(source, 72) && (
+                  <img
                     src={resolveSourceAvatar(source, 72)}
                     alt={source.name}
-                    fill
-                    className="object-cover"
-                    sizes="36px"
-                    unoptimized
+                    className="absolute inset-0 h-full w-full object-cover"
+                    onError={(e) => { e.currentTarget.style.display = "none"; }}
                   />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center">
-                    <Rss className="h-4 w-4 text-adm-text-tertiary" />
-                  </div>
                 )}
               </div>
               <div className="min-w-0 flex-1">

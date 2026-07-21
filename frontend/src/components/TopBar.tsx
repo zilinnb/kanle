@@ -108,6 +108,16 @@ function resolveFriendAvatar(link: { avatar?: string; email?: string }, size = 9
   return "";
 }
 
+/** 解析 RSS 订阅源头像：邮箱→Cravatar，链接/上传→绝对 URL，为空返回空 */
+function resolveRssSourceAvatar(source: { avatar?: string }, size = 96): string {
+  const avatar = (source.avatar || "").trim();
+  if (!avatar) return "";
+  if (!avatar.startsWith("http") && avatar.includes("@")) {
+    return cravatarUrl(avatar, size);
+  }
+  return getImageUrl(avatar);
+}
+
 export interface LoggedInUser {
   token: string;
   nickname: string;
@@ -585,12 +595,12 @@ export default function TopBar({ coverHeight = 300 }: TopBarProps) {
 
           {/* Right: friends + publish/login */}
           <div className="flex shrink-0 items-center gap-1.5">
-            {/* 友链按钮：友链和豆瓣都为空时隐藏（加载中仍显示以避免闪烁） */}
+            {/* 友链按钮：移动端显示，桌面端用 Sidebar 中的友链/友圈切换 */}
             {((!friendsLoaded || !doubanLoaded) || friendLinks.length > 0 || hasDouban) && (
             <button
               type="button"
               onClick={() => { setFriendsTab(friendLinks.length === 0 && hasDouban ? "douban" : "friends"); setShowUserMenu(false); setShowFriends(true); }}
-              className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${iconClass}`}
+              className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors md:hidden ${iconClass}`}
               aria-label="友链"
             >
               <Contact className="h-[18px] w-[18px]" />
@@ -854,22 +864,18 @@ export default function TopBar({ coverHeight = 300 }: TopBarProps) {
                             className="flex items-start gap-3 rounded-lg px-2 py-2.5 transition-colors hover:bg-wechat-hover"
                           >
                             <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-[8px] bg-wechat-bubble">
-                              {article.thumbnail ? (
-                                <LazyImage
-                                  src={article.thumbnail}
+                              {/* 默认头像（底层），加载失败时自动显示 */}
+                              <div className="flex h-full w-full items-center justify-center">
+                                <Rss className="h-4 w-4 text-wechat-time" />
+                              </div>
+                              {/* 实际头像（上层），加载失败时隐藏 */}
+                              {(article.thumbnail || (article.source && resolveRssSourceAvatar(article.source, 80))) && (
+                                <img
+                                  src={article.thumbnail || resolveRssSourceAvatar(article.source!, 80)}
                                   alt={article.title}
-                                  className="h-full w-full object-cover"
+                                  className="absolute inset-0 h-full w-full object-cover"
+                                  onError={(e) => { e.currentTarget.style.display = "none"; }}
                                 />
-                              ) : article.source?.avatar ? (
-                                <LazyImage
-                                  src={article.source.avatar}
-                                  alt={article.source.name}
-                                  className="h-full w-full object-cover"
-                                />
-                              ) : (
-                                <div className="flex h-full w-full items-center justify-center">
-                                  <Rss className="h-4 w-4 text-wechat-time" />
-                                </div>
                               )}
                             </div>
                             <div className="min-w-0 flex-1">
