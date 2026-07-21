@@ -253,11 +253,12 @@ export default function LaAnalyticsSection() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const fetchData = async () => {
+  const fetchData = async (force = false) => {
     setLoading(true);
     setError("");
     try {
-      const res = await apiFetch("/analytics/overview");
+      const url = force ? "/analytics/overview?force=1" : "/analytics/overview";
+      const res = await apiFetch(url);
       if (!res.ok) {
         const err = await res.json().catch(() => ({ message: "获取失败" }));
         throw new Error(err.message || "获取失败");
@@ -316,6 +317,11 @@ export default function LaAnalyticsSection() {
               {data.range.startDate} ~ {data.range.endDate}
             </span>
           )}
+          {data?.fetchedAt && (
+            <span className="text-[10px] text-adm-text-tertiary/70" title={data.fetchedAt}>
+              更新于 {new Date(data.fetchedAt).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <a
@@ -327,10 +333,10 @@ export default function LaAnalyticsSection() {
             51.la <ExternalLink className="h-3 w-3" />
           </a>
           <button
-            onClick={fetchData}
+            onClick={() => fetchData(true)}
             disabled={loading}
             className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-adm-text-secondary transition-colors hover:bg-adm-card-hover disabled:opacity-50"
-            title="刷新数据"
+            title="强制刷新（跳过缓存）"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
             刷新

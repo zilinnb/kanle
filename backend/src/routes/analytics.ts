@@ -21,7 +21,8 @@ import { authenticate, requireAdmin, AuthRequest } from "../middleware/auth";
 const router = Router();
 
 const LA_API_BASE = "https://v6-open.51.la";
-const CACHE_TTL = 5 * 60 * 1000; // 5 分钟
+const CACHE_TTL = 2 * 60 * 1000; // 2 分钟（趋势数据）
+const REALTIME_CACHE_TTL = 30 * 1000; // 30 秒（实时数据）
 
 interface CacheEntry<T> {
   data: T;
@@ -179,8 +180,8 @@ router.get("/realtime", authenticate, requireAdmin, async (req: Request, res: Re
       return;
     }
     const data = await callLaApi("/open/online/data", { type });
-    // 实时数据变化较快，缓存 2 分钟
-    setCached(cacheKey, data, 2 * 60 * 1000);
+    // 实时数据变化快，缓存 30 秒
+    setCached(cacheKey, data, REALTIME_CACHE_TTL);
     res.json(data);
   } catch (err) {
     handleErr(err, res);
@@ -190,14 +191,18 @@ router.get("/realtime", authenticate, requireAdmin, async (req: Request, res: Re
 /**
  * GET /api/analytics/overview - 聚合仪表盘数据
  * 返回：趋势(7天)、新老访客、来路、受访页、入口页
+ * ?force=1 跳过缓存，强制拉取最新数据（供前端"刷新"按钮使用）
  */
-router.get("/overview", authenticate, requireAdmin, async (_req: AuthRequest, res: Response) => {
+router.get("/overview", authenticate, requireAdmin, async (req: AuthRequest, res: Response) => {
   try {
+    const force = req.query.force === "1" || req.query.force === "true";
     const cacheKey = "overview:default";
-    const cached = getCached<unknown>(cacheKey);
-    if (cached) {
-      res.json(cached);
-      return;
+    if (!force) {
+      const cached = getCached<unknown>(cacheKey);
+      if (cached) {
+        res.json(cached);
+        return;
+      }
     }
     const now = new Date();
     const start = new Date(now);
@@ -227,7 +232,8 @@ router.get("/overview", authenticate, requireAdmin, async (_req: AuthRequest, re
       range: { startDate, endDate },
       fetchedAt: new Date().toISOString(),
     };
-    setCached(cacheKey, data);
+    // 趋势用 2 分钟缓存，但实时明细（来路/受访页/入口页）变化较快，用 30 秒
+    setCached(cacheKey, data, REALTIME_CACHE_TTL);
     res.json(data);
   } catch (err) {
     handleErr(err, res);
