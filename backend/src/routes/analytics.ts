@@ -44,22 +44,23 @@ function setCached<T>(key: string, data: T, ttl = CACHE_TTL): void {
   cache.set(key, { data, expiresAt: Date.now() + ttl });
 }
 
-/** 生成 6 位随机 nonce */
+/** 生成 4 位随机 nonce（51.la 要求 4 位） */
 function genNonce(): string {
-  return Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+  return Math.random().toString(36).slice(2, 6);
 }
 
 /**
  * 构造 51.la OpenAPI 签名
  * 规则：将 accessKey/nonce/secretKey/timestamp 按 key 字典顺序排列，
  * 拼接成 `key=value&key=value` 形式，SHA256 加密后转 hex 大写。
+ * 注意：timestamp 必须是 13 位毫秒级字符串。
  */
-function buildSign(accessKey: string, secretKey: string, nonce: string, timestamp: number): string {
+function buildSign(accessKey: string, secretKey: string, nonce: string, timestamp: string): string {
   const params: Record<string, string> = {
     accessKey,
     nonce,
     secretKey,
-    timestamp: String(timestamp),
+    timestamp,
   };
   const keys = Object.keys(params).sort();
   const signString = keys.map((k) => `${k}=${params[k]}`).join("&");
@@ -92,7 +93,8 @@ async function callLaApi<T = unknown>(path: string, bizParams: Record<string, un
   if (!cfg) {
     throw new Error("NOT_CONFIGURED");
   }
-  const timestamp = Math.floor(Date.now() / 1000);
+  // 51.la 要求 timestamp 为 13 位毫秒级字符串
+  const timestamp = String(Date.now());
   const nonce = genNonce();
   const sign = buildSign(cfg.accessKey, cfg.secretKey, nonce, timestamp);
 
@@ -110,11 +112,12 @@ async function callLaApi<T = unknown>(path: string, bizParams: Record<string, un
     timeout: 10000,
   });
 
-  // 51.la 返回结构：{ code: 0, msg: "success", data: {...} }
-  if (resp.data && typeof resp.data.code !== "undefined" && resp.data.code !== 0 && resp.data.code !== "00000") {
-    throw new Error(`51.la API error: ${resp.data.msg || resp.data.message || JSON.stringify(resp.data)}`);
+  // 51.la 返回结构：{ success, code: "0000", message, data|bean }
+  // code "0000" 表示成功；trend 接口数据在 data 字段，online 接口数据在 bean 字段
+  if (resp.data && resp.data.code !== "0000") {
+    throw new Error(`51.la API error: ${resp.data.message || resp.data.msg || JSON.stringify(resp.data)}`);
   }
-  return (resp.data?.data ?? resp.data) as T;
+  return (resp.data?.bean ?? resp.data?.data ?? resp.data) as T;
 }
 
 /** 统一错误处理 */
@@ -154,14 +157,11 @@ router.get("/trend", authenticate, requireAdmin, async (req: Request, res: Respo
     const now = new Date();
     const start = new Date(now);
     start.setDate(start.getDate() - (range - 1));
-    const startStr = unit === "day"
-      ? `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-${String(start.getDate()).padStart(2, "0")}`
-      : `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-${String(start.getDate()).padStart(2, "0")} ${String(start.getHours()).padStart(2, "0")}:00:00`;
-    const endStr = unit === "day"
-      ? `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`
-      : `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")} ${String(now.getHours()).padStart(2, "0")}:59:59`;
+    // 51.la 趋势接口参数：按天用 startDay/endDay（YYYY-MM-dd），按小时用 startDay/endDay + 小时
+    const startDay = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-${String(start.getDate()).padStart(2, "0")}`;
+    const endDay = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
     const path = unit === "day" ? "/open/trend/day" : "/open/trend/hour";
-    const data = await callLaApi(path, { startDate: startStr, endDate: endStr });
+    const data = await callLaApi(path, { startDay, endDay });
     setCached(cacheKey, data);
     res.json(data);
   } catch (err) {
@@ -179,8 +179,8 @@ router.get("/realtime", authenticate, requireAdmin, async (req: Request, res: Re
       res.json(cached);
       return;
     }
-    const data = await callLaApi("/open/online/data", { type });
-    // 实时数据变化快，缓存 30 秒
+    // online/data 必须传 minute（5/15/30），maskId 由 callLaApi 自动添加
+    const data = await callLaApi("/open/online/data", { type, minute: 30 });
     setCached(cacheKey, data, REALTIME_CACHE_TTL);
     res.json(data);
   } catch (err) {
@@ -208,16 +208,17 @@ router.get("/overview", authenticate, requireAdmin, async (req: AuthRequest, res
     const start = new Date(now);
     start.setDate(start.getDate() - 6); // 最近 7 天
     const fmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-    const startDate = fmt(start);
-    const endDate = fmt(now);
+    const startDay = fmt(start);
+    const endDay = fmt(now);
 
     // 并行请求多个端点
-    const [trend, newVsReturn, src, interview, entry] = await Promise.allSettled([
-      callLaApi("/open/trend/day", { startDate, endDate }),
-      callLaApi("/open/online/data", { type: "ACTIVE_USER" }),
-      callLaApi("/open/online/data", { type: "SRC" }),
-      callLaApi("/open/online/data", { type: "INTERVIEW" }),
-      callLaApi("/open/online/data", { type: "ENTRY" }),
+    // trend/day 用 startDay/endDay；online/data 用 type + minute(30)，maskId 由 callLaApi 自动添加
+    const [trend, activeUser, src, interview, entry] = await Promise.allSettled([
+      callLaApi("/open/trend/day", { startDay, endDay }),
+      callLaApi("/open/online/data", { type: "ACTIVE_USER", minute: 30 }),
+      callLaApi("/open/online/data", { type: "SRC", minute: 30 }),
+      callLaApi("/open/online/data", { type: "INTERVIEW", minute: 30 }),
+      callLaApi("/open/online/data", { type: "ENTRY", minute: 30 }),
     ]);
 
     const unwrap = <T,>(r: PromiseSettledResult<T>): T | null =>
@@ -225,11 +226,11 @@ router.get("/overview", authenticate, requireAdmin, async (req: AuthRequest, res
 
     const data = {
       trend: unwrap(trend),
-      newVsReturn: unwrap(newVsReturn),
+      activeUser: unwrap(activeUser),
       src: unwrap(src),
       interview: unwrap(interview),
       entry: unwrap(entry),
-      range: { startDate, endDate },
+      range: { startDay, endDay },
       fetchedAt: new Date().toISOString(),
     };
     // 趋势用 2 分钟缓存，但实时明细（来路/受访页/入口页）变化较快，用 30 秒

@@ -59,11 +59,11 @@ interface ListItem {
 
 interface OverviewData {
   trend: unknown;
-  newVsReturn: unknown;
+  activeUser: unknown;
   src: unknown;
   interview: unknown;
   entry: unknown;
-  range?: { startDate: string; endDate: string };
+  range?: { startDay: string; endDay: string };
   fetchedAt?: string;
 }
 
@@ -71,10 +71,10 @@ interface OverviewData {
 function extractList(raw: unknown): ListItem[] {
   if (!raw || typeof raw !== "object") return [];
   const obj = raw as Record<string, unknown>;
-  // 常见结构：{ list: [...] } / { data: { list: [...] } } / { data: [...] } / [...]
-  let list: unknown = obj.list ?? obj.data ?? obj.items ?? obj.rows;
+  // online/data 返回 { topList: [...] }；trend 返回 { data: [...] }；其他可能 { list: [...] }
+  let list: unknown = obj.topList ?? obj.list ?? obj.data ?? obj.items ?? obj.rows;
   if (list && typeof list === "object" && !Array.isArray(list)) {
-    list = (list as Record<string, unknown>).list ?? (list as Record<string, unknown>).data ?? (list as Record<string, unknown>).items;
+    list = (list as Record<string, unknown>).topList ?? (list as Record<string, unknown>).list ?? (list as Record<string, unknown>).data ?? (list as Record<string, unknown>).items;
   }
   if (Array.isArray(list)) return list as ListItem[];
   if (Array.isArray(raw)) return raw as ListItem[];
@@ -314,7 +314,7 @@ export default function LaAnalyticsSection() {
           <h3 className="text-sm font-semibold text-adm-text">51.la 网站统计</h3>
           {data?.range && (
             <span className="text-xs text-adm-text-tertiary">
-              {data.range.startDate} ~ {data.range.endDate}
+              {data.range.startDay} ~ {data.range.endDay}
             </span>
           )}
           {data?.fetchedAt && (
