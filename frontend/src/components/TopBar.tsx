@@ -1030,18 +1030,19 @@ export function LoginModal({
                   onChange={(e) => setAccount(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && canSubmit && handleSubmit()}
                   placeholder="用户名或邮箱"
-                  className="w-full bg-transparent px-4 py-2.5 text-[14px] text-wechat-text outline-none placeholder:text-wechat-time"
+                  className="w-full bg-transparent px-4 py-3 text-[14px] text-wechat-text outline-none placeholder:text-wechat-time"
                 />
               </div>
-              {/* 密码 */}
+              {/* 密码 — 使用 text-security 替代原生 password 圆点，可控制圆点大小 */}
               <div className="relative">
                 <input
-                  type={showPwd ? "text" : "password"}
+                  type="text"
+                  style={!showPwd ? ({ WebkitTextSecurity: "disc" } as React.CSSProperties) : undefined}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && canSubmit && handleSubmit()}
                   placeholder="密码"
-                  className="w-full bg-transparent px-4 py-2.5 pr-10 text-[12px] leading-[14px] text-wechat-text outline-none placeholder:text-wechat-time placeholder:text-[14px]"
+                  className="w-full bg-transparent px-4 py-3 pr-10 text-[10px] leading-[20px] tracking-[2px] text-wechat-text outline-none placeholder:text-wechat-time placeholder:text-[14px] placeholder:tracking-normal"
                 />
                 <button
                   type="button"
