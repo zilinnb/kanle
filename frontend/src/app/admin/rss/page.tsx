@@ -8,7 +8,7 @@ export default function Page() {
   const siteName = useSiteSettings((s) => s.siteName);
 
   useEffect(() => {
-    document.title = `友圈管理 - ${siteName}`;
+    document.title = `订阅友圈 - ${siteName}`;
   }, [siteName]);
 
   return <AdminRss />;

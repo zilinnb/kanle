@@ -205,7 +205,7 @@ export default function AdminRss() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-bold text-adm-text">友圈管理</h2>
+          <h2 className="text-lg font-bold text-adm-text">订阅友圈</h2>
           <p className="mt-1 text-sm text-adm-text-secondary">
             管理 RSS 订阅源，聚合友圈文章
           </p>
