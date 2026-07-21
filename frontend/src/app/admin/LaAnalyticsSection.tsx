@@ -59,7 +59,6 @@ interface ListItem {
 
 interface OverviewData {
   trend: unknown;
-  activeUser: unknown;
   src: unknown;
   interview: unknown;
   entry: unknown;
@@ -253,12 +252,11 @@ export default function LaAnalyticsSection() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const fetchData = async (force = false) => {
+  const fetchData = async () => {
     setLoading(true);
     setError("");
     try {
-      const url = force ? "/analytics/overview?force=1" : "/analytics/overview";
-      const res = await apiFetch(url);
+      const res = await apiFetch("/analytics/overview");
       if (!res.ok) {
         const err = await res.json().catch(() => ({ message: "获取失败" }));
         throw new Error(err.message || "获取失败");
@@ -319,9 +317,12 @@ export default function LaAnalyticsSection() {
           )}
           {data?.fetchedAt && (
             <span className="text-[10px] text-adm-text-tertiary/70" title={data.fetchedAt}>
-              更新于 {new Date(data.fetchedAt).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+              数据拉取于 {new Date(data.fetchedAt).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" })}
             </span>
           )}
+          <span className="rounded bg-adm-input/60 px-1.5 py-0.5 text-[10px] text-adm-text-tertiary">
+            每日 0 点更新
+          </span>
         </div>
         <div className="flex items-center gap-2">
           <a
@@ -333,10 +334,10 @@ export default function LaAnalyticsSection() {
             51.la <ExternalLink className="h-3 w-3" />
           </a>
           <button
-            onClick={() => fetchData(true)}
+            onClick={() => fetchData()}
             disabled={loading}
             className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-adm-text-secondary transition-colors hover:bg-adm-card-hover disabled:opacity-50"
-            title="强制刷新（跳过缓存）"
+            title="重新加载（走缓存，不消耗配额）"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
             刷新
@@ -408,27 +409,45 @@ export default function LaAnalyticsSection() {
   );
 }
 
-/** 明细表格：页面地址 + 数值 */
+/** 明细表格：页面地址（可点击） + 次数 */
 function DetailTable({ title, items, label }: { title: string; items: ListItem[]; label: string }) {
   const top = items.slice(0, 10);
   return (
     <div className="rounded-xl border border-adm-border bg-adm-input/30 p-3">
-      <h4 className="mb-2 text-xs font-medium text-adm-text-secondary">{title}</h4>
+      <div className="mb-2 flex items-center justify-between">
+        <h4 className="text-xs font-medium text-adm-text-secondary">{title}</h4>
+        <span className="text-[10px] text-adm-text-tertiary">{label}</span>
+      </div>
       {top.length === 0 ? (
         <p className="py-4 text-center text-xs text-adm-text-tertiary">暂无数据</p>
       ) : (
-        <div className="space-y-1">
-          {top.map((it, idx) => (
-            <div key={idx} className="flex items-center justify-between gap-2 rounded px-2 py-1 text-xs hover:bg-adm-card-hover">
-              <span className="min-w-0 flex-1 truncate text-adm-text-secondary" title={itemName(it)}>
-                {itemName(it)}
-              </span>
-              <span className="shrink-0 font-medium text-adm-text">{itemValue(it)}</span>
-            </div>
-          ))}
+        <div className="space-y-0.5">
+          {top.map((it, idx) => {
+            const url = (it.url || it.link || "").toString();
+            const name = (it.name || it.title || url || "未知").toString();
+            return (
+              <div key={idx} className="flex items-center justify-between gap-2 rounded px-2 py-1.5 text-xs hover:bg-adm-card-hover">
+                {url ? (
+                  <a
+                    href={url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="min-w-0 flex-1 truncate text-adm-primary hover:underline"
+                    title={url}
+                  >
+                    {name}
+                  </a>
+                ) : (
+                  <span className="min-w-0 flex-1 truncate text-adm-text-secondary" title={name}>
+                    {name}
+                  </span>
+                )}
+                <span className="shrink-0 font-semibold text-adm-text">{itemValue(it)}</span>
+              </div>
+            );
+          })}
         </div>
       )}
-      <p className="mt-2 text-[10px] text-adm-text-tertiary">{label}</p>
     </div>
   );
 }

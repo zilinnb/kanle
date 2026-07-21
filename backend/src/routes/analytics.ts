@@ -21,8 +21,6 @@ import { authenticate, requireAdmin, AuthRequest } from "../middleware/auth";
 const router = Router();
 
 const LA_API_BASE = "https://v6-open.51.la";
-const CACHE_TTL = 2 * 60 * 1000; // 2 分钟（趋势数据）
-const REALTIME_CACHE_TTL = 30 * 1000; // 30 秒（实时数据）
 
 interface CacheEntry<T> {
   data: T;
@@ -40,8 +38,22 @@ function getCached<T>(key: string): T | null {
   return entry.data as T;
 }
 
-function setCached<T>(key: string, data: T, ttl = CACHE_TTL): void {
-  cache.set(key, { data, expiresAt: Date.now() + ttl });
+function setCached<T>(key: string, data: T, ttlMs: number): void {
+  cache.set(key, { data, expiresAt: Date.now() + ttlMs });
+}
+
+/** 当天日期字符串（YYYY-MM-DD），用于缓存 key 隔离每天数据 */
+function todayKey(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+/** 计算到当天午夜（次日 0 点）的毫秒数 —— 51.la 每月仅 100 次配额，缓存到午夜一天只调一次 */
+function msUntilMidnight(): number {
+  const now = new Date();
+  const midnight = new Date(now);
+  midnight.setHours(24, 0, 0, 0);
+  return midnight.getTime() - now.getTime();
 }
 
 /** 生成 4 位随机 nonce（51.la 要求 4 位） */
@@ -148,7 +160,7 @@ router.get("/trend", authenticate, requireAdmin, async (req: Request, res: Respo
   try {
     const range = parseInt(req.query.range as string, 10) || 7;
     const unit = (req.query.unit as string) === "hour" ? "hour" : "day";
-    const cacheKey = `trend:${unit}:${range}`;
+    const cacheKey = `trend:${unit}:${range}:${todayKey()}`;
     const cached = getCached<unknown>(cacheKey);
     if (cached) {
       res.json(cached);
@@ -157,12 +169,12 @@ router.get("/trend", authenticate, requireAdmin, async (req: Request, res: Respo
     const now = new Date();
     const start = new Date(now);
     start.setDate(start.getDate() - (range - 1));
-    // 51.la 趋势接口参数：按天用 startDay/endDay（YYYY-MM-dd），按小时用 startDay/endDay + 小时
+    // 51.la 趋势接口参数：按天用 startDay/endDay（YYYY-MM-dd）
     const startDay = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-${String(start.getDate()).padStart(2, "0")}`;
     const endDay = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
     const path = unit === "day" ? "/open/trend/day" : "/open/trend/hour";
     const data = await callLaApi(path, { startDay, endDay });
-    setCached(cacheKey, data);
+    setCached(cacheKey, data, msUntilMidnight());
     res.json(data);
   } catch (err) {
     handleErr(err, res);
@@ -173,7 +185,7 @@ router.get("/trend", authenticate, requireAdmin, async (req: Request, res: Respo
 router.get("/realtime", authenticate, requireAdmin, async (req: Request, res: Response) => {
   try {
     const type = (req.query.type as string) || "ACTIVE_USER";
-    const cacheKey = `realtime:${type}`;
+    const cacheKey = `realtime:${type}:${todayKey()}`;
     const cached = getCached<unknown>(cacheKey);
     if (cached) {
       res.json(cached);
@@ -181,7 +193,7 @@ router.get("/realtime", authenticate, requireAdmin, async (req: Request, res: Re
     }
     // online/data 必须传 minute（5/15/30），maskId 由 callLaApi 自动添加
     const data = await callLaApi("/open/online/data", { type, minute: 30 });
-    setCached(cacheKey, data, REALTIME_CACHE_TTL);
+    setCached(cacheKey, data, msUntilMidnight());
     res.json(data);
   } catch (err) {
     handleErr(err, res);
@@ -190,13 +202,14 @@ router.get("/realtime", authenticate, requireAdmin, async (req: Request, res: Re
 
 /**
  * GET /api/analytics/overview - 聚合仪表盘数据
- * 返回：趋势(7天)、新老访客、来路、受访页、入口页
- * ?force=1 跳过缓存，强制拉取最新数据（供前端"刷新"按钮使用）
+ * 返回：趋势(7天)、来路、受访页、入口页
+ * 51.la 每月仅 100 次配额 → 缓存到当天午夜，一天只调 4 次 API
+ * ?force=1 可跳过缓存（手动调试用，UI 不暴露）
  */
 router.get("/overview", authenticate, requireAdmin, async (req: AuthRequest, res: Response) => {
   try {
     const force = req.query.force === "1" || req.query.force === "true";
-    const cacheKey = "overview:default";
+    const cacheKey = `overview:${todayKey()}`;
     if (!force) {
       const cached = getCached<unknown>(cacheKey);
       if (cached) {
@@ -211,11 +224,10 @@ router.get("/overview", authenticate, requireAdmin, async (req: AuthRequest, res
     const startDay = fmt(start);
     const endDay = fmt(now);
 
-    // 并行请求多个端点
+    // 并行请求 4 个端点（去掉 ACTIVE_USER 省配额）：
     // trend/day 用 startDay/endDay；online/data 用 type + minute(30)，maskId 由 callLaApi 自动添加
-    const [trend, activeUser, src, interview, entry] = await Promise.allSettled([
+    const [trend, src, interview, entry] = await Promise.allSettled([
       callLaApi("/open/trend/day", { startDay, endDay }),
-      callLaApi("/open/online/data", { type: "ACTIVE_USER", minute: 30 }),
       callLaApi("/open/online/data", { type: "SRC", minute: 30 }),
       callLaApi("/open/online/data", { type: "INTERVIEW", minute: 30 }),
       callLaApi("/open/online/data", { type: "ENTRY", minute: 30 }),
@@ -226,15 +238,13 @@ router.get("/overview", authenticate, requireAdmin, async (req: AuthRequest, res
 
     const data = {
       trend: unwrap(trend),
-      activeUser: unwrap(activeUser),
       src: unwrap(src),
       interview: unwrap(interview),
       entry: unwrap(entry),
       range: { startDay, endDay },
       fetchedAt: new Date().toISOString(),
     };
-    // 趋势用 2 分钟缓存，但实时明细（来路/受访页/入口页）变化较快，用 30 秒
-    setCached(cacheKey, data, REALTIME_CACHE_TTL);
+    setCached(cacheKey, data, msUntilMidnight());
     res.json(data);
   } catch (err) {
     handleErr(err, res);
