@@ -1041,7 +1041,7 @@ export function LoginModal({
                   onChange={(e) => setPassword(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && canSubmit && handleSubmit()}
                   placeholder="密码"
-                  className="w-full bg-transparent px-4 py-2.5 pr-10 text-[14px] text-wechat-text outline-none placeholder:text-wechat-time"
+                  className="w-full bg-transparent px-4 py-2.5 pr-10 text-[12px] leading-[14px] text-wechat-text outline-none placeholder:text-wechat-time placeholder:text-[14px]"
                 />
                 <button
                   type="button"
