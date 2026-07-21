@@ -992,6 +992,7 @@ export function LoginModal({
   const faviconUrl = useSiteSettings((s) => s.faviconUrl);
   const siteName = useSiteSettings((s) => s.siteName);
   const resolvedIcon = faviconUrl ? getImageUrl(faviconUrl) : "";
+  const canSubmit = account.trim().length > 0 && password.trim().length > 0;
 
   if (typeof document === "undefined") return null;
   return createPortal(
@@ -1018,29 +1019,33 @@ export function LoginModal({
 
         {/* 内容区域 — 全屏居中 */}
         <div className="flex flex-1 flex-col justify-center px-6 pb-[env(safe-area-inset-bottom)] md:px-7 md:py-7">
-          {/* 网站头像 */}
-          {resolvedIcon && (
-            <div className="mb-6 flex justify-center md:mb-5">
+          {/* 网站头像 + 名称 */}
+          <div className="mb-8 flex flex-col items-center md:mb-6">
+            {resolvedIcon && (
               <img
                 src={resolvedIcon}
                 alt={siteName || "logo"}
-                className="h-14 w-14 rounded-2xl object-cover"
+                className="h-16 w-16 rounded-2xl object-cover shadow-sm md:h-14 md:w-14"
               />
-            </div>
-          )}
+            )}
+            {siteName && (
+              <p className="mt-3 text-sm text-wechat-time">{siteName}</p>
+            )}
+          </div>
 
-          {/* 表单 — 评论框风格：白色容器 + 透明输入区 */}
+          {/* 表单 — 评论框风格：灰色容器 + 透明输入区 */}
           <div className="w-full max-w-[320px] self-center">
-            <div className="overflow-hidden rounded-lg bg-wechat-bubble dark:bg-white/5">
+            <div className="overflow-hidden rounded-xl bg-wechat-bubble dark:bg-white/5">
               {/* 用户名或邮箱 */}
               <div className="relative border-b border-wechat-divider dark:border-white/5">
                 <input
                   type="text"
                   value={account}
                   onChange={(e) => setAccount(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+                  onKeyDown={(e) => e.key === "Enter" && canSubmit && handleSubmit()}
                   placeholder="用户名或邮箱"
-                  className="w-full bg-transparent px-4 py-3 text-[15px] text-wechat-text outline-none placeholder:text-wechat-time"
+                  className="w-full bg-transparent px-4 py-3.5 text-[15px] text-wechat-text outline-none placeholder:text-wechat-time"
+                  autoFocus
                 />
               </div>
               {/* 密码 */}
@@ -1049,9 +1054,9 @@ export function LoginModal({
                   type={showPwd ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+                  onKeyDown={(e) => e.key === "Enter" && canSubmit && handleSubmit()}
                   placeholder="密码"
-                  className="w-full bg-transparent px-4 py-3 pr-10 text-[15px] text-wechat-text outline-none placeholder:text-wechat-time"
+                  className="w-full bg-transparent px-4 py-3.5 pr-10 text-[15px] text-wechat-text outline-none placeholder:text-wechat-time"
                 />
                 <button
                   type="button"
@@ -1070,15 +1075,17 @@ export function LoginModal({
               </p>
             )}
 
-            {/* 登录按钮 */}
-            <button
-              type="button"
-              onClick={handleSubmit}
-              disabled={loading}
-              className="mt-4 w-full rounded-lg bg-[#07c160] py-3 text-[15px] font-medium text-white transition-all hover:bg-[#06ad56] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {loading ? "登录中..." : "登录"}
-            </button>
+            {/* 登录按钮 — 仅在账号和密码都输入后显示 */}
+            {canSubmit && (
+              <button
+                type="button"
+                onClick={handleSubmit}
+                disabled={loading}
+                className="animate-content-fade-in mt-5 w-full rounded-xl bg-[#07c160] py-3.5 text-[15px] font-medium text-white transition-all hover:bg-[#06ad56] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {loading ? "登录中..." : "登录"}
+              </button>
+            )}
           </div>
         </div>
       </div>
