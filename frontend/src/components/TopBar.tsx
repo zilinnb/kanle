@@ -583,14 +583,14 @@ export default function TopBar({ coverHeight = 300 }: TopBarProps) {
           </div>
           )}
 
-          {/* Right: friends + publish/login (mobile only, desktop uses left side) */}
+          {/* Right: friends + publish/login */}
           <div className="flex shrink-0 items-center gap-1.5">
             {/* 友链按钮：友链和豆瓣都为空时隐藏（加载中仍显示以避免闪烁） */}
             {((!friendsLoaded || !doubanLoaded) || friendLinks.length > 0 || hasDouban) && (
             <button
               type="button"
               onClick={() => { setFriendsTab(friendLinks.length === 0 && hasDouban ? "douban" : "friends"); setShowUserMenu(false); setShowFriends(true); }}
-              className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors md:hidden ${iconClass}`}
+              className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${iconClass}`}
               aria-label="友链"
             >
               <Contact className="h-[18px] w-[18px]" />

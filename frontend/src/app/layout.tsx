@@ -131,6 +131,7 @@ export default async function RootLayout({
       </head>
       <body className="min-h-full bg-white text-wechat-text dark:bg-wechat-bg">
         <div id="initial-loading-bar" />
+        <script dangerouslySetInnerHTML={{ __html: `(function(){var r=sessionStorage.getItem('__chunkReload');if(r){try{var t=parseInt(r);if(Date.now()-t<60000){sessionStorage.removeItem('__chunkReload');return}}catch(e){}}window.addEventListener('error',function(e){var m=e&&e.message||'';var t=e&&e.target&&e.target.tagName;if((m.indexOf('ChunkLoadError')>=0||m.indexOf('Loading chunk')>=0||m.indexOf('Loading CSS chunk')>=0)&&(e.target&&(e.target.src||e.target.href))){sessionStorage.setItem('__chunkReload',Date.now().toString());window.location.reload()}});window.addEventListener('unhandledrejection',function(e){var m=e&&e.reason&&(e.reason.message||e.reason)||'';if(m.indexOf('ChunkLoadError')>=0||m.indexOf('Loading chunk')>=0){sessionStorage.setItem('__chunkReload',Date.now().toString());window.location.reload()}})})();` }} />
         <LoadingBar />
         <ThemeProvider>
           <GlobalMusicManager />
