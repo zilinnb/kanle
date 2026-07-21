@@ -425,7 +425,7 @@ function DetailTable({ title, items, label }: { title: string; items: ListItem[]
         <div className="space-y-0.5">
           {top.map((it, idx) => {
             const url = (it.url || it.link || "").toString();
-            const name = (it.name || it.title || url || "未知").toString();
+            const name = (it.name || it.title || "").toString();
             return (
               <div key={idx} className="flex items-center justify-between gap-2 rounded px-2 py-1.5 text-xs hover:bg-adm-card-hover">
                 {url ? (
@@ -434,13 +434,13 @@ function DetailTable({ title, items, label }: { title: string; items: ListItem[]
                     target="_blank"
                     rel="noreferrer"
                     className="min-w-0 flex-1 truncate text-adm-primary hover:underline"
-                    title={url}
+                    title={name ? `${name}\n${url}` : url}
                   >
-                    {name}
+                    {url}
                   </a>
                 ) : (
                   <span className="min-w-0 flex-1 truncate text-adm-text-secondary" title={name}>
-                    {name}
+                    {name || "未知"}
                   </span>
                 )}
                 <span className="shrink-0 font-semibold text-adm-text">{itemValue(it)}</span>
