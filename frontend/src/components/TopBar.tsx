@@ -1006,7 +1006,7 @@ export function LoginModal({
         onClick={(e) => e.stopPropagation()}
       >
         {/* 顶部标题栏：标题居中 + 关闭按钮右上角 */}
-        <div className="relative flex shrink-0 items-center justify-center border-b border-black/5 px-4 py-3.5 dark:border-white/5">
+        <div className="relative flex shrink-0 items-center justify-center px-4 pt-4 pb-2">
           <h3 className="text-base font-semibold text-wechat-text">登录</h3>
           <button
             onClick={handleClose}
@@ -1018,7 +1018,7 @@ export function LoginModal({
         </div>
 
         {/* 内容区域 */}
-        <div className="px-6 py-6">
+        <div className="px-6 pb-6">
           {/* 表单 — 评论框风格：灰色容器 + 透明输入区 */}
           <div className="w-full">
             <div className="overflow-hidden rounded-xl bg-wechat-bubble dark:bg-white/5">
@@ -1030,7 +1030,7 @@ export function LoginModal({
                   onChange={(e) => setAccount(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && canSubmit && handleSubmit()}
                   placeholder="用户名或邮箱"
-                  className="w-full bg-transparent px-4 py-3 text-[15px] text-wechat-text outline-none placeholder:text-wechat-time"
+                  className="w-full bg-transparent px-4 py-2.5 text-[14px] text-wechat-text outline-none placeholder:text-wechat-time"
                 />
               </div>
               {/* 密码 */}
@@ -1041,7 +1041,7 @@ export function LoginModal({
                   onChange={(e) => setPassword(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && canSubmit && handleSubmit()}
                   placeholder="密码"
-                  className="w-full bg-transparent px-4 py-3 pr-10 text-[15px] text-wechat-text outline-none placeholder:text-wechat-time"
+                  className="w-full bg-transparent px-4 py-2.5 pr-10 text-[14px] text-wechat-text outline-none placeholder:text-wechat-time"
                 />
                 <button
                   type="button"
