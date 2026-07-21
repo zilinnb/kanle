@@ -117,7 +117,7 @@ export default function FloatingActions({ liftAboveBottomBar = false }: { liftAb
         </svg>
       </button>
 
-      {/* 返回顶部 */}
+      {/* 返回顶部 — 仅桌面版显示，手机版双击顶栏返回顶部 */}
       <button
         type="button"
         id="btn-totop"
@@ -129,7 +129,7 @@ export default function FloatingActions({ liftAboveBottomBar = false }: { liftAb
             window.scrollTo({ top: 0, behavior: "smooth" });
           }
         }}
-        className={btnClass}
+        className={`${btnClass} hidden md:flex`}
         aria-label="回到顶部"
         title="回到顶部"
       >

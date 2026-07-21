@@ -174,6 +174,16 @@ export default function ProfileTopBar({ coverHeight = 300, initialBgAlpha = 0, s
               : "md:border md:border-transparent"
           }`}
           style={{ "--topbar-bg-alpha": bgAlpha, "--topbar-blur": "0px" } as React.CSSProperties}
+          onDoubleClick={(e) => {
+            // 双击顶栏空白区域返回顶部（双击按钮不触发）
+            if ((e.target as HTMLElement).closest("button")) return;
+            const root = document.getElementById("scroll-root");
+            if (root && root.scrollTop > 0) {
+              root.scrollTo({ top: 0, behavior: "smooth" });
+            } else {
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }
+          }}
         >
           {/* Left: back button — Android-style arrow */}
           <button

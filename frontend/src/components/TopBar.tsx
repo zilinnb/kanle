@@ -390,6 +390,16 @@ export default function TopBar({ coverHeight = 300 }: TopBarProps) {
             "--topbar-bg-alpha": bgAlpha,
             "--topbar-blur": blur,
           } as React.CSSProperties}
+          onDoubleClick={(e) => {
+            // 双击顶栏空白区域返回顶部（双击按钮不触发）
+            if ((e.target as HTMLElement).closest("button")) return;
+            const root = document.getElementById("scroll-root");
+            if (root && root.scrollTop > 0) {
+              root.scrollTo({ top: 0, behavior: "smooth" });
+            } else {
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }
+          }}
         >
           {/* Left: music player + lyric (mobile: full width, desktop: same) */}
           {/* 后端未配置歌单时隐藏整个音乐区域（activePostMusic 仍可接管播放） */}
@@ -640,9 +650,23 @@ export default function TopBar({ coverHeight = 300 }: TopBarProps) {
                     )}
                   </div>
                 )}
+                {/* 手机版未登录时显示登录入口 */}
+                {!loggedIn && (
+                  <button
+                    onClick={() => {
+                      friendsAnim.handleClose();
+                      setShowLogin(true);
+                    }}
+                    className="flex h-8 w-8 items-center justify-center rounded-full text-wechat-time transition-colors hover:bg-wechat-hover hover:text-wechat-text md:hidden"
+                    aria-label="登录"
+                  >
+                    <UserRound className="h-4 w-4" />
+                  </button>
+                )}
                 <button
                   onClick={friendsAnim.handleClose}
                   className="flex h-8 w-8 items-center justify-center rounded-full text-wechat-time transition-colors hover:bg-wechat-hover hover:text-wechat-text"
+                  aria-label="关闭"
                 >
                   <X className="h-5 w-5" />
                 </button>
@@ -798,11 +822,11 @@ export function LoginModal({
   return createPortal(
     <div
       data-modal="overlay"
-      className={`fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4 ${closing ? "animate-overlay-out" : "animate-overlay-in"}`}
+      className={`fixed inset-0 z-[100] flex items-start justify-center bg-black/40 md:items-center md:p-4 ${closing ? "animate-overlay-out" : "animate-overlay-in"}`}
       onClick={handleClose}
     >
       <div
-        className={`w-full max-w-[320px] rounded-2xl bg-wechat-white shadow-xl dark:bg-[#232328] ${closing ? "animate-modal-out" : "animate-modal-in"}`}
+        className={`w-full max-w-[320px] rounded-b-2xl bg-wechat-white pt-[env(safe-area-inset-top)] shadow-xl dark:bg-[#232328] md:rounded-2xl md:pt-0 ${closing ? "animate-sheet-to-top md:animate-modal-out" : "animate-sheet-from-top md:animate-modal-in"}`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-wechat-border px-5 py-3.5 dark:border-white/10">
