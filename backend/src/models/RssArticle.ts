@@ -78,11 +78,6 @@ RssArticle.init(
   {
     sequelize,
     tableName: "rss_articles",
-    indexes: [
-      { fields: ["sourceId"] },
-      { fields: ["pubDate"] },
-      { unique: true, fields: ["sourceId", "guid"] },
-    ],
   }
 );
 
