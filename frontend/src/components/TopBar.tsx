@@ -667,7 +667,7 @@ export default function TopBar({ coverHeight = 300 }: TopBarProps) {
             className={`flex h-[100dvh] w-full max-w-[520px] flex-col bg-wechat-white pt-[env(safe-area-inset-top)] md:h-auto md:rounded-2xl md:pt-0 md:shadow-xl dark:bg-[#232328] ${friendsAnim.closing ? "animate-sheet-to-top md:animate-modal-out" : "animate-sheet-from-top md:animate-modal-in"}`}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Tab 切换：友链 / 豆瓣 / 友圈 + 三点菜单 */}
+            {/* Tab 切换：友链 / 友圈 / 影单 + 三点菜单 */}
             <div className="flex shrink-0 items-center gap-1 border-b border-wechat-border px-3 py-2 dark:border-white/10">
               {/* 胶囊式 tab */}
               <div className="flex gap-1">
@@ -680,6 +680,17 @@ export default function TopBar({ coverHeight = 300 }: TopBarProps) {
                   }`}
                 >
                   友链
+                </button>
+                {/* 友圈 tab */}
+                <button
+                  onClick={() => setFriendsTab("rss")}
+                  className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
+                    friendsTab === "rss"
+                      ? "bg-wechat-text text-wechat-white dark:bg-white dark:text-black"
+                      : "bg-wechat-bubble text-wechat-time hover:text-wechat-text dark:bg-white/5"
+                  }`}
+                >
+                  友圈
                 </button>
                 {/* 影单 tab：没有豆瓣数据时隐藏（加载中仍显示以避免闪烁） */}
                 {(hasDouban || !doubanLoaded) && (
@@ -694,17 +705,6 @@ export default function TopBar({ coverHeight = 300 }: TopBarProps) {
                   影单
                 </button>
                 )}
-                {/* 友圈 tab */}
-                <button
-                  onClick={() => setFriendsTab("rss")}
-                  className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
-                    friendsTab === "rss"
-                      ? "bg-wechat-text text-wechat-white dark:bg-white dark:text-black"
-                      : "bg-wechat-bubble text-wechat-time hover:text-wechat-text dark:bg-white/5"
-                  }`}
-                >
-                  友圈
-                </button>
               </div>
               <div className="ml-auto flex items-center gap-0.5">
                 {loggedIn && (
