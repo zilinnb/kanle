@@ -173,6 +173,19 @@ export default function PostList({ initialPosts, initialHasMore, initialPage }: 
     return () => observer.disconnect();
   }, [loadMore]);
 
+  // 加载更多时锁定滚动容器，避免用户继续往下滑动导致卡顿
+  useEffect(() => {
+    if (!loadingMore) return;
+    const isDesktop = window.matchMedia("(min-width: 768px)").matches;
+    const scrollRoot = document.getElementById("scroll-root");
+    const target = isDesktop && scrollRoot ? scrollRoot : document.documentElement;
+    const prev = target.style.overflow;
+    target.style.overflow = "hidden";
+    return () => {
+      target.style.overflow = prev;
+    };
+  }, [loadingMore]);
+
   if (posts.length === 0) {
     return (
       <div className="py-12 text-center text-sm text-wechat-time">暂无动态</div>

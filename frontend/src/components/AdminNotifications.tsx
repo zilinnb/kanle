@@ -397,30 +397,7 @@ export default function AdminNotifications({ variant = "mobile" }: AdminNotifica
               </li>
             );
           })}
-          {loadingMore && <li><NotificationSkeleton variant="sidebar" /></li>}
         </ul>
-        {(hasMore || page > 1) && !loadingMore && (
-          <div className="mt-1 flex items-center gap-2">
-            {hasMore && (
-              <button
-                type="button"
-                onClick={loadMore}
-                className="flex-1 rounded-lg py-2 text-center text-xs text-wechat-nickname transition-colors hover:bg-wechat-hover dark:hover:bg-white/5"
-              >
-                加载更多
-              </button>
-            )}
-            {page > 1 && (
-              <button
-                type="button"
-                onClick={collapse}
-                className={`rounded-lg py-2 text-center text-xs text-wechat-time transition-colors hover:bg-wechat-hover dark:hover:bg-white/5 ${hasMore ? "flex-1" : "w-full"}`}
-              >
-                收起
-              </button>
-            )}
-          </div>
-        )}
       </div>
     );
   }

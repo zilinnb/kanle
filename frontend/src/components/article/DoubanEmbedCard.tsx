@@ -1,9 +1,15 @@
 "use client";
 
-import { Film } from "lucide-react";
+import { Film, Star } from "lucide-react";
 import type { PostDouban } from "@/lib/mock-data";
 import { getImageUrl } from "@/lib/site-settings-store";
 import LazyImage from "@/components/LazyImage";
+
+const STATUS_STYLES: Record<string, string> = {
+  collect: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400",
+  do: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400",
+  wish: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400",
+};
 
 interface DoubanEmbedCardProps {
   item: PostDouban;
@@ -11,7 +17,7 @@ interface DoubanEmbedCardProps {
   /**
    * 渲染样式：
    * - "article"（默认）：使用 link-card CSS 类，适用于文章正文（.article-content）内联渲染
-   * - "feed"：使用 Tailwind 内联样式，与首页动态链接卡片/音乐卡片样式一致
+   * - "feed"：影单风格放大版，竖版海报+标题+评分星星+状态标签，用于首页动态
    */
   variant?: "article" | "feed";
 }
@@ -27,35 +33,54 @@ export default function DoubanEmbedCard({ item, className, variant = "article" }
   const desc = descParts.join(" · ") || item.intro || "";
 
   if (variant === "feed") {
-    // 首页动态样式：与 PostCard 中的链接卡片/音乐卡片完全一致
+    // 首页动态样式：影单风格放大版（与左侧影单列表项结构一致，尺寸放大）
     return (
       <a
         href={item.link}
         target="_blank"
         rel="noopener noreferrer"
-        className={`mt-2 flex w-full max-w-[240px] items-stretch overflow-hidden rounded-[8px] bg-[#f2f2f2] transition-colors hover:bg-[#eaeaea] active:bg-[#e0e0e0] dark:bg-[#2a2a30] dark:hover:bg-[#33333a] dark:active:bg-[#3a3a42] md:max-w-[280px] ${className || ""}`}
+        className={`mt-2 flex w-full max-w-[360px] items-start gap-3 rounded-[8px] bg-[#f2f2f2] p-2.5 transition-colors hover:bg-[#eaeaea] active:bg-[#e0e0e0] dark:bg-[#2a2a30] dark:hover:bg-[#33333a] dark:active:bg-[#3a3a42] ${className || ""}`}
       >
-        <div className="flex h-[72px] w-[72px] shrink-0 items-center justify-center overflow-hidden bg-black/[0.02] dark:bg-white/[0.02] md:h-[80px] md:w-[80px]">
+        {/* 左侧竖版海报 */}
+        <div className="flex h-[90px] w-[64px] shrink-0 items-center justify-center overflow-hidden rounded-md bg-black/[0.02] dark:bg-white/[0.02]">
           {item.cover ? (
             <LazyImage
               src={getImageUrl(item.cover)}
-              alt=""
+              alt={item.title}
               className="h-full w-full object-cover"
               onError={(e) => {
                 (e.target as HTMLImageElement).style.display = "none";
               }}
             />
           ) : (
-            <Film className="h-6 w-6 text-black/30 dark:text-white/30 md:h-7 md:w-7" />
+            <Film className="h-7 w-7 text-black/30 dark:text-white/30" />
           )}
         </div>
-        <div className="flex min-w-0 flex-1 flex-col justify-center bg-white/35 px-3 dark:bg-white/[0.04]">
-          <p className="line-clamp-1 text-[14px] font-medium leading-[20px] text-black/[0.87] dark:text-white/90 md:text-[15px] md:leading-[21px]">
+        {/* 右侧内容 */}
+        <div className="flex min-w-0 flex-1 flex-col justify-center gap-1">
+          <p className="line-clamp-2 text-[15px] font-medium leading-snug text-black/[0.87] dark:text-white/90">
             {item.title}
           </p>
-          {desc && (
-            <p className="mt-0.5 line-clamp-2 text-[12px] leading-[15px] text-black/50 dark:text-white/50 md:text-[13px] md:leading-[16px]">
-              {desc}
+          <div className="flex flex-wrap items-center gap-1.5">
+            {item.rating > 0 && (
+              <div className="flex items-center gap-0.5">
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <Star
+                    key={n}
+                    className={`h-3.5 w-3.5 ${n <= item.rating ? "fill-amber-400 text-amber-400" : "text-gray-300 dark:text-gray-600"}`}
+                  />
+                ))}
+              </div>
+            )}
+            {item.statusLabel && (
+              <span className={`rounded px-1.5 py-0.5 text-[11px] font-medium ${STATUS_STYLES[item.status] || "bg-gray-100 text-gray-600 dark:bg-white/10 dark:text-gray-400"}`}>
+                {item.statusLabel}
+              </span>
+            )}
+          </div>
+          {item.intro && (
+            <p className="line-clamp-1 text-[12px] text-black/50 dark:text-white/50">
+              {item.intro}
             </p>
           )}
         </div>
