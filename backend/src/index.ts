@@ -20,6 +20,7 @@ import urlPreviewRoutes from "./routes/url-preview";
 import videoParseRoutes from "./routes/video-parse";
 import pluginsRoutes from "./routes/plugins";
 import doubanRoutes from "./routes/douban";
+import rssRoutes from "./routes/rss";
 import { visitorCookieMiddleware } from "./middleware/visitor-cookie";
 import { loadAllPlugins, watchPluginsDir } from "./music-sources/mf-manager";
 
@@ -65,6 +66,7 @@ app.use("/api/url-preview", urlPreviewRoutes);
 app.use("/api/video", videoParseRoutes);
 app.use("/api/admin/plugins", pluginsRoutes);
 app.use("/api/douban", doubanRoutes);
+app.use("/api/rss", rssRoutes);
 
 // Error handler
 app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

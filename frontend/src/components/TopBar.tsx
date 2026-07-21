@@ -37,6 +37,7 @@ import {
   Library,
   Check,
   MoreVertical,
+  Rss,
 } from "lucide-react";
 import { cravatarUrl } from "@/lib/avatar";
 import { getGlobalAudio } from "@/lib/global-audio";
@@ -80,6 +81,19 @@ interface FriendLink {
   avatar: string;
 }
 
+interface RssArticleItem {
+  id: string;
+  sourceId: string;
+  title: string;
+  link: string;
+  desc: string;
+  author: string;
+  thumbnail: string;
+  pubDate: string;
+  guid: string;
+  source?: { id: string; name: string; avatar: string; url: string };
+}
+
 /** 解析友链头像：avatar 优先（邮箱→Cravatar，链接/上传→原值），为空回退 email */
 function resolveFriendAvatar(link: { avatar?: string; email?: string }, size = 96): string {
   const avatar = (link.avatar || "").trim();
@@ -109,7 +123,7 @@ export default function TopBar({ coverHeight = 300 }: TopBarProps) {
   const [scrollProgress, setScrollProgress] = useState(0);
   const [bgAlpha, setBgAlpha] = useState(0);
   const [showFriends, setShowFriends] = useState(false);
-  const [friendsTab, setFriendsTab] = useState<"friends" | "douban">("friends");
+  const [friendsTab, setFriendsTab] = useState<"friends" | "douban" | "rss">("friends");
   const friendsAnim = useExitAnimation(() => setShowFriends(false), 250);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const userMenuRef = useRef<HTMLDivElement | null>(null);
@@ -161,6 +175,15 @@ export default function TopBar({ coverHeight = 300 }: TopBarProps) {
   // 豆瓣数据预检查：用于决定是否显示"影单"tab和友链按钮
   const [hasDouban, setHasDouban] = useState(false);
   const [doubanLoaded, setDoubanLoaded] = useState(false);
+
+  // 友圈（RSS）文章数据
+  const [rssArticles, setRssArticles] = useState<RssArticleItem[]>([]);
+  const [rssPage, setRssPage] = useState(1);
+  const [rssHasMore, setRssHasMore] = useState(false);
+  const [rssLoadingMore, setRssLoadingMore] = useState(false);
+  const [rssLoaded, setRssLoaded] = useState(false);
+  const rssSentinelRef = useRef<HTMLDivElement>(null);
+  const rssLoadingRef = useRef(false);
 
   // Fetch friend links + douban existence check（音乐数据由 GlobalMusicManager 全局管理）
   useEffect(() => {
@@ -228,6 +251,67 @@ export default function TopBar({ coverHeight = 300 }: TopBarProps) {
       setFriendsTab("friends");
     }
   }, [friendsTab, doubanLoaded, hasDouban]);
+
+  // 友圈（RSS）首次加载 — 弹窗打开时触发
+  const loadRssFirst = useCallback(async () => {
+    if (rssLoaded) return;
+    try {
+      const res = await fetch(`${API_URL}/rss/articles?page=1&limit=20`);
+      const data = await res.json();
+      if (Array.isArray(data.data)) {
+        setRssArticles(data.data);
+        setRssHasMore(data.pagination?.hasMore || false);
+        setRssPage(1);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setRssLoaded(true);
+    }
+  }, [rssLoaded]);
+
+  // 友圈分页：加载更多
+  const loadMoreRss = useCallback(async () => {
+    if (rssLoadingRef.current || !rssHasMore) return;
+    rssLoadingRef.current = true;
+    setRssLoadingMore(true);
+    const nextPage = rssPage + 1;
+    try {
+      const res = await fetch(`${API_URL}/rss/articles?page=${nextPage}&limit=20`);
+      const data = await res.json();
+      if (Array.isArray(data.data)) {
+        setRssArticles((prev) => [...prev, ...data.data]);
+        setRssHasMore(data.pagination?.hasMore || false);
+        setRssPage(nextPage);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setRssLoadingMore(false);
+      rssLoadingRef.current = false;
+    }
+  }, [rssPage, rssHasMore]);
+
+  // IntersectionObserver：友圈滚动到底部自动加载更多
+  useEffect(() => {
+    if (!showFriends || friendsTab !== "rss" || !rssSentinelRef.current) return;
+    const sentinel = rssSentinelRef.current;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) loadMoreRss();
+      },
+      { rootMargin: "50px" }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [loadMoreRss, showFriends, friendsTab]);
+
+  // 弹窗打开时首次加载 RSS
+  useEffect(() => {
+    if (showFriends && friendsTab === "rss") {
+      loadRssFirst();
+    }
+  }, [showFriends, friendsTab, loadRssFirst]);
 
   // 点击菜单外部关闭三点菜单
   useEffect(() => {
@@ -609,6 +693,18 @@ export default function TopBar({ coverHeight = 300 }: TopBarProps) {
                 影单
               </button>
               )}
+              {/* 友圈 tab */}
+              <button
+                onClick={() => setFriendsTab("rss")}
+                className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium transition-colors ${
+                  friendsTab === "rss"
+                    ? "border-b-2 border-wechat-nickname text-wechat-text"
+                    : "text-wechat-time hover:text-wechat-text"
+                }`}
+              >
+                <Rss className="h-4 w-4" />
+                友圈
+              </button>
               <div className="ml-auto flex items-center gap-0.5">
                 {loggedIn && (
                   <div ref={userMenuRef} className="relative">
@@ -739,6 +835,84 @@ export default function TopBar({ coverHeight = 300 }: TopBarProps) {
                     </ul>
                   )}
                   <div ref={friendsSentinelRef} className="h-1" />
+                </>
+              ) : friendsTab === "rss" ? (
+                <>
+                  {!rssLoaded ? (
+                    <div className="space-y-1">
+                      {[...Array(5)].map((_, i) => (
+                        <div key={i} className="flex items-start gap-3 rounded-lg px-2 py-2.5">
+                          <div className="h-10 w-10 shrink-0 animate-pulse rounded-[8px] bg-wechat-bubble dark:bg-white/5" />
+                          <div className="flex-1 space-y-1.5">
+                            <div className="h-3.5 w-2/3 animate-pulse rounded bg-wechat-bubble dark:bg-white/5" />
+                            <div className="h-2.5 w-1/2 animate-pulse rounded bg-wechat-bubble dark:bg-white/5" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : rssArticles.length === 0 ? (
+                    <div className="py-8 text-center text-sm text-wechat-time">暂无友圈文章</div>
+                  ) : (
+                    <ul>
+                      {rssArticles.map((article) => (
+                        <li key={article.id}>
+                          <a
+                            href={article.link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-start gap-3 rounded-lg px-2 py-2.5 transition-colors hover:bg-wechat-hover"
+                          >
+                            <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-[8px] bg-wechat-bubble">
+                              {article.thumbnail ? (
+                                <LazyImage
+                                  src={article.thumbnail}
+                                  alt={article.title}
+                                  className="h-full w-full object-cover"
+                                />
+                              ) : article.source?.avatar ? (
+                                <LazyImage
+                                  src={article.source.avatar}
+                                  alt={article.source.name}
+                                  className="h-full w-full object-cover"
+                                />
+                              ) : (
+                                <div className="flex h-full w-full items-center justify-center">
+                                  <Rss className="h-4 w-4 text-wechat-time" />
+                                </div>
+                              )}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="line-clamp-2 text-[14px] font-medium leading-snug text-wechat-nickname">
+                                {article.title}
+                              </p>
+                              {article.desc && (
+                                <p className="mt-0.5 line-clamp-1 text-xs text-wechat-time">{article.desc}</p>
+                              )}
+                              <div className="mt-0.5 flex items-center gap-1 text-[11px] text-wechat-time">
+                                {article.source?.name && <span className="truncate">{article.source.name}</span>}
+                                {article.source?.name && article.pubDate && <span>·</span>}
+                                {article.pubDate && (
+                                  <span>{new Date(article.pubDate).toLocaleDateString("zh-CN", { month: "long", day: "numeric" })}</span>
+                                )}
+                              </div>
+                            </div>
+                            <ExternalLink className="mt-1 h-4 w-4 shrink-0 text-wechat-time" />
+                          </a>
+                        </li>
+                      ))}
+                      {rssLoadingMore &&
+                        [...Array(3)].map((_, i) => (
+                          <li key={`rsk-${i}`} className="flex items-start gap-3 rounded-lg px-2 py-2.5">
+                            <div className="h-10 w-10 shrink-0 animate-pulse rounded-[8px] bg-wechat-bubble dark:bg-white/5" />
+                            <div className="flex-1 space-y-1.5">
+                              <div className="h-3.5 w-2/3 animate-pulse rounded bg-wechat-bubble dark:bg-white/5" />
+                              <div className="h-2.5 w-1/2 animate-pulse rounded bg-wechat-bubble dark:bg-white/5" />
+                            </div>
+                          </li>
+                        ))}
+                    </ul>
+                  )}
+                  <div ref={rssSentinelRef} className="h-1" />
                 </>
               ) : (
                 <DoubanSidebar embedded />

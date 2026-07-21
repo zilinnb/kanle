@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-import { LayoutDashboard, FileText, BookText, User, LogOut, MessageCircle, PenLine, Settings2, BookUser, Music, Megaphone, PanelLeftClose, ChevronDown, Home, Images, Cloud, ShieldBan, Film, Menu } from "lucide-react";
+import { LayoutDashboard, FileText, BookText, User, LogOut, MessageCircle, PenLine, Settings2, BookUser, Music, Megaphone, PanelLeftClose, ChevronDown, Home, Images, Cloud, ShieldBan, Film, Menu, Rss } from "lucide-react";
 import Image from "next/image";
 import EditPostModal from "@/components/EditPostModal";
 import ThemeToggleButton from "@/components/admin/ThemeToggleButton";
@@ -101,6 +101,7 @@ export default function AdminLayoutClient({
       items: [
         { href: "/admin/users", label: "个人资料", icon: User },
         { href: "/admin/friends", label: "友情链接", icon: BookUser },
+        { href: "/admin/rss", label: "友圈", icon: Rss },
         { href: "/admin/plugins", label: "音乐管理", icon: Music },
         { href: "/admin/storage", label: "云端存储", icon: Cloud },
         { href: "/admin/settings", label: "网站设置", icon: Settings2 },
