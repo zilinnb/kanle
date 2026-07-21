@@ -21,6 +21,7 @@ import videoParseRoutes from "./routes/video-parse";
 import pluginsRoutes from "./routes/plugins";
 import doubanRoutes from "./routes/douban";
 import rssRoutes from "./routes/rss";
+import analyticsRoutes from "./routes/analytics";
 import { visitorCookieMiddleware } from "./middleware/visitor-cookie";
 import { loadAllPlugins, watchPluginsDir } from "./music-sources/mf-manager";
 
@@ -67,6 +68,7 @@ app.use("/api/video", videoParseRoutes);
 app.use("/api/admin/plugins", pluginsRoutes);
 app.use("/api/douban", doubanRoutes);
 app.use("/api/rss", rssRoutes);
+app.use("/api/analytics", analyticsRoutes);
 
 // Error handler
 app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
@@ -129,6 +131,25 @@ async function bootstrap() {
       );
     } catch (e) {
       console.warn("Migration check for analyticsCode skipped:", (e as Error).message);
+    }
+
+    // Migration: ensure 51.la OpenAPI config columns (laAccessKey, laSecretKey, laMaskId) exist.
+    // These store the user credentials for fetching 51.la statistics in the admin dashboard.
+    try {
+      const cols = ["laAccessKey", "laSecretKey", "laMaskId"];
+      for (const col of cols) {
+        const [rows] = await sequelize.query(
+          `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'site_settings' AND COLUMN_NAME = '${col}'`
+        );
+        if (Array.isArray(rows) && rows.length === 0) {
+          await sequelize.query(
+            `ALTER TABLE \`site_settings\` ADD COLUMN \`${col}\` VARCHAR(255) NOT NULL DEFAULT ''`
+          );
+          console.log(`Migration: ${col} column added to site_settings.`);
+        }
+      }
+    } catch (e) {
+      console.warn("Migration check for 51.la config columns skipped:", (e as Error).message);
     }
 
     // 启动时清理已过期的黑名单记录

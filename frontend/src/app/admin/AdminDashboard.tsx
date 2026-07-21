@@ -10,6 +10,7 @@ import {
 import dynamic from "next/dynamic";
 import { apiFetch, getToken } from "@/lib/api-fetch";
 import { renderTextWithEmoji } from "@/lib/emoji";
+import LaAnalyticsSection from "./LaAnalyticsSection";
 
 // echarts 包含 canvas/window 操作，必须客户端动态加载避免 SSR 报错
 const ReactECharts = dynamic(() => import("echarts-for-react"), { ssr: false });
@@ -371,6 +372,9 @@ export default function AdminDashboard() {
           <DonutChart items={donutItems} />
         </div>
       </div>
+
+      {/* 51.la 网站统计（仅在后台配置 51.la OpenAPI 后显示） */}
+      <LaAnalyticsSection />
 
       {/* 快捷操作 */}
       <div className="mt-4 rounded-2xl border border-adm-border bg-adm-card p-5">

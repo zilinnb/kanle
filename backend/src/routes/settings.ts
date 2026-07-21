@@ -82,6 +82,10 @@ router.put(
     body("musicAutoplay").optional().isBoolean(),
     body("cdnProxyUrl").optional().trim().isLength({ max: 500 }),
     body("analyticsCode").optional().isString(),
+    // 51.la OpenAPI config
+    body("laAccessKey").optional().trim().isLength({ max: 255 }),
+    body("laSecretKey").optional().trim().isLength({ max: 255 }),
+    body("laMaskId").optional().trim().isLength({ max: 100 }),
     // Email config
     body("emailNotifyEnabled").optional().isBoolean(),
     body("notifyEmail").optional().trim().isLength({ max: 255 }),
@@ -139,6 +143,9 @@ router.put(
       musicAutoplay: req.body.musicAutoplay ?? setting.musicAutoplay,
       cdnProxyUrl: req.body.cdnProxyUrl ?? setting.cdnProxyUrl,
       analyticsCode: req.body.analyticsCode ?? setting.analyticsCode,
+      laAccessKey: req.body.laAccessKey ?? setting.laAccessKey,
+      laSecretKey: req.body.laSecretKey ?? setting.laSecretKey,
+      laMaskId: req.body.laMaskId ?? setting.laMaskId,
       emailNotifyEnabled: req.body.emailNotifyEnabled ?? setting.emailNotifyEnabled,
       notifyEmail: req.body.notifyEmail ?? setting.notifyEmail,
       smtpHost: req.body.smtpHost ?? setting.smtpHost,
@@ -186,6 +193,9 @@ router.put(
       musicAutoplay: setting.musicAutoplay,
       cdnProxyUrl: setting.cdnProxyUrl,
       analyticsCode: setting.analyticsCode,
+      laAccessKey: setting.laAccessKey,
+      laSecretKey: setting.laSecretKey,
+      laMaskId: setting.laMaskId,
     });
   }
 );
@@ -226,6 +236,16 @@ router.get("/amap-config", authenticate, requireAdmin, async (_req: AuthRequest,
     amapKey: setting.amapKey,
     amapJsKey: setting.amapJsKey,
     amapSecurityJsCode: setting.amapSecurityJsCode,
+  });
+});
+
+// GET /api/settings/la-config - 51.la OpenAPI config (admin only, includes secretKey)
+router.get("/la-config", authenticate, requireAdmin, async (_req: AuthRequest, res: Response) => {
+  const setting = await ensureSetting();
+  res.json({
+    laAccessKey: setting.laAccessKey,
+    laSecretKey: setting.laSecretKey,
+    laMaskId: setting.laMaskId,
   });
 });
 

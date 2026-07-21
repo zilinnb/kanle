@@ -57,11 +57,17 @@ interface SiteSettingAttributes {
   cdnProxyUrl: string;
   /** 网站统计代码（如 51.la、百度统计等），注入到 </head> 之前 */
   analyticsCode: string;
+  /** 51.la OpenAPI 用户标识码（accessKey），用于仪表盘展示统计数据 */
+  laAccessKey: string;
+  /** 51.la OpenAPI 密钥（secretKey），用于签名认证 */
+  laSecretKey: string;
+  /** 51.la 应用掩码 ID（应用标识），用于请求统计数据 */
+  laMaskId: string;
 }
 
 interface SiteSettingCreationAttributes extends Optional<
   SiteSettingAttributes,
-  "id" | "siteName" | "description" | "keywords" | "domain" | "beian" | "faviconUrl" | "ogImage" | "musicUrl" | "musicId" | "musicSource" | "playlistId" | "backgroundImages" | "darkModeEnabled" | "darkModeStartTime" | "darkModeEndTime" | "emailNotifyEnabled" | "notifyEmail" | "smtpHost" | "smtpPort" | "smtpSecure" | "smtpUser" | "smtpPass" | "smtpFrom" | "emailTemplate" | "upyunEnabled" | "upyunBucket" | "upyunOperator" | "upyunPassword" | "upyunDomain" | "upyunPath" | "amapJsKey" | "amapSecurityJsCode" | "amapKey" | "beianUrl" | "socialLinks" | "postCollapseLength" | "fontUrl" | "adOnArchives" | "commentAntiSpamEnabled" | "rssEnabled" | "rssIncludeMoments" | "doubanId" | "bannedWords" | "musicAutoplay" | "cdnProxyUrl" | "analyticsCode"
+  "id" | "siteName" | "description" | "keywords" | "domain" | "beian" | "faviconUrl" | "ogImage" | "musicUrl" | "musicId" | "musicSource" | "playlistId" | "backgroundImages" | "darkModeEnabled" | "darkModeStartTime" | "darkModeEndTime" | "emailNotifyEnabled" | "notifyEmail" | "smtpHost" | "smtpPort" | "smtpSecure" | "smtpUser" | "smtpPass" | "smtpFrom" | "emailTemplate" | "upyunEnabled" | "upyunBucket" | "upyunOperator" | "upyunPassword" | "upyunDomain" | "upyunPath" | "amapJsKey" | "amapSecurityJsCode" | "amapKey" | "beianUrl" | "socialLinks" | "postCollapseLength" | "fontUrl" | "adOnArchives" | "commentAntiSpamEnabled" | "rssEnabled" | "rssIncludeMoments" | "doubanId" | "bannedWords" | "musicAutoplay" | "cdnProxyUrl" | "analyticsCode" | "laAccessKey" | "laSecretKey" | "laMaskId"
 > {}
 
 class SiteSetting
@@ -115,6 +121,9 @@ class SiteSetting
   declare musicAutoplay: boolean;
   declare cdnProxyUrl: string;
   declare analyticsCode: string;
+  declare laAccessKey: string;
+  declare laSecretKey: string;
+  declare laMaskId: string;
   declare readonly createdAt: Date;
   declare readonly updatedAt: Date;
 }
@@ -359,6 +368,24 @@ SiteSetting.init(
       allowNull: false,
       defaultValue: "",
       field: "analyticsCode",
+    },
+    laAccessKey: {
+      type: DataTypes.STRING(255),
+      allowNull: false,
+      defaultValue: "",
+      field: "laAccessKey",
+    },
+    laSecretKey: {
+      type: DataTypes.STRING(255),
+      allowNull: false,
+      defaultValue: "",
+      field: "laSecretKey",
+    },
+    laMaskId: {
+      type: DataTypes.STRING(100),
+      allowNull: false,
+      defaultValue: "",
+      field: "laMaskId",
     },
   },
   {

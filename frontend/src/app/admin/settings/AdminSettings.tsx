@@ -60,6 +60,9 @@ interface SiteSettings {
   doubanId: string;
   cdnProxyUrl: string;
   analyticsCode: string;
+  laAccessKey: string;
+  laSecretKey: string;
+  laMaskId: string;
 }
 
 const DEFAULTS: SiteSettings = {
@@ -87,6 +90,9 @@ const DEFAULTS: SiteSettings = {
   doubanId: "",
   cdnProxyUrl: "",
   analyticsCode: "",
+  laAccessKey: "",
+  laSecretKey: "",
+  laMaskId: "",
 };
 
 interface SocialLink {
@@ -445,10 +451,12 @@ export default function AdminSettings() {
       router.replace("/");
       return;
     }
-    apiFetch("/settings")
-      .then((res) => res.json())
-      .then((data: SiteSettings) => {
-        setForm({ ...DEFAULTS, ...data });
+    Promise.all([
+      apiFetch("/settings").then((res) => res.json()),
+      apiFetch("/settings/la-config").then((res) => res.ok ? res.json() : null).catch(() => null),
+    ])
+      .then(([data, laConfig]) => {
+        setForm({ ...DEFAULTS, ...data, ...(laConfig || {}) });
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -881,6 +889,67 @@ export default function AdminSettings() {
           <p className="mt-1.5 text-xs text-adm-text-tertiary">
             将统计平台的代码粘贴到此，会自动注入到页面中。支持 51.la、百度统计、Google Analytics 等
           </p>
+        </div>
+
+        {/* 51.la OpenAPI config — enables the dashboard charts */}
+        <div className="mb-6 rounded-xl border border-adm-border bg-adm-input/40 p-4">
+          <div className="mb-3 flex items-center gap-2">
+            <BarChart3 className="h-4 w-4 text-adm-primary" />
+            <h4 className="text-sm font-semibold text-adm-text">51.la 仪表盘数据接入（OpenAPI）</h4>
+          </div>
+          <p className="mb-3 text-xs text-adm-text-tertiary">
+            填写后管理后台仪表盘将展示 PV / UV / IP / 新访客 / 会话数趋势，以及来路、受访页、入口页等 ECharts 图表。留空则不显示统计图表。前往
+            <a
+              href="https://v6.51.la/user/application/openapi"
+              target="_blank"
+              rel="noreferrer"
+              className="mx-1 text-adm-primary underline hover:opacity-80"
+            >
+              51.la OpenAPI 控制台
+            </a>
+            获取以下三项
+          </p>
+          <div className="space-y-3">
+            <div>
+              <label className="mb-1 block text-xs font-medium text-adm-text-secondary">
+                用户标识码（accessKey）
+              </label>
+              <input
+                type="text"
+                value={form.laAccessKey}
+                onChange={(e) => setForm({ ...form, laAccessKey: e.target.value })}
+                className="w-full rounded-lg border border-adm-border bg-adm-input px-3 py-2 text-sm text-adm-text transition-colors focus:border-adm-text-secondary focus:bg-adm-input-focus focus:outline-none focus:ring-1 focus:ring-adm-text-secondary"
+                placeholder="如：1b3c1308b7d1e2e9..."
+                autoComplete="off"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-adm-text-secondary">
+                密钥（secretKey）
+              </label>
+              <input
+                type="password"
+                value={form.laSecretKey}
+                onChange={(e) => setForm({ ...form, laSecretKey: e.target.value })}
+                className="w-full rounded-lg border border-adm-border bg-adm-input px-3 py-2 text-sm text-adm-text transition-colors focus:border-adm-text-secondary focus:bg-adm-input-focus focus:outline-none focus:ring-1 focus:ring-adm-text-secondary"
+                placeholder="用于签名认证"
+                autoComplete="off"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-adm-text-secondary">
+                应用掩码 ID（maskId）
+              </label>
+              <input
+                type="text"
+                value={form.laMaskId}
+                onChange={(e) => setForm({ ...form, laMaskId: e.target.value })}
+                className="w-full rounded-lg border border-adm-border bg-adm-input px-3 py-2 text-sm text-adm-text transition-colors focus:border-adm-text-secondary focus:bg-adm-input-focus focus:outline-none focus:ring-1 focus:ring-adm-text-secondary"
+                placeholder="应用标识"
+                autoComplete="off"
+              />
+            </div>
+          </div>
         </div>
 
         {/* Social links section */}
