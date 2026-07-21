@@ -354,15 +354,7 @@ export default function AdminDashboard() {
       <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
         {/* 柱状图 */}
         <div className="rounded-2xl border border-adm-border bg-adm-card p-5 lg:col-span-2">
-          <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-adm-text">近7天活动趋势</h3>
-            <div className="flex items-center gap-3 text-xs">
-              <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-[#3b82f6]" />动态</span>
-              <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-[#8b5cf6]" />文章</span>
-              <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-[#f43f5e]" />评论</span>
-              <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-[#f59e0b]" />点赞</span>
-            </div>
-          </div>
+          <h3 className="mb-4 text-sm font-semibold text-adm-text">近7天活动趋势</h3>
           {stats?.timeSeries && <BarChart data={stats.timeSeries} />}
         </div>
 
