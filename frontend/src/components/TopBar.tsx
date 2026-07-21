@@ -667,45 +667,45 @@ export default function TopBar({ coverHeight = 300 }: TopBarProps) {
             className={`flex h-[100dvh] w-full max-w-[520px] flex-col bg-wechat-white pt-[env(safe-area-inset-top)] md:h-auto md:rounded-2xl md:pt-0 md:shadow-xl dark:bg-[#232328] ${friendsAnim.closing ? "animate-sheet-to-top md:animate-modal-out" : "animate-sheet-from-top md:animate-modal-in"}`}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Tab 切换：友链 / 豆瓣 + 三点菜单 */}
-            <div className="flex shrink-0 items-center border-b border-wechat-border px-2 dark:border-white/10">
-              <button
-                onClick={() => setFriendsTab("friends")}
-                className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium transition-colors ${
-                  friendsTab === "friends"
-                    ? "border-b-2 border-wechat-nickname text-wechat-text"
-                    : "text-wechat-time hover:text-wechat-text"
-                }`}
-              >
-                <Contact className="h-4 w-4" />
-                友链
-              </button>
-              {/* 影单 tab：没有豆瓣数据时隐藏（加载中仍显示以避免闪烁） */}
-              {(hasDouban || !doubanLoaded) && (
-              <button
-                onClick={() => setFriendsTab("douban")}
-                className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium transition-colors ${
-                  friendsTab === "douban"
-                    ? "border-b-2 border-wechat-nickname text-wechat-text"
-                    : "text-wechat-time hover:text-wechat-text"
-                }`}
-              >
-                <Film className="h-4 w-4" />
-                影单
-              </button>
-              )}
-              {/* 友圈 tab */}
-              <button
-                onClick={() => setFriendsTab("rss")}
-                className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium transition-colors ${
-                  friendsTab === "rss"
-                    ? "border-b-2 border-wechat-nickname text-wechat-text"
-                    : "text-wechat-time hover:text-wechat-text"
-                }`}
-              >
-                <Rss className="h-4 w-4" />
-                友圈
-              </button>
+            {/* Tab 切换：友链 / 豆瓣 / 友圈 + 三点菜单 */}
+            <div className="flex shrink-0 items-center gap-1 border-b border-wechat-border px-3 py-2 dark:border-white/10">
+              {/* 胶囊式 tab */}
+              <div className="flex gap-1">
+                <button
+                  onClick={() => setFriendsTab("friends")}
+                  className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
+                    friendsTab === "friends"
+                      ? "bg-wechat-text text-wechat-white dark:bg-white dark:text-black"
+                      : "bg-wechat-bubble text-wechat-time hover:text-wechat-text dark:bg-white/5"
+                  }`}
+                >
+                  友链
+                </button>
+                {/* 影单 tab：没有豆瓣数据时隐藏（加载中仍显示以避免闪烁） */}
+                {(hasDouban || !doubanLoaded) && (
+                <button
+                  onClick={() => setFriendsTab("douban")}
+                  className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
+                    friendsTab === "douban"
+                      ? "bg-wechat-text text-wechat-white dark:bg-white dark:text-black"
+                      : "bg-wechat-bubble text-wechat-time hover:text-wechat-text dark:bg-white/5"
+                  }`}
+                >
+                  影单
+                </button>
+                )}
+                {/* 友圈 tab */}
+                <button
+                  onClick={() => setFriendsTab("rss")}
+                  className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
+                    friendsTab === "rss"
+                      ? "bg-wechat-text text-wechat-white dark:bg-white dark:text-black"
+                      : "bg-wechat-bubble text-wechat-time hover:text-wechat-text dark:bg-white/5"
+                  }`}
+                >
+                  友圈
+                </button>
+              </div>
               <div className="ml-auto flex items-center gap-0.5">
                 {loggedIn && (
                   <div ref={userMenuRef} className="relative">
@@ -1019,20 +1019,6 @@ export function LoginModal({
 
         {/* 内容区域 */}
         <div className="px-6 py-6">
-          {/* 网站头像 + 名称 */}
-          <div className="mb-6 flex flex-col items-center">
-            {resolvedIcon && (
-              <img
-                src={resolvedIcon}
-                alt={siteName || "logo"}
-                className="h-14 w-14 rounded-2xl object-cover shadow-sm"
-              />
-            )}
-            {siteName && (
-              <p className="mt-2.5 text-sm text-wechat-time">{siteName}</p>
-            )}
-          </div>
-
           {/* 表单 — 评论框风格：灰色容器 + 透明输入区 */}
           <div className="w-full">
             <div className="overflow-hidden rounded-xl bg-wechat-bubble dark:bg-white/5">
@@ -1074,17 +1060,19 @@ export function LoginModal({
               </p>
             )}
 
-            {/* 登录按钮 — 仅在账号和密码都输入后显示 */}
-            {canSubmit && (
-              <button
-                type="button"
-                onClick={handleSubmit}
-                disabled={loading}
-                className="animate-content-fade-in mt-4 w-full rounded-xl bg-[#07c160] py-3 text-[15px] font-medium text-white transition-all hover:bg-[#06ad56] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {loading ? "登录中..." : "登录"}
-              </button>
-            )}
+            {/* 登录按钮 — 灰色（未输入）/ 绿色（已输入） */}
+            <button
+              type="button"
+              onClick={canSubmit ? handleSubmit : undefined}
+              disabled={loading}
+              className={`mt-4 w-full rounded-xl py-3 text-[15px] font-medium transition-all active:scale-[0.98] ${
+                canSubmit
+                  ? "bg-[#07c160] text-white hover:bg-[#06ad56] disabled:cursor-not-allowed disabled:opacity-60"
+                  : "bg-wechat-bubble text-wechat-time dark:bg-white/5"
+              }`}
+            >
+              {loading ? "登录中..." : "登录"}
+            </button>
           </div>
         </div>
       </div>
