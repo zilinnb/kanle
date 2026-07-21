@@ -1006,7 +1006,7 @@ export function LoginModal({
         onClick={(e) => e.stopPropagation()}
       >
         {/* 顶部标题栏：标题居中 + 关闭按钮右上角 */}
-        <div className="relative flex shrink-0 items-center justify-center border-b border-wechat-border px-4 py-3.5 dark:border-white/10">
+        <div className="relative flex shrink-0 items-center justify-center border-b border-black/5 px-4 py-3.5 dark:border-white/5">
           <h3 className="text-base font-semibold text-wechat-text">登录</h3>
           <button
             onClick={handleClose}
