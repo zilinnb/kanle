@@ -11,10 +11,16 @@ export function toAbsoluteUrl(url: string) {
   return url;
 }
 
-/** Upgrade http:// to https:// to avoid Mixed Content warnings on HTTPS pages */
+/** Upgrade http:// to https:// to avoid Mixed Content warnings on HTTPS pages.
+ *  Local dev servers (localhost / 127.0.0.1) are skipped — they run HTTP only. */
 export function toHttps(url: string): string {
   if (!url || typeof url !== "string") return url;
-  if (url.startsWith("http://")) return "https://" + url.slice(7);
+  if (url.startsWith("http://")) {
+    if (url.startsWith("http://localhost") || url.startsWith("http://127.0.0.1")) {
+      return url;
+    }
+    return "https://" + url.slice(7);
+  }
   return url;
 }
 
